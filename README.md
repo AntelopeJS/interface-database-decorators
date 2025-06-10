@@ -3,7 +3,7 @@
 # Interface Database Decorators
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.md)
-[![Version](https://img.shields.io/badge/version-beta-orange.svg)](https://github.com/antelopejs/antelope)
+[![Version](https://img.shields.io/badge/version-beta-orange.svg)](https://github.com/AntelopeJS/database-decorators/tree/main/.antelope/output/database-decorators/beta)
 
 A structured framework for implementing database operations using TypeScript decorators. Interface Database Decorators offers a flexible, object-oriented approach to defining database tables, models, and operations with full type safety.
 
