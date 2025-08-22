@@ -32,10 +32,10 @@ This is the development version (`beta`) of the Interface Database Decorators. I
 
 ## Versions
 
-| Version | Link                                                                                                                              | Status                                        |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| beta    | [database-decorators@beta](https://github.com/AntelopeJS/database-decorators/tree/main/.antelope/output/database-decorators/beta) | Waiting validation from community to go in v1 |
-| 1       | _Not yet released_                                                                                                                | Planned stable release                        |
+| Version | Link                                                                                                                            | Status                                        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| beta    | [database-decorators@beta](https://github.com/AntelopeJS/database-decorators/tree/main/output/database-decorators/beta) | Waiting validation from community to go in v1 |
+| 1       | _Not yet released_                                                                                                              | Planned stable release                        |
 
 ## License
 
