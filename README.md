@@ -3,39 +3,29 @@
 # Interface Database Decorators
 
 <div align="center">
+<a href="https://www.npmjs.com/package/@antelopejs/interface-database-decorators"><img src="https://img.shields.io/npm/v/@antelopejs/interface-database-decorators?style=for-the-badge&labelColor=000000&color=000000" alt="npm"></a>
 <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge&labelColor=000000"></a>
 <a href="https://discord.gg/sjK28QHrA7"><img src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000" alt="Discord"></a>
 <a href="./docs/1.introduction.md"><img src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000" alt="Documentation"></a>
 </div>
 
-A structured framework for implementing database operations using TypeScript decorators. Interface Database Decorators offers a flexible, object-oriented approach to defining database tables, models, and operations with full type safety.
+A structured framework for implementing database operations using TypeScript decorators. Interface Database Decorators provides a flexible, object-oriented approach to defining database tables, models, and operations with full type safety, including built-in support for field-level encryption, hashing, and localization.
 
 ## Installation
 
 ```bash
-ajs module imports add database-decorators@beta
+npm install @antelopejs/interface-database-decorators
 ```
 
 ## Documentation
 
 Detailed documentation is available in the `docs` directory:
 
-- [Introduction](./docs/1.introduction.md) - Overview and basic concepts
-- [Table Definitions](./docs/2.table-definitions.md) - Defining database tables with decorators
-- [Table Modifiers](./docs/3.table-modifiers.md) - Table modifiers for encryption, hashing, and localization
-- [Data Models](./docs/4.data-models.md) - Creating and using data models
-- [Parameter Decoration](./docs/5.parameter-decoration.md) - Parameter decorators for API controllers
-
-## Current Status
-
-This is the development version (`beta`) of the Interface Database Decorators. It is currently in pre-release stage and may undergo changes before the final release. The interface is not considered stable for production use without understanding that breaking changes may occur.
-
-## Versions
-
-| Version | Link                                                                                                                            | Status                                        |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| beta    | [database-decorators@beta](https://github.com/AntelopeJS/database-decorators/tree/main/output/database-decorators/beta) | Waiting validation from community to go in v1 |
-| 1       | _Not yet released_                                                                                                              | Planned stable release                        |
+- [Introduction](./docs/1.introduction.md) - Overview and dependencies
+- [Table Definitions](./docs/2.table-definitions.md) - Define database tables with decorators, indexes, and fixtures
+- [Table Modifiers](./docs/3.table-modifiers.md) - Encryption, hashing, localization, and custom modifier creation
+- [Data Models](./docs/4.data-models.md) - Create and use data models with CRUD operations
+- [Parameter Decoration](./docs/5.parameter-decoration.md) - Inject models into API controllers
 
 ## License
 
