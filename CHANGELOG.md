@@ -1,6 +1,31 @@
 # Changelog
 
 
+## v0.0.3
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.0.2...v0.0.3)
+
+### 💅 Refactors
+
+- Switch test modules from local to npm packages ([c49f116](https://github.com/AntelopeJS/interface-database-decorators/commit/c49f116))
+
+### 📖 Documentation
+
+- Rewrite documentation for production readiness ([dc68876](https://github.com/AntelopeJS/interface-database-decorators/commit/dc68876))
+
+### 🏡 Chore
+
+- Update dependencies ([b52fdbe](https://github.com/AntelopeJS/interface-database-decorators/commit/b52fdbe))
+- Package maintenance ([#4](https://github.com/AntelopeJS/interface-database-decorators/pull/4))
+
+### 🤖 CI
+
+- Add test step to CI workflow ([2008eda](https://github.com/AntelopeJS/interface-database-decorators/commit/2008eda))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <upd4ting@gmail.com>
+
 ## v0.0.2
 
 
