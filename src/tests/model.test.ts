@@ -3,7 +3,7 @@ import {
   Get,
   type RequestContext,
 } from "@antelopejs/interface-api";
-import { CreateDatabaseSchemaInstance } from "@antelopejs/interface-database-decorators/database";
+import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   BasicDataModel,
   GetModel,
@@ -126,10 +126,7 @@ async function GetModelFromCacheTest() {
 
   const TestModel = BasicDataModel(TestTable, "cache_table");
 
-  await CreateDatabaseSchemaInstance(
-    "model-cache-schema",
-    "test-model-cache-db",
-  );
+  await RegisterSchema("model-cache-schema");
 
   const model1 = GetModel(TestModel, "test-model-cache-db");
   const model2 = GetModel(TestModel, "test-model-cache-db");
@@ -146,8 +143,8 @@ async function CreateNewModelWhenNotCachedTest() {
 
   const TestModel = BasicDataModel(TestTable, "nocache_table");
 
-  await CreateDatabaseSchemaInstance("model-nocache-schema", "model-db1");
-  await CreateDatabaseSchemaInstance("model-nocache-schema", "model-db2");
+  await RegisterSchema("model-nocache-schema");
+  await RegisterSchema("model-nocache-schema");
 
   const model1 = GetModel(TestModel, "model-db1");
   const model2 = GetModel(TestModel, "model-db2");
@@ -163,10 +160,7 @@ async function HandleModelWithStringInstanceIdTest() {
     name!: string;
   }
   const TestModel = BasicDataModel(TestTable, "static_table");
-  await CreateDatabaseSchemaInstance(
-    "model-static-schema",
-    "test-static-model-db",
-  );
+  await RegisterSchema("model-static-schema");
   class _TestService extends Controller("/staticmodel") {
     @Model(TestModel, "test-static-model-db")
     model!: InstanceType<typeof TestModel>;
@@ -188,10 +182,7 @@ async function HandleModelWithCallbackInstanceIdTest() {
     name!: string;
   }
   const TestModel = BasicDataModel(TestTable, "dynamic_table");
-  await CreateDatabaseSchemaInstance(
-    "model-dynamic-schema",
-    "test-dynamic-model-db",
-  );
+  await RegisterSchema("model-dynamic-schema");
   class _TestService extends Controller("/dynamicmodel/:database") {
     @Model(TestModel, (ctx: RequestContext) => ctx.routeParameters.database)
     model!: InstanceType<typeof TestModel>;

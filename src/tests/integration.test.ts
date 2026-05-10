@@ -1,5 +1,5 @@
 import { Schema } from "@antelopejs/interface-database";
-import { CreateDatabaseSchemaInstance } from "@antelopejs/interface-database-decorators/database";
+import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import { BasicDataModel } from "@antelopejs/interface-database-decorators/model";
 import {
   Encrypted,
@@ -21,10 +21,9 @@ import {
 } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
-function getDatabase(schemaId: string, instanceId: string) {
-  const instance = Schema.get(schemaId)?.instance(instanceId);
-  if (!instance)
-    throw new Error(`Database not found: ${schemaId}/${instanceId}`);
+function getDatabase(schemaId: string) {
+  const instance = Schema.get(schemaId)?.instance();
+  if (!instance) throw new Error(`Database not found: ${schemaId}`);
   return instance;
 }
 
@@ -64,14 +63,8 @@ async function CreateAndQueryUserWithModifiersTest() {
 
   const UserModel = BasicDataModel(User, "users");
 
-  await CreateDatabaseSchemaInstance(
-    "integration-modifiers-schema",
-    "test-integration-db",
-  );
-  const schemaInstance = getDatabase(
-    "integration-modifiers-schema",
-    "test-integration-db",
-  );
+  await RegisterSchema("integration-modifiers-schema");
+  const schemaInstance = getDatabase("integration-modifiers-schema");
   const userModel = new UserModel(schemaInstance);
 
   const userData = {
@@ -141,8 +134,8 @@ async function PerformCrudOperationsOnProductsTest() {
 
   const ProductModel = BasicDataModel(Product, "products");
 
-  await CreateDatabaseSchemaInstance("integration-crud-schema", "test-crud-db");
-  const schemaInstance = getDatabase("integration-crud-schema", "test-crud-db");
+  await RegisterSchema("integration-crud-schema");
+  const schemaInstance = getDatabase("integration-crud-schema");
   const productModel = new ProductModel(schemaInstance);
 
   const productData = {
@@ -187,14 +180,8 @@ async function HandleLocalizedContentTest() {
 
   const ContentModel = BasicDataModel(LocalizedContent, "localized_content");
 
-  await CreateDatabaseSchemaInstance(
-    "integration-l10n-schema",
-    "test-localization-db",
-  );
-  const schemaInstance = getDatabase(
-    "integration-l10n-schema",
-    "test-localization-db",
-  );
+  await RegisterSchema("integration-l10n-schema");
+  const schemaInstance = getDatabase("integration-l10n-schema");
   const contentModel = new ContentModel(schemaInstance);
 
   const content = new LocalizedContent();
@@ -243,14 +230,8 @@ async function ManageEncryptedSensitiveDataTest() {
 
   const SensitiveDataModel = BasicDataModel(SensitiveData, "sensitive_data");
 
-  await CreateDatabaseSchemaInstance(
-    "integration-encrypt-schema",
-    "test-encryption-db",
-  );
-  const schemaInstance = getDatabase(
-    "integration-encrypt-schema",
-    "test-encryption-db",
-  );
+  await RegisterSchema("integration-encrypt-schema");
+  const schemaInstance = getDatabase("integration-encrypt-schema");
   const sensitiveDataModel = new SensitiveDataModel(schemaInstance);
 
   const sensitiveData = {
@@ -294,8 +275,8 @@ async function ValidateHashedPasswordsTest() {
 
   const UserAccountModel = BasicDataModel(UserAccount, "user_accounts");
 
-  await CreateDatabaseSchemaInstance("integration-hash-schema", "test-hash-db");
-  const schemaInstance = getDatabase("integration-hash-schema", "test-hash-db");
+  await RegisterSchema("integration-hash-schema");
+  const schemaInstance = getDatabase("integration-hash-schema");
   const userAccountModel = new UserAccountModel(schemaInstance);
 
   const accountData = {
@@ -343,15 +324,9 @@ async function WorkWithSchemaRegistrationTest() {
     declare price: number;
   }
 
-  await CreateDatabaseSchemaInstance(
-    "integration-schema-reg",
-    "test-schema-integration-db",
-  );
+  await RegisterSchema("integration-schema-reg");
 
-  const schemaInstance = getDatabase(
-    "integration-schema-reg",
-    "test-schema-integration-db",
-  );
+  const schemaInstance = getDatabase("integration-schema-reg");
   const UserModel = BasicDataModel(SchemaUser, "schema_users");
   const ProductModel = BasicDataModel(SchemaProduct, "schema_products");
 
@@ -404,14 +379,8 @@ async function HandleComplexRelationshipsTest() {
   const OrderModel = BasicDataModel(Order, "orders");
   const OrderItemModel = BasicDataModel(OrderItem, "order_items");
 
-  await CreateDatabaseSchemaInstance(
-    "integration-rel-schema",
-    "test-relationships-db",
-  );
-  const schemaInstance = getDatabase(
-    "integration-rel-schema",
-    "test-relationships-db",
-  );
+  await RegisterSchema("integration-rel-schema");
+  const schemaInstance = getDatabase("integration-rel-schema");
 
   const orderModel = new OrderModel(schemaInstance);
   const orderItemModel = new OrderItemModel(schemaInstance);
@@ -457,8 +426,8 @@ async function PerformBulkOperationsTest() {
 
   const BulkProductModel = BasicDataModel(BulkProduct, "bulk_products");
 
-  await CreateDatabaseSchemaInstance("integration-bulk-schema", "test-bulk-db");
-  const schemaInstance = getDatabase("integration-bulk-schema", "test-bulk-db");
+  await RegisterSchema("integration-bulk-schema");
+  const schemaInstance = getDatabase("integration-bulk-schema");
   const bulkProductModel = new BulkProductModel(schemaInstance);
 
   const bulkData = [
@@ -501,15 +470,9 @@ async function ManageDatabaseInitializationTest() {
     declare name: string;
   }
 
-  await CreateDatabaseSchemaInstance(
-    "integration-fixture-schema",
-    "test-fixture-db",
-  );
+  await RegisterSchema("integration-fixture-schema");
 
-  const schemaInstance = getDatabase(
-    "integration-fixture-schema",
-    "test-fixture-db",
-  );
+  const schemaInstance = getDatabase("integration-fixture-schema");
   const FixtureUserModel = BasicDataModel(FixtureUser, "fixture_users");
   const fixtureUserModel = new FixtureUserModel(schemaInstance);
 

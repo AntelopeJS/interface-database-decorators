@@ -15,9 +15,24 @@ import type { Table } from "./table";
 type TableDefinitions = Record<string, Class<Table>>;
 type TableEntry = Record<string, unknown>;
 
-export async function CreateDatabaseSchemaInstance(
+/**
+ * Registers a schema with the database adapter and runs any fixtures.
+ *
+ * Reads the table classes registered for `schemaId` via `@RegisterTable`,
+ * builds a `SchemaDefinition` (including the per-table `tenantScoped` flag
+ * set by `@TenantScoped`), constructs the `Schema` (which the adapter
+ * provisions in its physical store), then inserts fixtures for any
+ * non-tenant-scoped table that declares one.
+ *
+ * Tenant-scoped tables cannot carry fixtures: there is no global tenant id
+ * to stamp them with. Boot-time seeding of tenant data should be done via
+ * an explicit "create tenant" hook in the application.
+ *
+ * @param schemaId Schema id matching the `@RegisterTable(_, schemaId)` calls
+ * @param options  Schema options (e.g. `physicalStore`)
+ */
+export async function RegisterSchema(
   schemaId: string,
-  instanceId?: string,
   options?: SchemaOptions,
 ): Promise<void> {
   const tables = getTablesForSchema(schemaId);
@@ -25,9 +40,8 @@ export async function CreateDatabaseSchemaInstance(
 
   const definition = buildSchemaDefinition(tables);
   const schema = new Schema(schemaId, definition, options);
-  await schema.createInstance(instanceId);
 
-  await insertAllFixtureData(schema, instanceId, tables);
+  await insertAllFixtureData(schema, tables);
 }
 
 function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
@@ -40,14 +54,17 @@ function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
         fields: fields.length === 1 && fields[0] === group ? undefined : fields,
       };
     }
-    definition[tableName] = { fields: {}, indexes };
+    definition[tableName] = {
+      fields: {},
+      indexes,
+      tenantScoped: metadata.tenantScoped || undefined,
+    };
   }
   return definition;
 }
 
 async function insertAllFixtureData(
   schema: Schema<any>,
-  instanceId: string | undefined,
   tables: TableDefinitions,
 ): Promise<void> {
   await Promise.all(
@@ -55,9 +72,9 @@ async function insertAllFixtureData(
       const metadata = getMetadata(tableClass, DatumStaticMetadata);
       return insertFixtureData(
         schema,
-        instanceId,
         tableName,
         tableClass,
+        metadata.tenantScoped,
         metadata.generator,
       );
     }),
@@ -66,15 +83,19 @@ async function insertAllFixtureData(
 
 async function insertFixtureData(
   schema: Schema<any>,
-  instanceId: string | undefined,
   tableName: string,
   tableClass: Class<Table>,
+  tenantScoped: boolean,
   generator: DatumStaticMetadata["generator"],
 ): Promise<void> {
   if (!generator) {
     return;
   }
-  const count = await schema.instance(instanceId).table(tableName).count();
+  assert(
+    !tenantScoped,
+    `Fixture on tenant-scoped table '${tableName}' is not supported: there is no implicit tenant id at registration time. Seed tenant data from a create-tenant hook instead.`,
+  );
+  const count = await schema.instance().table(tableName).count();
   if (count > 0) {
     return;
   }
@@ -84,7 +105,7 @@ async function insertFixtureData(
     return;
   }
   const payload: any = rows.length === 1 ? rows[0] : rows;
-  await schema.instance(instanceId).table(tableName).insert(payload);
+  await schema.instance().table(tableName).insert(payload);
 }
 
 function toFixtureRows(

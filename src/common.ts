@@ -35,6 +35,7 @@ export class DatumStaticMetadata {
   public readonly indexes: Record<string, Array<string>> = {};
   public primary: string = "_id";
   public generator?: DatumGenerator;
+  public tenantScoped: boolean = false;
 
   addIndex(key: string, group: string) {
     if (!(group in this.indexes)) {
