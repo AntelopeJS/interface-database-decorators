@@ -182,8 +182,10 @@ const modelCache = new Map<
   Map<string | symbol, InstanceType<DataModel>>
 >();
 
+const UNDEFINED_INSTANCE_KEY = Symbol("undefined-instance");
+
 function cacheKeyOf(instanceId: TenantId | undefined): string | symbol {
-  if (instanceId === undefined) return "";
+  if (instanceId === undefined) return UNDEFINED_INSTANCE_KEY;
   if (typeof instanceId === "symbol") return instanceId;
   return instanceId;
 }

@@ -3,6 +3,7 @@ import {
   Get,
   type RequestContext,
 } from "@antelopejs/interface-api";
+import { CROSS_TENANT } from "@antelopejs/interface-database";
 import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   BasicDataModel,
@@ -10,7 +11,10 @@ import {
   Model,
 } from "@antelopejs/interface-database-decorators/model";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
-import { Table } from "@antelopejs/interface-database-decorators/table";
+import {
+  Table,
+  TenantScoped,
+} from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Model - data operations", () => {
@@ -136,22 +140,26 @@ async function GetModelFromCacheTest() {
 }
 
 async function CreateNewModelWhenNotCachedTest() {
-  @RegisterTable("nocache_table", "model-nocache-schema")
+  @TenantScoped()
+  @RegisterTable("nocache_tenant", "model-nocache-schema")
   class TestTable extends Table {
     name!: string;
   }
 
-  const TestModel = BasicDataModel(TestTable, "nocache_table");
+  const TestModel = BasicDataModel(TestTable, "nocache_tenant");
 
   await RegisterSchema("model-nocache-schema");
-  await RegisterSchema("model-nocache-schema");
 
-  const model1 = GetModel(TestModel, "model-db1");
-  const model2 = GetModel(TestModel, "model-db2");
+  const tenant1 = GetModel(TestModel, "tenant-1");
+  const tenant2 = GetModel(TestModel, "tenant-2");
+  const cross = GetModel(TestModel, CROSS_TENANT);
 
-  expect(model1).to.not.equal(model2);
-  expect(model1).to.be.instanceOf(TestModel);
-  expect(model2).to.be.instanceOf(TestModel);
+  expect(tenant1).to.not.equal(tenant2);
+  expect(tenant1).to.not.equal(cross);
+  expect(tenant2).to.not.equal(cross);
+  expect(tenant1).to.be.instanceOf(TestModel);
+  expect(tenant2).to.be.instanceOf(TestModel);
+  expect(cross).to.be.instanceOf(TestModel);
 }
 
 async function HandleModelWithStringInstanceIdTest() {

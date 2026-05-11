@@ -57,7 +57,7 @@ function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
     definition[tableName] = {
       fields: {},
       indexes,
-      tenantScoped: metadata.tenantScoped || undefined,
+      tenantScoped: metadata.tenantScoped ? true : undefined,
     };
   }
   return definition;
