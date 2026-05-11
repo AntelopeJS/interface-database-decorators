@@ -8,7 +8,7 @@ import {
   MakeParameterAndPropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
 import type * as DatabaseDev from "@antelopejs/interface-database";
-import { Schema } from "@antelopejs/interface-database";
+import { Schema, type TenantId } from "@antelopejs/interface-database";
 import {
   type Constructible,
   DatumStaticMetadata,
@@ -177,22 +177,35 @@ export function BasicDataModel<T extends object>(
   };
 }
 
-const modelCache = new Map<Class, Record<string, InstanceType<DataModel>>>();
+const modelCache = new Map<
+  Class,
+  Map<string | symbol, InstanceType<DataModel>>
+>();
+
+const UNDEFINED_INSTANCE_KEY = Symbol("undefined-instance");
+
+function cacheKeyOf(instanceId: TenantId | undefined): string | symbol {
+  if (instanceId === undefined) return UNDEFINED_INSTANCE_KEY;
+  if (typeof instanceId === "symbol") return instanceId;
+  return instanceId;
+}
 
 export function GetModel<M extends InstanceType<DataModel>>(
   cl: DataModel & Class<M>,
-  instanceId?: string,
+  instanceId?: TenantId,
 ) {
   if (!modelCache.has(cl)) {
-    modelCache.set(cl, {});
+    modelCache.set(cl, new Map());
   }
-  const cache = modelCache.get(cl) ?? {};
-  const cacheKey = instanceId ?? "";
-  if (cache[cacheKey]) return cache[cacheKey] as M;
+  const cache = modelCache.get(cl);
+  assert(cache);
+  const key = cacheKeyOf(instanceId);
+  const cached = cache.get(key);
+  if (cached) return cached as M;
   const schema = Schema.get(cl.schemaName);
   assert(schema, `Schema not found for '${cl.schemaName}'`);
   const model = new cl(schema.instance(instanceId));
-  cache[cacheKey] = model;
+  cache.set(key, model);
   return model;
 }
 
@@ -203,8 +216,8 @@ export const Model = MakeParameterAndPropertyDecorator(
     index,
     cl: DataModel & Class<InstanceType<DataModel>>,
     instanceIdOrCallback?:
-      | string
-      | ((ctx: RequestContext) => string | undefined),
+      | TenantId
+      | ((ctx: RequestContext) => TenantId | undefined),
   ) => {
     if (typeof instanceIdOrCallback === "function") {
       SetParameterProvider(target, key, index, (ctx: RequestContext) => {

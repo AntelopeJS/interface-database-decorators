@@ -11,14 +11,14 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/mongodb",
-        version: "1.0.0",
+        version: "1.1.0",
       },
     },
     database_decorators: {
       source: {
         type: "package",
         package: "@antelopejs/database-decorators",
-        version: "1.0.0",
+        version: "1.1.0",
       },
     },
     api: {

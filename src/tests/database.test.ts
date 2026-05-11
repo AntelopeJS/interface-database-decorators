@@ -1,15 +1,16 @@
 import { Schema } from "@antelopejs/interface-database";
-import { CreateDatabaseSchemaInstance } from "@antelopejs/interface-database-decorators/database";
+import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
 import {
   Fixture,
   Index,
   Table,
+  TenantScoped,
 } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Database - initialization", () => {
-  it("creates a schema instance", async () => CreateSchemaInstanceTest());
+  it("creates a schema", async () => CreateSchemaTest());
   it("creates tables with default primary key", async () =>
     CreateTablesWithDefaultPrimaryKeyTest());
   it("creates tables with indexes", async () => CreateTablesWithIndexesTest());
@@ -18,19 +19,21 @@ describe("Database - initialization", () => {
   it("creates tables with fixture data", async () =>
     CreateTablesWithFixtureDataTest());
   it("handles multiple tables", async () => HandleMultipleTablesTest());
-  it("creates multiple instances for same schema", async () =>
-    CreateMultipleInstancesTest());
-  it("inserts fixtures for each instance", async () =>
-    InsertFixturesForEachInstanceTest());
+  it("co-locates schemas via shared physicalStore", async () =>
+    SharedPhysicalStoreTest());
+  it("rejects fixtures on tenant-scoped tables", async () =>
+    RejectsFixturesOnTenantScopedTablesTest());
+  it("propagates tenantScoped flag to schema definition", async () =>
+    PropagatesTenantScopedFlagTest());
 });
 
-async function CreateSchemaInstanceTest() {
+async function CreateSchemaTest() {
   @RegisterTable("test_table", "test-new-schema")
   class _TestTable extends Table {
     declare name: string;
   }
 
-  await CreateDatabaseSchemaInstance("test-new-schema", "test-new-instance");
+  await RegisterSchema("test-new-schema");
 
   const schema = Schema.get("test-new-schema");
   expect(schema).to.not.equal(undefined);
@@ -42,7 +45,7 @@ async function CreateTablesWithDefaultPrimaryKeyTest() {
     declare name: string;
   }
 
-  await CreateDatabaseSchemaInstance("test-pk-schema", "test-pk-instance");
+  await RegisterSchema("test-pk-schema");
 
   const schema = Schema.get("test-pk-schema");
   expect(schema).to.not.equal(undefined);
@@ -58,7 +61,7 @@ async function CreateTablesWithIndexesTest() {
     declare email: string;
   }
 
-  await CreateDatabaseSchemaInstance("test-idx-schema", "test-idx-instance");
+  await RegisterSchema("test-idx-schema");
 
   const schema = Schema.get("test-idx-schema");
   expect(schema).to.not.equal(undefined);
@@ -77,7 +80,7 @@ async function CreateTablesWithGroupedIndexesTest() {
     declare age: number;
   }
 
-  await CreateDatabaseSchemaInstance("test-grp-schema", "test-grp-instance");
+  await RegisterSchema("test-grp-schema");
 
   const schema = Schema.get("test-grp-schema");
   expect(schema).to.not.equal(undefined);
@@ -95,16 +98,11 @@ async function CreateTablesWithFixtureDataTest() {
     declare name: string;
   }
 
-  await CreateDatabaseSchemaInstance(
-    "test-fixture-schema",
-    "test-fixture-instance",
-  );
+  await RegisterSchema("test-fixture-schema");
 
   const schema = Schema.get("test-fixture-schema");
   if (!schema) throw new Error("Schema not found");
-  const result = await schema
-    .instance("test-fixture-instance")
-    .table("fixture_table");
+  const result = await schema.instance().table("fixture_table");
   for (const val of result) {
     delete val._id;
   }
@@ -129,74 +127,67 @@ async function HandleMultipleTablesTest() {
     declare price: number;
   }
 
-  await CreateDatabaseSchemaInstance(
-    "test-multi-table-schema",
-    "test-multi-table-instance",
-  );
+  await RegisterSchema("test-multi-table-schema");
 
   const schema = Schema.get("test-multi-table-schema");
   expect(schema).to.not.equal(undefined);
 }
 
-async function CreateMultipleInstancesTest() {
-  @RegisterTable("tenant_table", "test-multi-instance-schema")
+async function SharedPhysicalStoreTest() {
+  @RegisterTable("global_table", "test-store-global")
+  class _GlobalTable extends Table {
+    declare name: string;
+  }
+
+  @RegisterTable("tenant_table", "test-store-tenant")
+  @TenantScoped()
   class _TenantTable extends Table {
     declare name: string;
   }
 
-  await CreateDatabaseSchemaInstance("test-multi-instance-schema", "tenant-1");
-  await CreateDatabaseSchemaInstance("test-multi-instance-schema", "tenant-2");
+  await RegisterSchema("test-store-global", { physicalStore: "test-shared" });
+  await RegisterSchema("test-store-tenant", { physicalStore: "test-shared" });
 
-  const schema1 = Schema.get("test-multi-instance-schema");
-  const schema2 = Schema.get("test-multi-instance-schema");
-  expect(schema1).to.not.equal(undefined);
-  expect(schema2).to.not.equal(undefined);
-  expect(schema1).to.equal(schema2);
-
-  const instance1 = schema1?.instance("tenant-1");
-  const instance2 = schema2?.instance("tenant-2");
-  expect(instance1).to.not.equal(undefined);
-  expect(instance2).to.not.equal(undefined);
+  const globalSchema = Schema.get("test-store-global");
+  const tenantSchema = Schema.get("test-store-tenant");
+  expect(globalSchema).to.not.equal(undefined);
+  expect(tenantSchema).to.not.equal(undefined);
+  expect(globalSchema?.options.physicalStore).to.equal("test-shared");
+  expect(tenantSchema?.options.physicalStore).to.equal("test-shared");
 }
 
-async function InsertFixturesForEachInstanceTest() {
-  const testData = [
-    { id: "1", name: "Fixture 1" },
-    { id: "2", name: "Fixture 2" },
-  ];
-
-  @Fixture(() => testData)
-  @RegisterTable("fixture_multi", "test-fixture-multi-schema")
-  class _FixtureTable extends Table {
+async function RejectsFixturesOnTenantScopedTablesTest() {
+  @Fixture(() => [{ name: "boom" }])
+  @TenantScoped()
+  @RegisterTable("forbidden_fixture", "test-fixture-tenant-schema")
+  class _ForbiddenTable extends Table {
     declare name: string;
   }
 
-  await CreateDatabaseSchemaInstance(
-    "test-fixture-multi-schema",
-    "fixture-inst-1",
-  );
-  await CreateDatabaseSchemaInstance(
-    "test-fixture-multi-schema",
-    "fixture-inst-2",
-  );
-
-  const schema = Schema.get("test-fixture-multi-schema");
-  if (!schema) throw new Error("Schema not found");
-  const sortById = (a: any, b: any) => a.id.localeCompare(b.id);
-
-  const result1 = await schema
-    .instance("fixture-inst-1")
-    .table("fixture_multi");
-  for (const val of result1) {
-    delete val._id;
+  let threw = false;
+  try {
+    await RegisterSchema("test-fixture-tenant-schema");
+  } catch {
+    threw = true;
   }
-  expect(result1.sort(sortById)).to.deep.equal(testData.sort(sortById));
+  expect(threw).to.equal(true);
+}
 
-  const result2 = await schema
-    .instance("fixture-inst-2")
-    .table("fixture_multi");
-  for (const val of result2) {
-    delete val._id;
+async function PropagatesTenantScopedFlagTest() {
+  @RegisterTable("global_only", "test-flag-schema")
+  class _GlobalTable extends Table {
+    declare name: string;
   }
-  expect(result2.sort(sortById)).to.deep.equal(testData.sort(sortById));
+
+  @RegisterTable("tenant_only", "test-flag-schema")
+  @TenantScoped()
+  class _TenantTable extends Table {
+    declare name: string;
+  }
+
+  await RegisterSchema("test-flag-schema");
+
+  const schema = Schema.get("test-flag-schema");
+  expect(schema?.definition.global_only.tenantScoped).to.equal(undefined);
+  expect(schema?.definition.tenant_only.tenantScoped).to.equal(true);
 }

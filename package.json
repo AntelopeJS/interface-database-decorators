@@ -25,6 +25,42 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./common": {
+      "types": "./dist/common.d.ts",
+      "default": "./dist/common.js"
+    },
+    "./database": {
+      "types": "./dist/database.d.ts",
+      "default": "./dist/database.js"
+    },
+    "./model": {
+      "types": "./dist/model.d.ts",
+      "default": "./dist/model.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./dist/schema.js"
+    },
+    "./table": {
+      "types": "./dist/table.d.ts",
+      "default": "./dist/table.js"
+    },
+    "./modifiers/common": {
+      "types": "./dist/modifiers/common.d.ts",
+      "default": "./dist/modifiers/common.js"
+    },
+    "./modifiers/encryption": {
+      "types": "./dist/modifiers/encryption.d.ts",
+      "default": "./dist/modifiers/encryption.js"
+    },
+    "./modifiers/hash": {
+      "types": "./dist/modifiers/hash.d.ts",
+      "default": "./dist/modifiers/hash.js"
+    },
+    "./modifiers/localization": {
+      "types": "./dist/modifiers/localization.d.ts",
+      "default": "./dist/modifiers/localization.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -39,7 +75,7 @@
   "dependencies": {
     "@antelopejs/interface-api": "^0.0.3",
     "@antelopejs/interface-core": "^0.0.3",
-    "@antelopejs/interface-database": "^0.0.4",
+    "@antelopejs/interface-database": "^0.1.0",
     "randomstring": "^1.3.1",
     "reflect-metadata": "^0.2.2"
   },
