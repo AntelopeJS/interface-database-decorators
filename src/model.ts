@@ -60,7 +60,8 @@ function isCodec(type: FieldType): type is FieldType & CodecLike {
 }
 
 function decodeFieldError(field: string, result: DecodeLeftLike): FieldError {
-  const message = result.left[0]?.message ?? `invalid ${field}`;
+  const message =
+    result.left.map((e) => e.message).find(Boolean) ?? `invalid ${field}`;
   return { field, message };
 }
 
@@ -187,16 +188,18 @@ export function BasicDataModel<T extends object>(
      * @param options Insert options
      * @returns Insert result
      */
-    public insert(
+    public async insert(
       obj: DeepPartial<T> | Array<DeepPartial<T>>,
       options?: ValidateOptions,
     ) {
       if (options?.validate) {
         const entries = Array.isArray(obj) ? obj : [obj];
+        const allErrors: FieldError[] = [];
         for (const entry of entries) {
           const result = Model.validate(entry);
-          if (!result.ok) throw makeValidationError(result.errors);
+          if (!result.ok) allErrors.push(...result.errors);
         }
+        if (allErrors.length > 0) throw makeValidationError(allErrors);
       }
       const converter = (entry: any) => {
         const instance = Model.fromPlainData(entry);
@@ -225,7 +228,7 @@ export function BasicDataModel<T extends object>(
       obj: DeepPartial<T>,
       options?: ValidateOptions,
     ): Promise<number>;
-    public update(
+    public async update(
       idOrObj: DeepPartial<T> | string,
       objOrOptions?: DeepPartial<T> | ValidateOptions,
       options?: ValidateOptions,
