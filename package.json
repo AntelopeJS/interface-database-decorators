@@ -128,14 +128,6 @@
     }
   },
   "antelopeJs": {
-    "implements": [
-      "@antelopejs/interface-database-decorators"
-    ],
-    "paths": {
-      "@antelopejs/interface-database-decorators/*": [
-        "dist/*"
-      ]
-    },
     "test": "src/antelope.test.ts"
   }
 }

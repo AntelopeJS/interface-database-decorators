@@ -17,14 +17,6 @@ export default defineConfig({
         version: "1.1.0",
       },
     },
-    database_decorators: {
-      source: {
-        type: "package",
-        package: "@antelopejs/database-decorators",
-        version: "1.1.0",
-      },
-      disabledExports: ["@antelopejs/interface-database-decorators"],
-    },
     api: {
       source: {
         type: "package",
