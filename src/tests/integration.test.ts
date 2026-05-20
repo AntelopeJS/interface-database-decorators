@@ -58,6 +58,8 @@ describe("Model - validate-on-write", () => {
     ValidateOnInsertAcceptsTest());
   it("rejects update with validate:true on bad input", () =>
     ValidateOnUpdateRejectsTest());
+  it("accepts partial update with validate:true when omitted fields are absent", () =>
+    ValidateOnUpdateAcceptsPartialTest());
 });
 
 async function ValidateOnInsertRejectsTest() {
@@ -113,6 +115,25 @@ async function ValidateOnUpdateRejectsTest() {
     expect((e as Error).message).to.contain("validation failed");
   }
   expect(threw).to.equal(true);
+}
+
+async function ValidateOnUpdateAcceptsPartialTest() {
+  @RegisterTable("v_update_partial", "model-vow-schema-4")
+  class _T extends Table {
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+    @Field(asFieldType(numberCodec))
+    declare score: number;
+  }
+  const TM = BasicDataModel(_T, "v_update_partial");
+  await RegisterSchema("model-vow-schema-4");
+  const model = GetModel(TM);
+  const inserted = await model.insert({ age: 30, score: 100 } as any);
+  const id = Array.isArray(inserted) ? inserted[0] : inserted;
+  const updated = await model.update(id as string, { age: 31 } as any, {
+    validate: true,
+  });
+  expect(updated).to.not.equal(undefined);
 }
 
 async function CreateAndQueryUserWithModifiersTest() {

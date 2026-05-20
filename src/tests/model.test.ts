@@ -40,6 +40,12 @@ describe("Model - validate", () => {
   it("returns errors for invalid input", () => ValidateErrorsTest());
   it("returns ok for unannotated tables", () => ValidateUnannotatedTest());
   it("skips string-token fields", () => ValidateSkipsStringTokensTest());
+  it("rejects partial input by default", () =>
+    ValidatePartialDefaultsToStrictTest());
+  it("accepts partial input with partial:true", () =>
+    ValidatePartialModeAcceptsAbsentTest());
+  it("still rejects present-but-invalid fields in partial mode", () =>
+    ValidatePartialModeChecksPresentFieldsTest());
 });
 
 function ValidateOkTest() {
@@ -92,6 +98,49 @@ function ValidateSkipsStringTokensTest() {
   const TM = BasicDataModel(_T, "v_skip");
   expect(TM.validate({ name: 123, age: 4 }).ok).to.equal(true);
   expect(TM.validate({ name: "n", age: "bad" }).ok).to.equal(false);
+}
+
+function ValidatePartialDefaultsToStrictTest() {
+  @RegisterTable("v_partial_strict", "model-validate-schema")
+  class _T extends Table {
+    @Field(asFieldType(stringCodec))
+    declare name: string;
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_partial_strict");
+  const result = TM.validate({ name: "Alice" });
+  expect(result.ok).to.equal(false);
+  if (result.ok) throw new Error("expected failure branch");
+  expect(result.errors.map((e) => e.field)).to.deep.equal(["age"]);
+}
+
+function ValidatePartialModeAcceptsAbsentTest() {
+  @RegisterTable("v_partial_accept", "model-validate-schema")
+  class _T extends Table {
+    @Field(asFieldType(stringCodec))
+    declare name: string;
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_partial_accept");
+  expect(TM.validate({ name: "Alice" }, { partial: true }).ok).to.equal(true);
+  expect(TM.validate({}, { partial: true }).ok).to.equal(true);
+}
+
+function ValidatePartialModeChecksPresentFieldsTest() {
+  @RegisterTable("v_partial_check", "model-validate-schema")
+  class _T extends Table {
+    @Field(asFieldType(stringCodec))
+    declare name: string;
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_partial_check");
+  const result = TM.validate({ age: "old" }, { partial: true });
+  expect(result.ok).to.equal(false);
+  if (result.ok) throw new Error("expected failure branch");
+  expect(result.errors.map((e) => e.field)).to.deep.equal(["age"]);
 }
 
 async function CreateBasicDataModelTest() {

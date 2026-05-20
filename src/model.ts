@@ -39,6 +39,7 @@ export type FieldError = { field: string; message: string };
 export type ValidationResult =
   | { ok: true }
   | { ok: false; errors: FieldError[] };
+export type ValidateInputOptions = { partial?: boolean };
 
 type DecodeLeftLike = {
   _tag: "Left";
@@ -114,16 +115,23 @@ export function BasicDataModel<T extends object>(
 
     /**
      * Validates a plain object against every io-ts codec attached via `@Field`.
+     * Pass `{ partial: true }` to skip fields not present on `obj` (patch semantics).
      */
-    public static validate(obj: unknown): ValidationResult {
+    public static validate(
+      obj: unknown,
+      options?: ValidateInputOptions,
+    ): ValidationResult {
       const fields = metadata.fields;
       const errors: FieldError[] = [];
+      const partial = options?.partial === true;
+      const record =
+        typeof obj === "object" && obj !== null
+          ? (obj as Record<string, unknown>)
+          : undefined;
       for (const [field, type] of Object.entries(fields)) {
         if (!isCodec(type)) continue;
-        const value = (obj as Record<string, unknown> | null | undefined)?.[
-          field
-        ];
-        const result = (type as CodecLike).decode(value);
+        if (partial && (!record || !(field in record))) continue;
+        const result = (type as CodecLike).decode(record?.[field]);
         if (result._tag === "Left") {
           errors.push(decodeFieldError(field, result));
         }
@@ -224,7 +232,7 @@ export function BasicDataModel<T extends object>(
     ) {
       const parsed = parseUpdateArgs<T>(idOrObj, objOrOptions, options);
       if (parsed.options?.validate) {
-        const result = Model.validate(parsed.data);
+        const result = Model.validate(parsed.data, { partial: true });
         if (!result.ok) throw makeValidationError(result.errors);
       }
       if (parsed.id !== undefined) {
