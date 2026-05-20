@@ -2,11 +2,13 @@ import { Schema } from "@antelopejs/interface-database";
 import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
 import {
+  Field,
   Fixture,
   Index,
   Table,
 } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
+import { asFieldType, numberCodec } from "./codec_helpers";
 
 describe("Database - initialization", () => {
   it("creates a schema", async () => CreateSchemaTest());
@@ -18,6 +20,8 @@ describe("Database - initialization", () => {
   it("creates tables with fixture data", async () =>
     CreateTablesWithFixtureDataTest());
   it("handles multiple tables", async () => HandleMultipleTablesTest());
+  it("populates TableDefinition.fields from @Field declarations", () =>
+    PopulatesTableDefinitionFieldsTest());
 });
 
 async function CreateSchemaTest() {
@@ -101,6 +105,26 @@ async function CreateTablesWithFixtureDataTest() {
   }
   const sortById = (a: any, b: any) => a.id.localeCompare(b.id);
   expect(result.sort(sortById)).to.deep.equal(testData.sort(sortById));
+}
+
+async function PopulatesTableDefinitionFieldsTest() {
+  @RegisterTable("orders", "test-fields-schema")
+  class _Order extends Table {
+    @Field("string")
+    declare status: string;
+
+    @Field(asFieldType(numberCodec))
+    declare total: number;
+
+    declare untyped: string;
+  }
+  await RegisterSchema("test-fields-schema");
+  const schema = Schema.get("test-fields-schema");
+  if (!schema) throw new Error("Schema not found");
+  const fields = schema.definition.orders.fields;
+  expect(fields.status).to.equal("string");
+  expect(fields.total).to.equal(numberCodec);
+  expect("untyped" in fields).to.equal(false);
 }
 
 async function HandleMultipleTablesTest() {

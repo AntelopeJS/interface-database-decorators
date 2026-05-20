@@ -41,7 +41,7 @@ function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
       };
     }
     definition[tableName] = {
-      fields: {},
+      fields: metadata.fields,
       indexes,
     };
   }

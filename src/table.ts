@@ -3,6 +3,7 @@ import {
   MakeClassDecorator,
   MakePropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
+import type { FieldType } from "@antelopejs/interface-database/schema";
 import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
 import { MixinSymbol, type MixinType } from "./modifiers/common";
 
@@ -106,6 +107,16 @@ export const Index = MakePropertyDecorator(
       <string>propertyKey,
       options?.group || <string>propertyKey,
     );
+  },
+);
+
+/**
+ * Database Table Field type decorator.
+ */
+export const Field = MakePropertyDecorator(
+  (target, propertyKey, type: FieldType) => {
+    const metadata = getMetadata(target.constructor, DatumStaticMetadata);
+    metadata.fields[propertyKey as string] = type;
   },
 );
 

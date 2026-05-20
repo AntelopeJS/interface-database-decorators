@@ -11,8 +11,9 @@ import {
   Model,
 } from "@antelopejs/interface-database-decorators/model";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
-import { Table } from "@antelopejs/interface-database-decorators/table";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
+import { asFieldType, numberCodec, stringCodec } from "./codec_helpers";
 
 describe("Model - data operations", () => {
   it("creates basic data model", async () => CreateBasicDataModelTest());
@@ -33,6 +34,65 @@ describe("Model - data operations", () => {
   it("handles model with callback instance id", async () =>
     HandleModelWithCallbackInstanceIdTest());
 });
+
+describe("Model - validate", () => {
+  it("returns ok for valid input", () => ValidateOkTest());
+  it("returns errors for invalid input", () => ValidateErrorsTest());
+  it("returns ok for unannotated tables", () => ValidateUnannotatedTest());
+  it("skips string-token fields", () => ValidateSkipsStringTokensTest());
+});
+
+function ValidateOkTest() {
+  @RegisterTable("v_ok", "model-validate-schema")
+  class _T extends Table {
+    @Field(asFieldType(stringCodec))
+    declare name: string;
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_ok");
+  const result = TM.validate({ name: "Alice", age: 30 });
+  expect(result.ok).to.equal(true);
+}
+
+function ValidateErrorsTest() {
+  @RegisterTable("v_err", "model-validate-schema")
+  class _T extends Table {
+    @Field(asFieldType(stringCodec))
+    declare name: string;
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_err");
+  const result = TM.validate({ name: 42, age: "old" });
+  expect(result.ok).to.equal(false);
+  if (result.ok) throw new Error("expected failure branch");
+  const fields = result.errors.map((e) => e.field).sort();
+  expect(fields).to.deep.equal(["age", "name"]);
+}
+
+function ValidateUnannotatedTest() {
+  @RegisterTable("v_un", "model-validate-schema")
+  class _T extends Table {
+    declare name: string;
+  }
+  const TM = BasicDataModel(_T, "v_un");
+  expect(TM.validate({ name: "anything" }).ok).to.equal(true);
+  expect(TM.validate({}).ok).to.equal(true);
+}
+
+function ValidateSkipsStringTokensTest() {
+  @RegisterTable("v_skip", "model-validate-schema")
+  class _T extends Table {
+    @Field("string")
+    declare name: string;
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_skip");
+  expect(TM.validate({ name: 123, age: 4 }).ok).to.equal(true);
+  expect(TM.validate({ name: "n", age: "bad" }).ok).to.equal(false);
+}
 
 async function CreateBasicDataModelTest() {
   class TestTable extends Table {

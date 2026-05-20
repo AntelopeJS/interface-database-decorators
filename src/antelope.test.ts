@@ -7,6 +7,9 @@ export default defineConfig({
   name: "interface-database-decorators-test",
   cacheFolder: ".antelope/cache",
   modules: {
+    local: {
+      source: { type: "local", path: "." },
+    },
     mongodb: {
       source: {
         type: "package",
@@ -20,6 +23,7 @@ export default defineConfig({
         package: "@antelopejs/database-decorators",
         version: "1.1.0",
       },
+      disabledExports: ["@antelopejs/interface-database-decorators"],
     },
     api: {
       source: {

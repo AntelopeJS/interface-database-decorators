@@ -9,6 +9,7 @@ import {
 } from "@antelopejs/interface-core/decorators";
 import type * as DatabaseDev from "@antelopejs/interface-database";
 import { type InstanceId, Schema } from "@antelopejs/interface-database";
+import type { FieldType } from "@antelopejs/interface-database/schema";
 import {
   type Constructible,
   DatumStaticMetadata,
@@ -33,6 +34,34 @@ export type DataModel<T = any> = {
   fromDatabase(obj: any): T | undefined;
   fromPlainData(obj: any): T;
 };
+
+export type FieldError = { field: string; message: string };
+export type ValidationResult =
+  | { ok: true }
+  | { ok: false; errors: FieldError[] };
+
+type DecodeLeftLike = {
+  _tag: "Left";
+  left: Array<{ message?: string }>;
+};
+type DecodeRightLike = { _tag: "Right" };
+type CodecLike = {
+  decode(u: unknown): DecodeLeftLike | DecodeRightLike;
+};
+
+function isCodec(type: FieldType): type is FieldType & CodecLike {
+  return (
+    typeof type === "object" &&
+    type !== null &&
+    !Array.isArray(type) &&
+    typeof (type as { decode?: unknown }).decode === "function"
+  );
+}
+
+function decodeFieldError(field: string, result: DecodeLeftLike): FieldError {
+  const message = result.left[0]?.message ?? `invalid ${field}`;
+  return { field, message };
+}
 
 /**
  * Utility Class factory to create a basic Data Model with 1 table.
@@ -84,6 +113,25 @@ export function BasicDataModel<T extends object>(
     }
 
     /**
+     * Validates a plain object against every io-ts codec attached via `@Field`.
+     */
+    public static validate(obj: unknown): ValidationResult {
+      const fields = metadata.fields;
+      const errors: FieldError[] = [];
+      for (const [field, type] of Object.entries(fields)) {
+        if (!isCodec(type)) continue;
+        const value = (obj as Record<string, unknown> | null | undefined)?.[
+          field
+        ];
+        const result = (type as CodecLike).decode(value);
+        if (result._tag === "Left") {
+          errors.push(decodeFieldError(field, result));
+        }
+      }
+      return errors.length === 0 ? { ok: true } : { ok: false, errors };
+    }
+
+    /**
      * AQL Table reference.
      */
     public readonly table: DatabaseDev.Table<T>;
@@ -131,7 +179,17 @@ export function BasicDataModel<T extends object>(
      * @param options Insert options
      * @returns Insert result
      */
-    public insert(obj: DeepPartial<T> | Array<DeepPartial<T>>) {
+    public insert(
+      obj: DeepPartial<T> | Array<DeepPartial<T>>,
+      options?: ValidateOptions,
+    ) {
+      if (options?.validate) {
+        const entries = Array.isArray(obj) ? obj : [obj];
+        for (const entry of entries) {
+          const result = Model.validate(entry);
+          if (!result.ok) throw makeValidationError(result.errors);
+        }
+      }
       const converter = (entry: any) => {
         const instance = Model.fromPlainData(entry);
         triggerEvent(instance, "insert");
@@ -150,17 +208,36 @@ export function BasicDataModel<T extends object>(
      * @param options Update options
      * @returns Update result
      */
-    public update(id: string, obj: DeepPartial<T>): Promise<number>;
-    public update(obj: DeepPartial<T>): Promise<number>;
-    public update(obj: DeepPartial<T> | string, data?: DeepPartial<T>) {
-      if (typeof obj === "string") {
-        const instance = Model.fromPlainData(<DeepPartial<T>>data);
-        triggerEvent(instance, "update");
-        return this.table.get(obj).update(Model.toDatabase(instance)).run();
+    public update(
+      id: string,
+      obj: DeepPartial<T>,
+      options?: ValidateOptions,
+    ): Promise<number>;
+    public update(
+      obj: DeepPartial<T>,
+      options?: ValidateOptions,
+    ): Promise<number>;
+    public update(
+      idOrObj: DeepPartial<T> | string,
+      objOrOptions?: DeepPartial<T> | ValidateOptions,
+      options?: ValidateOptions,
+    ) {
+      const parsed = parseUpdateArgs<T>(idOrObj, objOrOptions, options);
+      if (parsed.options?.validate) {
+        const result = Model.validate(parsed.data);
+        if (!result.ok) throw makeValidationError(result.errors);
       }
-      const instance = Model.fromPlainData(obj);
+      if (parsed.id !== undefined) {
+        const instance = Model.fromPlainData(parsed.data);
+        triggerEvent(instance, "update");
+        return this.table
+          .get(parsed.id)
+          .update(Model.toDatabase(instance))
+          .run();
+      }
+      const instance = Model.fromPlainData(parsed.data);
       triggerEvent(instance, "update");
-      const id = (<any>obj)[primaryKey];
+      const id = (parsed.data as any)[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
       return this.table.get(id).update(Model.toDatabase(instance)).run();
     }
@@ -188,6 +265,41 @@ function cacheKeyOf(instanceId: InstanceId | undefined): string | symbol {
   if (instanceId === undefined) return UNDEFINED_INSTANCE_KEY;
   if (typeof instanceId === "symbol") return instanceId;
   return instanceId;
+}
+
+export type ValidateOptions = { validate?: boolean };
+
+type ParsedUpdate<T> = {
+  id?: string;
+  data: DeepPartial<T>;
+  options?: ValidateOptions;
+};
+
+function makeValidationError(errors: FieldError[]): Error {
+  const summary = errors.map((e) => `${e.field} (${e.message})`).join(", ");
+  const err = new Error(`validation failed: ${summary}`) as Error & {
+    errors: FieldError[];
+  };
+  err.errors = errors;
+  return err;
+}
+
+function parseUpdateArgs<T>(
+  idOrObj: DeepPartial<T> | string,
+  objOrOptions?: DeepPartial<T> | ValidateOptions,
+  options?: ValidateOptions,
+): ParsedUpdate<T> {
+  if (typeof idOrObj === "string") {
+    return {
+      id: idOrObj,
+      data: objOrOptions as DeepPartial<T>,
+      options,
+    };
+  }
+  return {
+    data: idOrObj,
+    options: objOrOptions as ValidateOptions | undefined,
+  };
 }
 
 export function GetModel<M extends InstanceType<DataModel>>(
