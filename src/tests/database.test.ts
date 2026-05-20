@@ -5,7 +5,6 @@ import {
   Fixture,
   Index,
   Table,
-  TenantScoped,
 } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
@@ -19,12 +18,6 @@ describe("Database - initialization", () => {
   it("creates tables with fixture data", async () =>
     CreateTablesWithFixtureDataTest());
   it("handles multiple tables", async () => HandleMultipleTablesTest());
-  it("co-locates schemas via shared physicalStore", async () =>
-    SharedPhysicalStoreTest());
-  it("rejects fixtures on tenant-scoped tables", async () =>
-    RejectsFixturesOnTenantScopedTablesTest());
-  it("propagates tenantScoped flag to schema definition", async () =>
-    PropagatesTenantScopedFlagTest());
 });
 
 async function CreateSchemaTest() {
@@ -131,63 +124,4 @@ async function HandleMultipleTablesTest() {
 
   const schema = Schema.get("test-multi-table-schema");
   expect(schema).to.not.equal(undefined);
-}
-
-async function SharedPhysicalStoreTest() {
-  @RegisterTable("global_table", "test-store-global")
-  class _GlobalTable extends Table {
-    declare name: string;
-  }
-
-  @RegisterTable("tenant_table", "test-store-tenant")
-  @TenantScoped()
-  class _TenantTable extends Table {
-    declare name: string;
-  }
-
-  await RegisterSchema("test-store-global", { physicalStore: "test-shared" });
-  await RegisterSchema("test-store-tenant", { physicalStore: "test-shared" });
-
-  const globalSchema = Schema.get("test-store-global");
-  const tenantSchema = Schema.get("test-store-tenant");
-  expect(globalSchema).to.not.equal(undefined);
-  expect(tenantSchema).to.not.equal(undefined);
-  expect(globalSchema?.options.physicalStore).to.equal("test-shared");
-  expect(tenantSchema?.options.physicalStore).to.equal("test-shared");
-}
-
-async function RejectsFixturesOnTenantScopedTablesTest() {
-  @Fixture(() => [{ name: "boom" }])
-  @TenantScoped()
-  @RegisterTable("forbidden_fixture", "test-fixture-tenant-schema")
-  class _ForbiddenTable extends Table {
-    declare name: string;
-  }
-
-  let threw = false;
-  try {
-    await RegisterSchema("test-fixture-tenant-schema");
-  } catch {
-    threw = true;
-  }
-  expect(threw).to.equal(true);
-}
-
-async function PropagatesTenantScopedFlagTest() {
-  @RegisterTable("global_only", "test-flag-schema")
-  class _GlobalTable extends Table {
-    declare name: string;
-  }
-
-  @RegisterTable("tenant_only", "test-flag-schema")
-  @TenantScoped()
-  class _TenantTable extends Table {
-    declare name: string;
-  }
-
-  await RegisterSchema("test-flag-schema");
-
-  const schema = Schema.get("test-flag-schema");
-  expect(schema?.definition.global_only.tenantScoped).to.equal(undefined);
-  expect(schema?.definition.tenant_only.tenantScoped).to.equal(true);
 }

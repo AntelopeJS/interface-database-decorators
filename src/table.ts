@@ -121,19 +121,3 @@ export const Fixture: <T extends typeof Table>(
   const metadata = getMetadata(target, DatumStaticMetadata);
   metadata.generator = generator as unknown as DatumStaticMetadata["generator"];
 });
-
-/**
- * Marks a Table as tenant-scoped.
- *
- * Implementations stamp `tenant_id` on insert, filter reads/updates/deletes
- * on it, and reject queries that omit a tenant context (`Schema.instance(id)`).
- *
- * The query path supports a `CROSS_TENANT` sentinel for legitimate admin
- * operations that need to span every tenant; see `@antelopejs/interface-database`
- * for the contract.
- */
-export const TenantScoped: () => ClassDecorator<typeof Table> =
-  MakeClassDecorator((target) => {
-    const metadata = getMetadata(target, DatumStaticMetadata);
-    metadata.tenantScoped = true;
-  });

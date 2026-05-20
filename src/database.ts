@@ -1,10 +1,6 @@
 import assert from "node:assert";
 import type { Class } from "@antelopejs/interface-core/decorators";
-import {
-  Schema,
-  type SchemaDefinition,
-  type SchemaOptions,
-} from "@antelopejs/interface-database";
+import { Schema, type SchemaDefinition } from "@antelopejs/interface-database";
 import type { IndexDefinition } from "@antelopejs/interface-database/schema";
 import type { DatumGeneratorOutput } from "./common";
 import { DatumStaticMetadata, getMetadata } from "./common";
@@ -19,27 +15,17 @@ type TableEntry = Record<string, unknown>;
  * Registers a schema with the database adapter and runs any fixtures.
  *
  * Reads the table classes registered for `schemaId` via `@RegisterTable`,
- * builds a `SchemaDefinition` (including the per-table `tenantScoped` flag
- * set by `@TenantScoped`), constructs the `Schema` (which the adapter
- * provisions in its physical store), then inserts fixtures for any
- * non-tenant-scoped table that declares one.
- *
- * Tenant-scoped tables cannot carry fixtures: there is no global tenant id
- * to stamp them with. Boot-time seeding of tenant data should be done via
- * an explicit "create tenant" hook in the application.
+ * builds a `SchemaDefinition`, constructs the `Schema` (which the adapter
+ * provisions), then inserts fixtures for any table that declares one.
  *
  * @param schemaId Schema id matching the `@RegisterTable(_, schemaId)` calls
- * @param options  Schema options (e.g. `physicalStore`)
  */
-export async function RegisterSchema(
-  schemaId: string,
-  options?: SchemaOptions,
-): Promise<void> {
+export async function RegisterSchema(schemaId: string): Promise<void> {
   const tables = getTablesForSchema(schemaId);
   assert(tables, `No tables registered for schema '${schemaId}'`);
 
   const definition = buildSchemaDefinition(tables);
-  const schema = new Schema(schemaId, definition, options);
+  const schema = new Schema(schemaId, definition);
 
   await insertAllFixtureData(schema, tables);
 }
@@ -57,7 +43,6 @@ function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
     definition[tableName] = {
       fields: {},
       indexes,
-      tenantScoped: metadata.tenantScoped ? true : undefined,
     };
   }
   return definition;
@@ -74,7 +59,6 @@ async function insertAllFixtureData(
         schema,
         tableName,
         tableClass,
-        metadata.tenantScoped,
         metadata.generator,
       );
     }),
@@ -85,16 +69,11 @@ async function insertFixtureData(
   schema: Schema<any>,
   tableName: string,
   tableClass: Class<Table>,
-  tenantScoped: boolean,
   generator: DatumStaticMetadata["generator"],
 ): Promise<void> {
   if (!generator) {
     return;
   }
-  assert(
-    !tenantScoped,
-    `Fixture on tenant-scoped table '${tableName}' is not supported: there is no implicit tenant id at registration time. Seed tenant data from a create-tenant hook instead.`,
-  );
   const count = await schema.instance().table(tableName).count();
   if (count > 0) {
     return;

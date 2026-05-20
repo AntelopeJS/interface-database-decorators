@@ -3,7 +3,7 @@ import {
   Get,
   type RequestContext,
 } from "@antelopejs/interface-api";
-import { CROSS_TENANT } from "@antelopejs/interface-database";
+import { CROSS_INSTANCE } from "@antelopejs/interface-database";
 import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   BasicDataModel,
@@ -11,10 +11,7 @@ import {
   Model,
 } from "@antelopejs/interface-database-decorators/model";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
-import {
-  Table,
-  TenantScoped,
-} from "@antelopejs/interface-database-decorators/table";
+import { Table } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Model - data operations", () => {
@@ -140,25 +137,24 @@ async function GetModelFromCacheTest() {
 }
 
 async function CreateNewModelWhenNotCachedTest() {
-  @TenantScoped()
-  @RegisterTable("nocache_tenant", "model-nocache-schema")
+  @RegisterTable("nocache_instances", "model-nocache-schema")
   class TestTable extends Table {
     name!: string;
   }
 
-  const TestModel = BasicDataModel(TestTable, "nocache_tenant");
+  const TestModel = BasicDataModel(TestTable, "nocache_instances");
 
   await RegisterSchema("model-nocache-schema");
 
-  const tenant1 = GetModel(TestModel, "tenant-1");
-  const tenant2 = GetModel(TestModel, "tenant-2");
-  const cross = GetModel(TestModel, CROSS_TENANT);
+  const instance1 = GetModel(TestModel, "instance-1");
+  const instance2 = GetModel(TestModel, "instance-2");
+  const cross = GetModel(TestModel, CROSS_INSTANCE);
 
-  expect(tenant1).to.not.equal(tenant2);
-  expect(tenant1).to.not.equal(cross);
-  expect(tenant2).to.not.equal(cross);
-  expect(tenant1).to.be.instanceOf(TestModel);
-  expect(tenant2).to.be.instanceOf(TestModel);
+  expect(instance1).to.not.equal(instance2);
+  expect(instance1).to.not.equal(cross);
+  expect(instance2).to.not.equal(cross);
+  expect(instance1).to.be.instanceOf(TestModel);
+  expect(instance2).to.be.instanceOf(TestModel);
   expect(cross).to.be.instanceOf(TestModel);
 }
 

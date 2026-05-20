@@ -8,7 +8,7 @@ import {
   MakeParameterAndPropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
 import type * as DatabaseDev from "@antelopejs/interface-database";
-import { Schema, type TenantId } from "@antelopejs/interface-database";
+import { type InstanceId, Schema } from "@antelopejs/interface-database";
 import {
   type Constructible,
   DatumStaticMetadata,
@@ -184,7 +184,7 @@ const modelCache = new Map<
 
 const UNDEFINED_INSTANCE_KEY = Symbol("undefined-instance");
 
-function cacheKeyOf(instanceId: TenantId | undefined): string | symbol {
+function cacheKeyOf(instanceId: InstanceId | undefined): string | symbol {
   if (instanceId === undefined) return UNDEFINED_INSTANCE_KEY;
   if (typeof instanceId === "symbol") return instanceId;
   return instanceId;
@@ -192,7 +192,7 @@ function cacheKeyOf(instanceId: TenantId | undefined): string | symbol {
 
 export function GetModel<M extends InstanceType<DataModel>>(
   cl: DataModel & Class<M>,
-  instanceId?: TenantId,
+  instanceId?: InstanceId,
 ) {
   if (!modelCache.has(cl)) {
     modelCache.set(cl, new Map());
@@ -216,8 +216,8 @@ export const Model = MakeParameterAndPropertyDecorator(
     index,
     cl: DataModel & Class<InstanceType<DataModel>>,
     instanceIdOrCallback?:
-      | TenantId
-      | ((ctx: RequestContext) => TenantId | undefined),
+      | InstanceId
+      | ((ctx: RequestContext) => InstanceId | undefined),
   ) => {
     if (typeof instanceIdOrCallback === "function") {
       SetParameterProvider(target, key, index, (ctx: RequestContext) => {
