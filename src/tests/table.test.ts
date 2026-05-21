@@ -4,11 +4,13 @@ import {
 } from "@antelopejs/interface-database-decorators/common";
 import { MixinSymbol } from "@antelopejs/interface-database-decorators/modifiers/common";
 import {
+  Field,
   Fixture,
   Index,
   Table,
 } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
+import { asFieldType, stringCodec } from "./codec_helpers";
 
 describe("Table - decorators", () => {
   it("creates table with default primary key", async () =>
@@ -84,6 +86,42 @@ async function CreateTableWithFixtureDataTest() {
 
   expect(metadata.generator).to.be.a("function");
   expect(metadata.primary).to.equal("_id");
+}
+
+describe("Table - @Field decorator", () => {
+  it("stores a string-token type on metadata.fields", () =>
+    StoresStringTokenFieldTest());
+  it("stores an io-ts codec on metadata.fields", () => StoresCodecFieldTest());
+  it("stacks with @Index", () => StacksWithIndexTest());
+});
+
+function StoresStringTokenFieldTest() {
+  class _T extends Table {
+    @Field("string")
+    declare name: string;
+  }
+  const metadata = getMetadata(_T, DatumStaticMetadata);
+  expect(metadata.fields.name).to.equal("string");
+}
+
+function StoresCodecFieldTest() {
+  class _T extends Table {
+    @Field(asFieldType(stringCodec))
+    declare name: string;
+  }
+  const metadata = getMetadata(_T, DatumStaticMetadata);
+  expect(metadata.fields.name).to.equal(stringCodec);
+}
+
+function StacksWithIndexTest() {
+  class _T extends Table {
+    @Index()
+    @Field("string")
+    declare email: string;
+  }
+  const metadata = getMetadata(_T, DatumStaticMetadata);
+  expect(metadata.fields.email).to.equal("string");
+  expect(metadata.indexes.email).to.deep.equal(["email"]);
 }
 
 async function CombineTableWithMixinsTest() {

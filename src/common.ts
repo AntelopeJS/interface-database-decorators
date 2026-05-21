@@ -1,3 +1,5 @@
+import type { FieldType } from "@antelopejs/interface-database/schema";
+
 export type Constructible<T = object, A extends unknown[] = unknown[]> = new (
   ...args: A
 ) => T;
@@ -33,9 +35,9 @@ export class DatumStaticMetadata {
   public tableName?: string;
   public schemaName?: string;
   public readonly indexes: Record<string, Array<string>> = {};
+  public readonly fields: Record<string, FieldType> = {};
   public primary: string = "_id";
   public generator?: DatumGenerator;
-  public tenantScoped: boolean = false;
 
   addIndex(key: string, group: string) {
     if (!(group in this.indexes)) {

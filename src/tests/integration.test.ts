@@ -1,6 +1,10 @@
 import { Schema } from "@antelopejs/interface-database";
 import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
-import { BasicDataModel } from "@antelopejs/interface-database-decorators/model";
+import type { FieldError } from "@antelopejs/interface-database-decorators/model";
+import {
+  BasicDataModel,
+  GetModel,
+} from "@antelopejs/interface-database-decorators/model";
 import {
   Encrypted,
   EncryptionModifier,
@@ -15,11 +19,13 @@ import {
 } from "@antelopejs/interface-database-decorators/modifiers/localization";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
 import {
+  Field,
   Fixture,
   Index,
   Table,
 } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
+import { asFieldType, numberCodec } from "./codec_helpers";
 
 function getDatabase(schemaId: string) {
   const instance = Schema.get(schemaId)?.instance();
@@ -44,6 +50,91 @@ describe("Integration - real database operations", () => {
   it("manages database initialization", async () =>
     ManageDatabaseInitializationTest());
 });
+
+describe("Model - validate-on-write", () => {
+  it("rejects insert with validate:true on bad input", () =>
+    ValidateOnInsertRejectsTest());
+  it("accepts insert with validate:true on good input", () =>
+    ValidateOnInsertAcceptsTest());
+  it("rejects update with validate:true on bad input", () =>
+    ValidateOnUpdateRejectsTest());
+  it("accepts partial update with validate:true when omitted fields are absent", () =>
+    ValidateOnUpdateAcceptsPartialTest());
+});
+
+async function ValidateOnInsertRejectsTest() {
+  @RegisterTable("v_insert_bad", "model-vow-schema-1")
+  class _T extends Table {
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_insert_bad");
+  await RegisterSchema("model-vow-schema-1");
+  const model = GetModel(TM);
+  let threw = false;
+  try {
+    await model.insert({ age: "old" } as any, { validate: true });
+  } catch (e) {
+    threw = true;
+    const errors = (e as Error & { errors?: FieldError[] }).errors;
+    expect(Array.isArray(errors)).to.equal(true);
+    expect(errors?.[0].field).to.equal("age");
+  }
+  expect(threw).to.equal(true);
+}
+
+async function ValidateOnInsertAcceptsTest() {
+  @RegisterTable("v_insert_ok", "model-vow-schema-2")
+  class _T extends Table {
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_insert_ok");
+  await RegisterSchema("model-vow-schema-2");
+  const model = GetModel(TM);
+  const ids = await model.insert({ age: 30 } as any, { validate: true });
+  expect(ids).to.not.equal(undefined);
+}
+
+async function ValidateOnUpdateRejectsTest() {
+  @RegisterTable("v_update_bad", "model-vow-schema-3")
+  class _T extends Table {
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+  }
+  const TM = BasicDataModel(_T, "v_update_bad");
+  await RegisterSchema("model-vow-schema-3");
+  const model = GetModel(TM);
+  const inserted = await model.insert({ age: 30 } as any);
+  const id = Array.isArray(inserted) ? inserted[0] : inserted;
+  let threw = false;
+  try {
+    await model.update(id as string, { age: "old" } as any, { validate: true });
+  } catch (e) {
+    threw = true;
+    expect((e as Error).message).to.contain("validation failed");
+  }
+  expect(threw).to.equal(true);
+}
+
+async function ValidateOnUpdateAcceptsPartialTest() {
+  @RegisterTable("v_update_partial", "model-vow-schema-4")
+  class _T extends Table {
+    @Field(asFieldType(numberCodec))
+    declare age: number;
+    @Field(asFieldType(numberCodec))
+    declare score: number;
+  }
+  const TM = BasicDataModel(_T, "v_update_partial");
+  await RegisterSchema("model-vow-schema-4");
+  const model = GetModel(TM);
+  const inserted = await model.insert({ age: 30, score: 100 } as any);
+  const id = Array.isArray(inserted) ? inserted[0] : inserted;
+  const updated = await model.update(id as string, { age: 31 } as any, {
+    validate: true,
+  });
+  expect(updated).to.not.equal(undefined);
+}
 
 async function CreateAndQueryUserWithModifiersTest() {
   @RegisterTable("users", "integration-modifiers-schema")

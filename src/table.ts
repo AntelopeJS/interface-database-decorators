@@ -3,6 +3,7 @@ import {
   MakeClassDecorator,
   MakePropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
+import type { FieldType } from "@antelopejs/interface-database/schema";
 import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
 import { MixinSymbol, type MixinType } from "./modifiers/common";
 
@@ -109,6 +110,16 @@ export const Index = MakePropertyDecorator(
   },
 );
 
+/**
+ * Database Table Field type decorator.
+ */
+export const Field = MakePropertyDecorator(
+  (target, propertyKey, type: FieldType) => {
+    const metadata = getMetadata(target.constructor, DatumStaticMetadata);
+    metadata.fields[propertyKey as string] = type;
+  },
+);
+
 type AwaitableArray<T> = Promise<T | T[]> | T | T[];
 /**
  * Database Table class decorator to create default data on table creation.
@@ -121,19 +132,3 @@ export const Fixture: <T extends typeof Table>(
   const metadata = getMetadata(target, DatumStaticMetadata);
   metadata.generator = generator as unknown as DatumStaticMetadata["generator"];
 });
-
-/**
- * Marks a Table as tenant-scoped.
- *
- * Implementations stamp `tenant_id` on insert, filter reads/updates/deletes
- * on it, and reject queries that omit a tenant context (`Schema.instance(id)`).
- *
- * The query path supports a `CROSS_TENANT` sentinel for legitimate admin
- * operations that need to span every tenant; see `@antelopejs/interface-database`
- * for the contract.
- */
-export const TenantScoped: () => ClassDecorator<typeof Table> =
-  MakeClassDecorator((target) => {
-    const metadata = getMetadata(target, DatumStaticMetadata);
-    metadata.tenantScoped = true;
-  });
