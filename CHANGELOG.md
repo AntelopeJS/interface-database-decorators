@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v0.1.1
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.0...v0.1.1)
+
+### 🚀 Enhancements
+
+- Align with interface-database lifecycle rollback; add @Field + opt-in validation ([#6](https://github.com/AntelopeJS/interface-database-decorators/pull/6))
+
+### ✅ Tests
+
+- Bump mongodb adapter to 1.2.1 and strip _instance in fixture assertion ([96be284](https://github.com/AntelopeJS/interface-database-decorators/commit/96be284))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <upd4ting@gmail.com>
+- Thomas ([@Thomasims](http://github.com/Thomasims))
+
 ## v0.1.0
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.0.4...v0.1.0)
