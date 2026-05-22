@@ -14,7 +14,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/mongodb",
-        version: "1.1.0",
+        version: "1.2.1",
       },
     },
     api: {
@@ -35,7 +35,7 @@ export default defineConfig({
       return {
         modules: {
           mongodb: {
-            config: { url: mongod.getUri() },
+            config: { url: mongod.getUri(), database: "antelopejs_test" },
           },
         },
       };

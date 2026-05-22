@@ -102,6 +102,7 @@ async function CreateTablesWithFixtureDataTest() {
   const result = await schema.instance().table("fixture_table");
   for (const val of result) {
     delete val._id;
+    delete val._instance;
   }
   const sortById = (a: any, b: any) => a.id.localeCompare(b.id);
   expect(result.sort(sortById)).to.deep.equal(testData.sort(sortById));
