@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v0.1.2
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.1...v0.1.2)
+
+### 🚀 Enhancements
+
+- Declare interface as standalone ([4b41939](https://github.com/AntelopeJS/interface-database-decorators/commit/4b41939))
+
+### 📖 Documentation
+
+- Update schema registration to RegisterSchema(schemaId) ([cb552b3](https://github.com/AntelopeJS/interface-database-decorators/commit/cb552b3))
+
+### ❤️ Contributors
+
+- Thomasims <thomasims3@hotmail.fr>
+
 ## v0.1.1
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.0...v0.1.1)
