@@ -8,15 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@antelopejs/interface-api':
-        specifier: ^0.0.3
-        version: 0.0.3
-      '@antelopejs/interface-core':
-        specifier: ^0.0.3
-        version: 0.0.3
-      '@antelopejs/interface-database':
-        specifier: ^0.1.1
-        version: 0.1.1
       randomstring:
         specifier: ^1.3.1
         version: 1.3.1
@@ -24,6 +15,15 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
     devDependencies:
+      '@antelopejs/interface-api':
+        specifier: '>=0.0.3 <1.0.0'
+        version: 0.0.3
+      '@antelopejs/interface-core':
+        specifier: '>=0.0.3 <1.0.0'
+        version: 0.0.3
+      '@antelopejs/interface-database':
+        specifier: '>=0.1.1 <1.0.0'
+        version: 0.1.1
       '@biomejs/biome':
         specifier: 2.3.2
         version: 2.3.2
