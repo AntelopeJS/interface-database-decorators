@@ -16,7 +16,8 @@ export interface RelationOptions {
    */
   toField?: string;
   /**
-   * The decorated field holds multiple target keys (one-to-many).
+   * The decorated field holds multiple target keys (many targets per source
+   * record).
    */
   many?: boolean;
 }
