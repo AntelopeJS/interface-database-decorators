@@ -2,7 +2,7 @@ import {
   Hashed,
   HashModifier,
 } from "@antelopejs/interface-database-decorators/modifiers/hash";
-import { Table } from "@antelopejs/interface-database-decorators/table";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Modifiers - hash", () => {
@@ -112,6 +112,7 @@ async function GenerateUniqueSaltForEachFieldTest() {
 async function HandleHashDecoratorTest() {
   class TestTable extends Table.with(HashModifier) {
     @Hashed({ algorithm: "sha256" })
+    @Field("string")
     declare password: string;
   }
 
@@ -140,6 +141,7 @@ async function TestHashValuesTest() {
 async function ProvideTestHashMethodTest() {
   class TestTable extends Table.with(HashModifier) {
     @Hashed({ algorithm: "sha256" })
+    @Field("string")
     declare password: string;
   }
 

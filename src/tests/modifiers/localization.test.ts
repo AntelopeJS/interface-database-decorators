@@ -2,7 +2,7 @@ import {
   LocalizationModifier,
   Localized,
 } from "@antelopejs/interface-database-decorators/modifiers/localization";
-import { Table } from "@antelopejs/interface-database-decorators/table";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Modifiers - localization", () => {
@@ -116,9 +116,11 @@ async function ProvideLocalizeMethodTest() {
 
   class TestTable extends TestTableWithMixin {
     @Localized({ fallbackLocale: "en" })
+    @Field("string")
     declare title: string;
 
     @Localized({ fallbackLocale: "en" })
+    @Field("string")
     declare description: string;
   }
 
@@ -131,9 +133,11 @@ async function ProvideLocalizeMethodTest() {
 async function HandleLocalizationDecoratorTest() {
   class TestTable extends Table.with(LocalizationModifier) {
     @Localized({ fallbackLocale: "en" })
+    @Field("string")
     declare title: string;
 
     @Localized({ fallbackLocale: "fr" })
+    @Field("string")
     declare description: string;
   }
 
@@ -155,12 +159,15 @@ async function LocalizeSpecificFieldsTest() {
 
   class TestTable extends TestTableWithMixin {
     @Localized({ fallbackLocale: "en" })
+    @Field("string")
     declare title: string;
 
     @Localized({ fallbackLocale: "en" })
+    @Field("string")
     declare description: string;
 
     @Localized({ fallbackLocale: "en" })
+    @Field("string")
     declare content: string;
   }
 

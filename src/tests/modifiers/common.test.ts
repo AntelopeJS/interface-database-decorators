@@ -8,7 +8,7 @@ import {
   TwoWayModifier,
   toDatabase,
 } from "@antelopejs/interface-database-decorators/modifiers/common";
-import { Table } from "@antelopejs/interface-database-decorators/table";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Modifiers - common", () => {
@@ -108,6 +108,7 @@ async function AttachWithOptionsTest() {
     }
   }
   class TestTable extends Table {
+    @Field("string")
     declare name: string;
   }
 
@@ -135,6 +136,7 @@ async function ChainedModifiersTest() {
   }
 
   class TestTable extends Table {
+    @Field("string")
     name!: string;
   }
 
@@ -158,6 +160,7 @@ async function DuplicateOneWayErrorTest() {
   }
 
   class TestTable extends Table {
+    @Field("string")
     name!: string;
   }
 
@@ -169,7 +172,9 @@ async function DuplicateOneWayErrorTest() {
 
 async function ConvertDatabaseDataToTableTest() {
   class TestTable extends Table {
+    @Field("string")
     name!: string;
+    @Field("number")
     age!: number;
   }
 
@@ -183,7 +188,9 @@ async function ConvertDatabaseDataToTableTest() {
 
 async function ConvertTableToDatabaseDataTest() {
   class TestTable extends Table {
+    @Field("string")
     name!: string;
+    @Field("number")
     age!: number;
   }
 
@@ -204,7 +211,9 @@ async function GetModifiedFieldsTest() {
   }
 
   class TestTable extends Table {
+    @Field("string")
     name!: string;
+    @Field("number")
     age!: number;
   }
 
