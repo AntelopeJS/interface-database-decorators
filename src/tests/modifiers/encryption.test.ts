@@ -2,7 +2,7 @@ import {
   Encrypted,
   EncryptionModifier,
 } from "@antelopejs/interface-database-decorators/modifiers/encryption";
-import { Table } from "@antelopejs/interface-database-decorators/table";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Modifiers - encryption", () => {
@@ -25,6 +25,7 @@ async function CreateEncryptionModifierTest() {
   const Mixed = Table.with(EncryptionModifier);
   class Sample extends Mixed {
     @Encrypted({ secretKey: "12345678901234567890123456789012" })
+    @Field("string")
     declare value: string;
   }
 
@@ -39,6 +40,7 @@ async function EncryptAndDecryptStringValuesTest() {
       secretKey: "12345678901234567890123456789012",
       algorithm: "aes-256-cbc",
     })
+    @Field("string")
     declare email: string;
   }
 
@@ -53,6 +55,7 @@ async function EncryptAndDecryptObjectValuesTest() {
       secretKey: "12345678901234567890123456789012",
       algorithm: "aes-256-cbc",
     })
+    @Field("any")
     declare meta: Record<string, unknown>;
   }
 
@@ -68,6 +71,7 @@ async function EncryptAndDecryptArrayValuesTest() {
       secretKey: "12345678901234567890123456789012",
       algorithm: "aes-256-cbc",
     })
+    @Field("any")
     declare values: (string | { deep: string })[];
   }
 
@@ -84,6 +88,7 @@ async function UseCustomIvSizeTest() {
       ivSize: 16,
       algorithm: "aes-256-cbc",
     })
+    @Field("string")
     declare data: string;
   }
 
@@ -98,12 +103,14 @@ async function HandleEncryptionDecoratorTest() {
       secretKey: "12345678901234567890123456789012",
       algorithm: "aes-256-cbc",
     })
+    @Field("string")
     declare password: string;
 
     @Encrypted({
       secretKey: "12345678901234567890123456789012",
       algorithm: "aes-256-cbc",
     })
+    @Field("any")
     declare extra: Record<string, unknown>;
   }
 
@@ -121,6 +128,7 @@ async function GenerateUniqueIvForEachEncryptionTest() {
       secretKey: "12345678901234567890123456789012",
       algorithm: "aes-256-cbc",
     })
+    @Field("string")
     declare body: string;
   }
   const m1 = new Message();
@@ -140,6 +148,7 @@ async function PreserveDataIntegrityTest() {
       secretKey: "12345678901234567890123456789012",
       algorithm: "aes-256-cbc",
     })
+    @Field("any")
     declare payload: {
       string: string;
       number: number;

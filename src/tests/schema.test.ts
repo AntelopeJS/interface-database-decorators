@@ -6,7 +6,11 @@ import {
   getTablesForSchema,
   RegisterTable,
 } from "@antelopejs/interface-database-decorators/schema";
-import { Index, Table } from "@antelopejs/interface-database-decorators/table";
+import {
+  Field,
+  Index,
+  Table,
+} from "@antelopejs/interface-database-decorators/table";
 import { expect } from "chai";
 
 describe("Schema - RegisterTable decorator", () => {
@@ -24,6 +28,7 @@ describe("Schema - RegisterTable decorator", () => {
 async function StoreTableNameAndSchemaNameInMetadataTest() {
   @RegisterTable("test_table", "test-schema")
   class TestTable extends Table {
+    @Field("string")
     name!: string;
   }
 
@@ -36,16 +41,20 @@ async function StoreTableNameForMultipleClassesTest() {
   @RegisterTable("user_table", "multi-schema")
   class UserTable extends Table {
     @Index()
+    @Field("string")
     email!: string;
 
+    @Field("string")
     name!: string;
   }
 
   @RegisterTable("product_table", "multi-schema")
   class ProductTable extends Table {
     @Index()
+    @Field("string")
     name!: string;
 
+    @Field("number")
     price!: number;
   }
 
@@ -62,8 +71,10 @@ async function PreserveExistingMetadataTest() {
   @RegisterTable("indexed_table", "preserve-schema")
   class IndexedTable extends Table {
     @Index()
+    @Field("string")
     email!: string;
 
+    @Field("string")
     name!: string;
   }
 
