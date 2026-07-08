@@ -37,6 +37,10 @@
       "types": "./dist/model.d.ts",
       "default": "./dist/model.js"
     },
+    "./relation": {
+      "types": "./dist/relation.d.ts",
+      "default": "./dist/relation.js"
+    },
     "./schema": {
       "types": "./dist/schema.d.ts",
       "default": "./dist/schema.js"
@@ -111,6 +115,9 @@
       ],
       "model": [
         "dist/model.d.ts"
+      ],
+      "relation": [
+        "dist/relation.d.ts"
       ],
       "schema": [
         "dist/schema.d.ts"
