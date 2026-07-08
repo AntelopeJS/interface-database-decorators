@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.4
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.3...v0.1.4)
+
+### 🚀 Enhancements
+
+- **relation:** Add Relation decorator for declarative table links ([#8](https://github.com/AntelopeJS/interface-database-decorators/pull/8))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <upd4ting@gmail.com>
+
 ## v0.1.3
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.2...v0.1.3)
