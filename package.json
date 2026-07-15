@@ -49,6 +49,10 @@
       "types": "./dist/table.d.ts",
       "default": "./dist/table.js"
     },
+    "./modifiers/autodate": {
+      "types": "./dist/modifiers/autodate.d.ts",
+      "default": "./dist/modifiers/autodate.js"
+    },
     "./modifiers/common": {
       "types": "./dist/modifiers/common.d.ts",
       "default": "./dist/modifiers/common.js"
@@ -124,6 +128,9 @@
       ],
       "table": [
         "dist/table.d.ts"
+      ],
+      "modifiers/autodate": [
+        "dist/modifiers/autodate.d.ts"
       ],
       "modifiers/common": [
         "dist/modifiers/common.d.ts"
