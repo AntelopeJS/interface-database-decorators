@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/interface-database-decorators",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "AntelopeJS interface for database schema decorators and model definitions",
   "keywords": [
     "antelopejs",

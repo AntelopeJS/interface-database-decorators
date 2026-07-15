@@ -1,6 +1,27 @@
 # Changelog
 
 
+## v0.1.5
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.4...v0.1.5)
+
+### 🚀 Enhancements
+
+- **modifiers:** Add AutoDateModifier with CreationTime and UpdateTime decorators ([#11](https://github.com/AntelopeJS/interface-database-decorators/pull/11))
+
+### 📖 Documentation
+
+- Declare table fields with @Field and @Relation decorators in examples ([#10](https://github.com/AntelopeJS/interface-database-decorators/pull/10))
+
+### ✅ Tests
+
+- Declare table fields with @Field decorator in test fixtures ([#9](https://github.com/AntelopeJS/interface-database-decorators/pull/9))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <upd4ting@gmail.com>
+- Fabrice Cst <fabrice@altab.be>
+
 ## v0.1.4
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.3...v0.1.4)
