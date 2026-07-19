@@ -55,7 +55,7 @@ await users.delete(one._id);
 ```
 
 Controller injection (works as parameter or property decorator; second arg is a static `InstanceId` or a
-`(ctx: RequestContext) => InstanceId` callback):
+`(ctx: RequestContext) => InstanceId | undefined` callback — returning `undefined` falls back to the default schema instance):
 
 ```typescript
 class UsersController extends Controller("/users") {
