@@ -7,11 +7,10 @@ tags: [database, decorators, orm, models, antelopejs]
 
 # Database Decorators Interface
 
-Consumer-side decorator layer on top of `@antelopejs/interface-database` (AQL). This package itself has no
-proxy points and no provider side — you never `ImplementInterface` it. All actual database access flows
-through `Schema`/`Table` from `@antelopejs/interface-database`, which must be implemented by a database
-module (e.g. MongoDB). Peer interfaces required: `@antelopejs/interface-core`, `@antelopejs/interface-api`
-(only for the `Model` controller decorator), `@antelopejs/interface-database`.
+Consumer-side decorator layer on top of `@antelopejs/interface-database` (AQL). This package itself has no proxy
+points and no provider side — you never `ImplementInterface` it. All actual database access flows through
+`Schema`/`Table` from `@antelopejs/interface-database`, which must be implemented by a database module (e.g. MongoDB).
+Peer interfaces required: `@antelopejs/interface-core`, `@antelopejs/interface-api` (only for the `Model` controller decorator), `@antelopejs/interface-database`.
 
 ## Imports
 
@@ -82,15 +81,12 @@ class Account extends Table.with(HashModifier, EncryptionModifier, LocalizationM
 
 - Only the package root imports `reflect-metadata`; if you import only subpaths, ensure `reflect-metadata`
   is loaded once before decorators run (e.g. `import "@antelopejs/interface-database-decorators"`).
-- `Hashed`, `Encrypted`, and `Localized` require the matching modifier class in `Table.with(...)`;
-  `CreationTime`/`UpdateTime` are event-only and need no mixin.
-- Modifier ordering matters: `attachModifier` throws if you stack a modifier after a one-way modifier
-  (e.g. anything after `@Hashed` on the same field).
+- `Hashed`, `Encrypted`, and `Localized` require the matching modifier class in `Table.with(...)`; `CreationTime`/`UpdateTime` are event-only and need no mixin.
+- Modifier ordering matters: `attachModifier` throws if you stack a modifier after a one-way modifier (e.g. anything after `@Hashed` on the same field).
 - Hashed fields cannot be read back or queried directly — only equality-tested with `testHash`.
 - Localized fields must be written through a localized instance (`instance.localize(locale).field = ...`);
   values assigned before `localize()` are held in floating state and silently dropped on insert/update.
-- `@Relation({ to: () => Target })` is declarative metadata only: no foreign-key enforcement, consumed by
-  introspection tooling via `RelationStaticMetadata`.
+- `@Relation({ to: () => Target })` is declarative metadata only: no foreign-key enforcement, consumed by introspection tooling via `RelationStaticMetadata`.
 - `Model.validate` (and `{ validate: true }` on insert/update) only checks fields whose `@Field` type is an
   io-ts-style codec with `.decode`; plain string field tokens are skipped. Update validates with
   `{ partial: true }` semantics.
