@@ -33,34 +33,34 @@ The package root re-exports everything above and also imports `reflect-metadata`
 ## Minimal usage
 
 ```typescript
-@RegisterTable("users", "app") // (tableName, schemaName)
-class User extends Table {
+@RegisterTable("recipes", "cookbook") // (tableName, schemaName)
+class Recipe extends Table {
   // _id: string is inherited as the primary key
   @Index() @Field("string")
-  declare email: string;
+  declare slug: string;
   @Field("string")
-  declare name: string;
+  declare tagline: string;
 }
 
-const UserModel = BasicDataModel(User); // table name taken from @RegisterTable
-await RegisterSchema("app"); // once at startup: provisions all tables registered for "app", runs fixtures
+const RecipeModel = BasicDataModel(Recipe); // table name taken from @RegisterTable
+await RegisterSchema("cookbook"); // once at startup: provisions all tables registered for "cookbook", runs fixtures
 
-const users = GetModel(UserModel); // cached per (model class, instanceId)
-await users.insert({ email: "a@b.c", name: "Ada" }, { validate: true });
-const byEmail = await users.getBy("email", "a@b.c");
-const one = await users.get(byEmail[0]._id);
-await users.update(one._id, { name: "Ada L." });
-await users.delete(one._id);
+const recipes = GetModel(RecipeModel); // cached per (model class, instanceId)
+await recipes.insert({ slug: "grilled-halloumi", tagline: "Smoky skewers" }, { validate: true });
+const bySlug = await recipes.getBy("slug", "grilled-halloumi");
+const one = await recipes.get(bySlug[0]._id);
+await recipes.update(one._id, { tagline: "Smoky halloumi skewers" });
+await recipes.delete(one._id);
 ```
 
 Controller injection (works as parameter or property decorator; second arg is a static `InstanceId` or a
 `(ctx: RequestContext) => InstanceId | undefined` callback — returning `undefined` falls back to the default schema instance):
 
 ```typescript
-class UsersController extends Controller("/users") {
+class RecipesController extends Controller("/recipes") {
   @Get()
-  async list(@Model(UserModel) users: InstanceType<typeof UserModel>) {
-    return users.getAll();
+  async list(@Model(RecipeModel) recipes: InstanceType<typeof RecipeModel>) {
+    return recipes.getAll();
   }
 }
 ```
@@ -68,12 +68,12 @@ class UsersController extends Controller("/users") {
 ## Field modifiers
 
 ```typescript
-class Account extends Table.with(HashModifier, EncryptionModifier, LocalizationModifier) {
-  @Hashed() declare password: string;              // one-way; test via instance.testHash("password", value)
-  @Encrypted({ secretKey }) declare ssn: string;   // transparent encrypt/decrypt (autolock + autounlock)
-  @Localized() declare bio: string;                // read AND write via instance.localize("en", ["bio"])
-  @CreationTime() declare createdAt: Date;         // set on insert, stripped from updates
-  @UpdateTime() declare updatedAt: Date;           // refreshed on insert and update
+class Chef extends Table.with(HashModifier, EncryptionModifier, LocalizationModifier) {
+  @Hashed() declare passphrase: string;                   // one-way; test via instance.testHash("passphrase", value)
+  @Encrypted({ secretKey }) declare supplierCode: string; // transparent encrypt/decrypt (autolock + autounlock)
+  @Localized() declare motto: string;                     // read AND write via instance.localize("en", ["motto"])
+  @CreationTime() declare hiredAt: Date;                  // set on insert, stripped from updates
+  @UpdateTime() declare lastActiveAt: Date;               // refreshed on insert and update
 }
 ```
 
