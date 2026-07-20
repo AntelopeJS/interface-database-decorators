@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.6
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.5...v0.1.6)
+
+### 🚀 Enhancements
+
+- **skills:** Ship a consumer skill with the package ([#12](https://github.com/AntelopeJS/interface-database-decorators/pull/12))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <upd4ting@gmail.com>
+
 ## v0.1.5
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.4...v0.1.5)
