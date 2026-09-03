@@ -109,7 +109,8 @@
     "@antelopejs/interface-database": ">=0.1.1 <1.0.0"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "typesVersions": {
     "*": {
