@@ -1,30 +1,31 @@
+import { expect } from "chai";
 import { Schema } from "@antelopejs/interface-database";
-import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
+import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
 import type { FieldError } from "@antelopejs/interface-database-decorators/model";
+import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   BasicDataModel,
   GetModel,
 } from "@antelopejs/interface-database-decorators/model";
 import {
-  Encrypted,
-  EncryptionModifier,
-} from "@antelopejs/interface-database-decorators/modifiers/encryption";
-import {
   Hashed,
   HashModifier,
 } from "@antelopejs/interface-database-decorators/modifiers/hash";
-import {
-  LocalizationModifier,
-  Localized,
-} from "@antelopejs/interface-database-decorators/modifiers/localization";
-import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
 import {
   Field,
   Fixture,
   Index,
   Table,
 } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
+import {
+  Encrypted,
+  EncryptionModifier,
+} from "@antelopejs/interface-database-decorators/modifiers/encryption";
+import {
+  LocalizationModifier,
+  Localized,
+} from "@antelopejs/interface-database-decorators/modifiers/localization";
+
 import { asFieldType, numberCodec } from "./codec_helpers";
 
 function getDatabase(schemaId: string) {

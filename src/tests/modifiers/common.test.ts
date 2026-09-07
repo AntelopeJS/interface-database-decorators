@@ -1,3 +1,5 @@
+import { expect } from "chai";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import {
   attachModifier,
   ContainerModifier,
@@ -8,8 +10,6 @@ import {
   TwoWayModifier,
   toDatabase,
 } from "@antelopejs/interface-database-decorators/modifiers/common";
-import { Field, Table } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
 
 describe("Modifiers - common", () => {
   it("creates basic modifier", async () => CreateBasicModifierTest());

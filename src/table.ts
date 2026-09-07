@@ -1,11 +1,12 @@
+import type { FieldType } from "@antelopejs/interface-database/schema";
 import {
   type ClassDecorator,
   MakeClassDecorator,
   MakePropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
-import type { FieldType } from "@antelopejs/interface-database/schema";
-import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
+
 import { MixinSymbol, type MixinType } from "./modifiers/common";
+import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I,

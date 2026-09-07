@@ -1,4 +1,5 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
+
 import { type Constructible, getMetadata } from "../common";
 
 export const MixinSymbol = Symbol();

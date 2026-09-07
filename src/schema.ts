@@ -3,8 +3,9 @@ import {
   type ClassDecorator,
   MakeClassDecorator,
 } from "@antelopejs/interface-core/decorators";
-import { DatumStaticMetadata, getMetadata } from "./common";
+
 import type { Table } from "./table";
+import { DatumStaticMetadata, getMetadata } from "./common";
 
 const schemaTableRegistry: Record<string, Record<string, Class<Table>>> = {};
 

@@ -1,18 +1,19 @@
+import { expect } from "chai";
+import { CROSS_INSTANCE } from "@antelopejs/interface-database";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
+import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
+import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   Controller,
   Get,
   type RequestContext,
 } from "@antelopejs/interface-api";
-import { CROSS_INSTANCE } from "@antelopejs/interface-database";
-import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   BasicDataModel,
   GetModel,
   Model,
 } from "@antelopejs/interface-database-decorators/model";
-import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
-import { Field, Table } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
+
 import { asFieldType, numberCodec, stringCodec } from "./codec_helpers";
 
 describe("Model - data operations", () => {

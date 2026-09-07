@@ -1,4 +1,7 @@
 import assert from "node:assert";
+import type * as DatabaseDev from "@antelopejs/interface-database";
+import type { FieldType } from "@antelopejs/interface-database/schema";
+import { type InstanceId, Schema } from "@antelopejs/interface-database";
 import {
   type RequestContext,
   SetParameterProvider,
@@ -7,21 +10,19 @@ import {
   type Class,
   MakeParameterAndPropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
-import type * as DatabaseDev from "@antelopejs/interface-database";
-import { type InstanceId, Schema } from "@antelopejs/interface-database";
-import type { FieldType } from "@antelopejs/interface-database/schema";
-import {
-  type Constructible,
-  DatumStaticMetadata,
-  type DeepPartial,
-  getMetadata,
-} from "./common";
+
 import {
   fromDatabase,
   fromPlainData,
   toDatabase,
   triggerEvent,
 } from "./modifiers/common";
+import {
+  type Constructible,
+  DatumStaticMetadata,
+  type DeepPartial,
+  getMetadata,
+} from "./common";
 
 export type DataModel<T = any> = {
   readonly schemaName: string;

@@ -1,6 +1,7 @@
+import { generate } from "randomstring";
 import { createHash } from "node:crypto";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
-import { generate } from "randomstring";
+
 import {
   attachModifier,
   MixinSymbol,

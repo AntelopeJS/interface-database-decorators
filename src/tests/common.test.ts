@@ -1,9 +1,9 @@
+import { expect } from "chai";
 import {
   DatumStaticMetadata,
   type DeepPartial,
   getMetadata,
 } from "@antelopejs/interface-database-decorators/common";
-import { expect } from "chai";
 
 describe("Common - metadata", () => {
   it("creates metadata with default values", async () =>

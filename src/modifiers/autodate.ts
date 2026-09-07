@@ -1,4 +1,5 @@
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
+
 import { attachModifier, Modifier } from "./common";
 
 type AutoDateType = "created" | "updated";

@@ -1,13 +1,14 @@
+import { expect } from "chai";
 import { Schema } from "@antelopejs/interface-database";
-import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
+import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   Field,
   Fixture,
   Index,
   Table,
 } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
+
 import { asFieldType, numberCodec } from "./codec_helpers";
 
 describe("Database - initialization", () => {

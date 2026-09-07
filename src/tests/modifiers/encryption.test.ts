@@ -1,9 +1,9 @@
+import { expect } from "chai";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import {
   Encrypted,
   EncryptionModifier,
 } from "@antelopejs/interface-database-decorators/modifiers/encryption";
-import { Field, Table } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
 
 describe("Modifiers - encryption", () => {
   it("creates encryption modifier", async () => CreateEncryptionModifierTest());

@@ -1,7 +1,4 @@
-import {
-  DatumStaticMetadata,
-  getMetadata,
-} from "@antelopejs/interface-database-decorators/common";
+import { expect } from "chai";
 import { MixinSymbol } from "@antelopejs/interface-database-decorators/modifiers/common";
 import {
   Field,
@@ -9,7 +6,11 @@ import {
   Index,
   Table,
 } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
+import {
+  DatumStaticMetadata,
+  getMetadata,
+} from "@antelopejs/interface-database-decorators/common";
+
 import { asFieldType, stringCodec } from "./codec_helpers";
 
 describe("Table - decorators", () => {

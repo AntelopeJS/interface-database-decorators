@@ -1,9 +1,9 @@
+import { expect } from "chai";
+import { Field, Table } from "@antelopejs/interface-database-decorators/table";
 import {
   LocalizationModifier,
   Localized,
 } from "@antelopejs/interface-database-decorators/modifiers/localization";
-import { Field, Table } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
 
 describe("Modifiers - localization", () => {
   it("creates localization modifier", async () =>

@@ -1,5 +1,6 @@
-import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 import type * as DatabaseDev from "@antelopejs/interface-database";
+import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
+
 import {
   attachModifier,
   ContainerModifier,
