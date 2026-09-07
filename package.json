@@ -4,24 +4,60 @@
   "description": "AntelopeJS interface for database schema decorators and model definitions",
   "keywords": [
     "antelopejs",
-    "interface",
     "database",
     "decorators",
+    "interface",
     "orm"
   ],
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AntelopeJS/interface-database-decorators.git"
   },
-  "license": "Apache-2.0",
-  "packageManager": "pnpm@10.6.5",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "docs",
     "skills"
   ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "common": [
+        "dist/common.d.ts"
+      ],
+      "database": [
+        "dist/database.d.ts"
+      ],
+      "model": [
+        "dist/model.d.ts"
+      ],
+      "relation": [
+        "dist/relation.d.ts"
+      ],
+      "schema": [
+        "dist/schema.d.ts"
+      ],
+      "table": [
+        "dist/table.d.ts"
+      ],
+      "modifiers/autodate": [
+        "dist/modifiers/autodate.d.ts"
+      ],
+      "modifiers/common": [
+        "dist/modifiers/common.d.ts"
+      ],
+      "modifiers/encryption": [
+        "dist/modifiers/encryption.d.ts"
+      ],
+      "modifiers/hash": [
+        "dist/modifiers/hash.d.ts"
+      ],
+      "modifiers/localization": [
+        "dist/modifiers/localization.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -73,6 +109,10 @@
     },
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "rimraf dist && tsc",
     "format": "oxfmt .",
@@ -115,47 +155,7 @@
     "@antelopejs/interface-core": ">=0.0.3 <1.0.0",
     "@antelopejs/interface-database": ">=0.1.1 <1.0.0"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "typesVersions": {
-    "*": {
-      "common": [
-        "dist/common.d.ts"
-      ],
-      "database": [
-        "dist/database.d.ts"
-      ],
-      "model": [
-        "dist/model.d.ts"
-      ],
-      "relation": [
-        "dist/relation.d.ts"
-      ],
-      "schema": [
-        "dist/schema.d.ts"
-      ],
-      "table": [
-        "dist/table.d.ts"
-      ],
-      "modifiers/autodate": [
-        "dist/modifiers/autodate.d.ts"
-      ],
-      "modifiers/common": [
-        "dist/modifiers/common.d.ts"
-      ],
-      "modifiers/encryption": [
-        "dist/modifiers/encryption.d.ts"
-      ],
-      "modifiers/hash": [
-        "dist/modifiers/hash.d.ts"
-      ],
-      "modifiers/localization": [
-        "dist/modifiers/localization.d.ts"
-      ]
-    }
-  },
+  "packageManager": "pnpm@10.6.5",
   "antelopeJs": {
     "standalone": true,
     "test": "src/antelope.test.ts",

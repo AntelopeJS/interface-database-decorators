@@ -26,9 +26,7 @@ import {
 
 export type DataModel<T = any> = {
   readonly schemaName: string;
-  new (
-    database: DatabaseDev.SchemaInstance<any>,
-  ): {
+  new (database: DatabaseDev.SchemaInstance<any>): {
     readonly database: DatabaseDev.SchemaInstance<any>;
     readonly table: DatabaseDev.Table<T>;
   };
