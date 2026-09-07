@@ -72,7 +72,6 @@ export class Table {
     | ExtractTableMeta<InstanceType<This>>
     | ExtractTableMeta<InstanceType<T[number]>>
   > {
-    // intentional mixin pattern — this refers to the calling class
     const c = class _internal_table extends (this as any) {};
     for (const mixin of others
       .map((otherClass) => otherClass.prototype && new otherClass())
