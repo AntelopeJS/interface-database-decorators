@@ -1,10 +1,10 @@
+import { expect } from "chai";
+import { Table } from "@antelopejs/interface-database-decorators/table";
 import { getMetadata } from "@antelopejs/interface-database-decorators/common";
 import {
   Relation,
   RelationStaticMetadata,
 } from "@antelopejs/interface-database-decorators/relation";
-import { Table } from "@antelopejs/interface-database-decorators/table";
-import { expect } from "chai";
 
 describe("Relation - Relation decorator", () => {
   it("stores relation options in metadata", async () =>

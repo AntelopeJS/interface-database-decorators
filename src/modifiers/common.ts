@@ -1,4 +1,5 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
+
 import { type Constructible, getMetadata } from "../common";
 
 export const MixinSymbol = Symbol();
@@ -344,12 +345,10 @@ export function toDatabase<T extends { constructor: any }>(
   return result;
 }
 
-type ExtractModifierOptions<T> = T extends Modifier<any, infer Options>
-  ? Options
-  : undefined;
-type ExtractModifierArgs<T> = T extends OneWayModifier<any, infer Args>
-  ? Args
-  : [];
+type ExtractModifierOptions<T> =
+  T extends Modifier<any, infer Options> ? Options : undefined;
+type ExtractModifierArgs<T> =
+  T extends OneWayModifier<any, infer Args> ? Args : [];
 
 const ignoredEventNames = {
   constructor: true,

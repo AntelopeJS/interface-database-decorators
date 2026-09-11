@@ -1,6 +1,7 @@
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
-import { getMetadata } from "./common";
+
 import type { Table } from "./table";
+import { getMetadata } from "./common";
 
 /**
  * Options for the {@link Relation} decorator.

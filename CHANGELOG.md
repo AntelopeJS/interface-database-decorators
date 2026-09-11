@@ -1,6 +1,5 @@
 # Changelog
 
-
 ## v0.1.6
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.5...v0.1.6)
@@ -134,7 +133,6 @@
 
 ## v0.0.2
 
-
 ### 🚀 Enhancements
 
 - Add database decorators interface implementation ([f470fb9](https://github.com/AntelopeJS/interface-database-decorators/commit/f470fb9))
@@ -158,4 +156,3 @@
 
 - Antony Rizzitelli <upd4ting@gmail.com>
 - Glastis ([@Glastis](http://github.com/Glastis))
-

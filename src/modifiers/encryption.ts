@@ -1,3 +1,5 @@
+import type * as DatabaseDev from "@antelopejs/interface-database";
+import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 import {
   type CipherCCM,
   createCipheriv,
@@ -5,8 +7,7 @@ import {
   type DecipherCCM,
   randomBytes,
 } from "node:crypto";
-import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
-import type * as DatabaseDev from "@antelopejs/interface-database";
+
 import { attachModifier, MixinSymbol, TwoWayModifier } from "./common";
 
 type Options = {

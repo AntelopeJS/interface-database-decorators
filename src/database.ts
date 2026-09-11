@@ -1,12 +1,13 @@
 import assert from "node:assert";
 import type { Class } from "@antelopejs/interface-core/decorators";
-import { Schema, type SchemaDefinition } from "@antelopejs/interface-database";
 import type { IndexDefinition } from "@antelopejs/interface-database/schema";
+import { Schema, type SchemaDefinition } from "@antelopejs/interface-database";
+
+import type { Table } from "./table";
+import { getTablesForSchema } from "./schema";
 import type { DatumGeneratorOutput } from "./common";
 import { DatumStaticMetadata, getMetadata } from "./common";
 import { fromPlainData, toDatabase, triggerEvent } from "./modifiers/common";
-import { getTablesForSchema } from "./schema";
-import type { Table } from "./table";
 
 type TableDefinitions = Record<string, Class<Table>>;
 type TableEntry = Record<string, unknown>;
