@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.1.7
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.6...v0.1.7)
+
+### 🚀 Enhancements
+
+- **index:** Add crossInstance option to @Index ([#22](https://github.com/AntelopeJS/interface-database-decorators/pull/22))
+
+### 📖 Documentation
+
+- **readme:** Remove social card image ([#17](https://github.com/AntelopeJS/interface-database-decorators/pull/17))
+
+### 🏡 Chore
+
+- Replace Biome with oxlint, oxfmt and Knip ([#14](https://github.com/AntelopeJS/interface-database-decorators/pull/14))
+- Align community files with the organization defaults ([#16](https://github.com/AntelopeJS/interface-database-decorators/pull/16))
+- Remove .git-blame-ignore-revs ([#18](https://github.com/AntelopeJS/interface-database-decorators/pull/18))
+
+### 🤖 CI
+
+- Standardize npm releases ([#13](https://github.com/AntelopeJS/interface-database-decorators/pull/13))
+- Use shared npm release workflow ([#15](https://github.com/AntelopeJS/interface-database-decorators/pull/15))
+- **release:** Release next from a dedicated branch and restore requireCommits ([#19](https://github.com/AntelopeJS/interface-database-decorators/pull/19))
+- **release:** Reference the shared release workflows through v1 ([#20](https://github.com/AntelopeJS/interface-database-decorators/pull/20))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+- Thomas ([@Thomasims](http://github.com/Thomasims))
+
 ## v0.1.6
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.5...v0.1.6)
