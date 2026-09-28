@@ -35,18 +35,25 @@ function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
   const definition: SchemaDefinition = {};
   for (const [tableName, tableClass] of Object.entries(tables)) {
     const metadata = getMetadata(tableClass, DatumStaticMetadata);
-    const indexes: Record<string, IndexDefinition> = {};
-    for (const [group, fields] of Object.entries(metadata.indexes)) {
-      indexes[group] = {
-        fields: fields.length === 1 && fields[0] === group ? undefined : fields,
-      };
-    }
     definition[tableName] = {
       fields: metadata.fields,
-      indexes,
+      indexes: buildIndexDefinitions(metadata),
     };
   }
   return definition;
+}
+
+function buildIndexDefinitions(
+  metadata: DatumStaticMetadata,
+): Record<string, IndexDefinition> {
+  const indexes: Record<string, IndexDefinition> = {};
+  for (const [group, fields] of Object.entries(metadata.indexes)) {
+    indexes[group] = {
+      fields: fields.length === 1 && fields[0] === group ? undefined : fields,
+      ...(metadata.crossInstanceIndexes.has(group) && { crossInstance: true }),
+    };
+  }
+  return indexes;
 }
 
 async function insertAllFixtureData(
