@@ -35,15 +35,19 @@ export class DatumStaticMetadata {
   public tableName?: string;
   public schemaName?: string;
   public readonly indexes: Record<string, Array<string>> = {};
+  public readonly crossInstanceIndexes = new Set<string>();
   public readonly fields: Record<string, FieldType> = {};
   public primary: string = "_id";
   public generator?: DatumGenerator;
 
-  addIndex(key: string, group: string) {
+  addIndex(key: string, group: string, isCrossInstance: boolean = false) {
     if (!(group in this.indexes)) {
       this.indexes[group] = [];
     }
     this.indexes[group].push(key);
+    if (isCrossInstance) {
+      this.crossInstanceIndexes.add(group);
+    }
   }
 }
 

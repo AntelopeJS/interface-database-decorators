@@ -132,6 +132,9 @@ class Chef extends Table.with(
   io-ts-style codec with `.decode`; plain string field tokens are skipped. Update validates with
   `{ partial: true }` semantics.
 - `update(obj)` without an explicit id asserts that the object carries the primary key (`_id` by default).
+- Indexes are scoped to the schema instance. Add `@Index({ crossInstance: true })` only for indexes also queried
+  across all instances (`CROSS_INSTANCE`); it never changes results, only speed. On a group, one member setting it
+  applies it to the whole group.
 - `@Fixture` data is only inserted by `RegisterSchema` when the table is empty (count === 0).
 - `GetModel` caches by model class + instanceId; the same pair always returns the same instance.
 - Serialization of modified instances to plain JSON goes through `toPlainData` (auto-attached as `toJSON`).

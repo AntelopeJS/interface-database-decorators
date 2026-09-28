@@ -93,19 +93,39 @@ export class Table {
 }
 
 /**
+ * Options of the {@link Index} decorator.
+ */
+export interface IndexOptions {
+  /**
+   * Index name for multi-field indexes.
+   */
+  group?: string;
+  /**
+   * Also keep this index fast for queries that run across all instances.
+   *
+   * Every index is always scoped to the instance; set this when the index is
+   * also queried across instances. It never changes query results.
+   * For a group, setting it on any field applies it to the whole group.
+   */
+  crossInstance?: boolean;
+}
+
+/**
  * Database Table Index decorator.
  *
  * Available options:
  * - `group`: Index name for multi-field indexes.
+ * - `crossInstance`: Also keep the index fast for cross-instance queries.
  *
  * @param options Options
  */
 export const Index = MakePropertyDecorator(
-  (target, propertyKey, options?: { group?: string }) => {
+  (target, propertyKey, options?: IndexOptions) => {
     const metadata = getMetadata(target.constructor, DatumStaticMetadata);
     metadata.addIndex(
       <string>propertyKey,
       options?.group || <string>propertyKey,
+      options?.crossInstance,
     );
   },
 );
