@@ -3,6 +3,10 @@ import { Schema } from "@antelopejs/interface-database";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
 import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
+  BasicDataModel,
+  GetModel,
+} from "@antelopejs/interface-database-decorators/model";
+import {
   Field,
   Fixture,
   Index,
@@ -27,6 +31,8 @@ describe("Database - initialization", () => {
   it("creates tables with fixture data", async () =>
     CreateTablesWithFixtureDataTest());
   it("handles multiple tables", async () => HandleMultipleTablesTest());
+  it("binds a table class registered after RegisterSchema ran to that schema (module hot reload)", async () =>
+    BindsLateRegisteredTableTest());
   it("populates TableDefinition.fields from @Field declarations", () =>
     PopulatesTableDefinitionFieldsTest());
 });
@@ -229,4 +235,22 @@ async function HandleMultipleTablesTest() {
 
   const schema = Schema.get("test-multi-table-schema");
   expect(schema).to.not.equal(undefined);
+}
+
+async function BindsLateRegisteredTableTest() {
+  @RegisterTable("late_items", "test-late-schema")
+  class _Declared extends Table {
+    declare name: string;
+  }
+
+  await RegisterSchema("test-late-schema");
+
+  @RegisterTable("late_items", "test-late-schema")
+  class Reloaded extends Table {
+    declare name: string;
+  }
+
+  const model = GetModel(BasicDataModel(Reloaded), "late-instance");
+  expect(model.database.build()[0].options.id).to.equal("test-late-schema");
+  expect(Reloaded.table().build()[0].options.id).to.equal("test-late-schema");
 }
