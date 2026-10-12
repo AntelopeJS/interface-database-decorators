@@ -26,6 +26,7 @@ import {
 
 export type DataModel<T = any> = {
   readonly schemaName: string;
+  readonly tableClass?: Constructible;
   new (database: DatabaseDev.SchemaInstance<any>): {
     readonly database: DatabaseDev.SchemaInstance<any>;
     readonly table: DatabaseDev.Table<T>;
@@ -82,6 +83,10 @@ export function BasicDataModel<T extends object>(
   const primaryKey = metadata.primary;
   return class Model {
     public static readonly schemaName = schemaName as string;
+    /**
+     * Table class this model was built from.
+     */
+    public static readonly tableClass: Constructible<T> = dataType;
     /**
      * Converts some plain data into an instance of the Table class.
      *
@@ -312,6 +317,20 @@ function parseUpdateArgs<T>(
   };
 }
 
+function schemaOf(cl: DataModel): Schema<any> {
+  if (!cl.tableClass) {
+    const schema = Schema.get(cl.schemaName);
+    assert(schema, `Schema not found for '${cl.schemaName}'`);
+    return schema;
+  }
+  const schema = getMetadata(cl.tableClass, DatumStaticMetadata).schema;
+  assert(
+    schema,
+    `${cl.tableClass.name} is not bound to a schema: call RegisterSchema("${cl.schemaName}") in the module that declares it`,
+  );
+  return schema;
+}
+
 export function GetModel<M extends InstanceType<DataModel>>(
   cl: DataModel & Class<M>,
   instanceId?: InstanceId,
@@ -324,9 +343,7 @@ export function GetModel<M extends InstanceType<DataModel>>(
   const key = cacheKeyOf(instanceId);
   const cached = cache.get(key);
   if (cached) return cached as M;
-  const schema = Schema.get(cl.schemaName);
-  assert(schema, `Schema not found for '${cl.schemaName}'`);
-  const model = new cl(schema.instance(instanceId));
+  const model = new cl(schemaOf(cl).instance(instanceId));
   cache.set(key, model);
   return model;
 }

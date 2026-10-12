@@ -17,7 +17,8 @@ type TableEntry = Record<string, unknown>;
  *
  * Reads the table classes registered for `schemaId` via `@RegisterTable`,
  * builds a `SchemaDefinition`, constructs the `Schema` (which the adapter
- * provisions), then inserts fixtures for any table that declares one.
+ * provisions), binds each table class to it (see `Table.table`), then
+ * inserts fixtures for any table that declares one.
  *
  * @param schemaId Schema id matching the `@RegisterTable(_, schemaId)` calls
  */
@@ -27,8 +28,15 @@ export async function RegisterSchema(schemaId: string): Promise<void> {
 
   const definition = buildSchemaDefinition(tables);
   const schema = new Schema(schemaId, definition);
+  bindTables(schema, tables);
 
   await insertAllFixtureData(schema, tables);
+}
+
+function bindTables(schema: Schema<any>, tables: TableDefinitions): void {
+  for (const tableClass of Object.values(tables)) {
+    getMetadata(tableClass, DatumStaticMetadata).schema = schema;
+  }
 }
 
 function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
