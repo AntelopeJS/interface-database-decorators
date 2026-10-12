@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.8
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.7...v0.1.8)
+
+### 🚀 Enhancements
+
+- **table:** Open a table class's query object and share metadata keys across interface instances ([#24](https://github.com/AntelopeJS/interface-database-decorators/pull/24))
+
+### ❤️ Contributors
+
+- Thomas ([@Thomasims](http://github.com/Thomasims))
+
 ## v0.1.7
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.6...v0.1.7)
