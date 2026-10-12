@@ -30,7 +30,9 @@ export interface MetadataClass<TMetadata> extends Constructible<TMetadata> {
  * Table class Metadata.
  */
 export class DatumStaticMetadata {
-  public static key = Symbol();
+  public static key = Symbol.for(
+    "@antelopejs/interface-database-decorators/DatumStaticMetadata@1",
+  );
 
   public tableName?: string;
   public schemaName?: string;

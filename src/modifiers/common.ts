@@ -121,7 +121,9 @@ type ModifierEvent = <T>(
 ) => void;
 
 export class ModifiersStaticMetadata {
-  public static key = Symbol();
+  public static key = Symbol.for(
+    "@antelopejs/interface-database-decorators/ModifiersStaticMetadata@1",
+  );
 
   public fields: Record<string, Array<ModifiedField>> = {};
 
@@ -147,7 +149,9 @@ function withRef<T extends Modifier, U>(
 }
 
 export class ModifiersDynamicMetadata {
-  public static key = Symbol();
+  public static key = Symbol.for(
+    "@antelopejs/interface-database-decorators/ModifiersDynamicMetadata@1",
+  );
 
   staticMeta: ModifiersStaticMetadata;
   floating: Record<string, any> = {}; // Plain data that has no known lock value
