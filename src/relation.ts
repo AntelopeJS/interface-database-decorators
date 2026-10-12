@@ -27,7 +27,9 @@ export interface RelationOptions {
  * Relation Metadata.
  */
 export class RelationStaticMetadata {
-  public static key = Symbol();
+  public static key = Symbol.for(
+    "@antelopejs/interface-database-decorators/RelationStaticMetadata@1",
+  );
 
   public readonly relations: Record<string, RelationOptions> = {};
 }

@@ -3,6 +3,7 @@ import {
   type ClassDecorator,
   MakeClassDecorator,
 } from "@antelopejs/interface-core/decorators";
+import { Schema } from "@antelopejs/interface-database";
 
 import type { Table } from "./table";
 import { DatumStaticMetadata, getMetadata } from "./common";
@@ -17,6 +18,7 @@ export const RegisterTable: (
     const metadata = getMetadata(target, DatumStaticMetadata);
     metadata.tableName = tableName;
     metadata.schemaName = schemaName;
+    metadata.schema = Schema.get(schemaName);
 
     if (!(schemaName in schemaTableRegistry)) {
       schemaTableRegistry[schemaName] = {};

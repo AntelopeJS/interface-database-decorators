@@ -1,3 +1,4 @@
+import type { Schema } from "@antelopejs/interface-database";
 import type { FieldType } from "@antelopejs/interface-database/schema";
 
 export type Constructible<T = object, A extends unknown[] = unknown[]> = new (
@@ -30,7 +31,9 @@ export interface MetadataClass<TMetadata> extends Constructible<TMetadata> {
  * Table class Metadata.
  */
 export class DatumStaticMetadata {
-  public static key = Symbol();
+  public static key = Symbol.for(
+    "@antelopejs/interface-database-decorators/DatumStaticMetadata@1",
+  );
 
   public tableName?: string;
   public schemaName?: string;
@@ -39,6 +42,10 @@ export class DatumStaticMetadata {
   public readonly fields: Record<string, FieldType> = {};
   public primary: string = "_id";
   public generator?: DatumGenerator;
+  /**
+   * Schema the table was registered into by `RegisterSchema`.
+   */
+  public schema?: Schema<any>;
 
   addIndex(key: string, group: string, isCrossInstance: boolean = false) {
     if (!(group in this.indexes)) {
