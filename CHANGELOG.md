@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.9
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.8...v0.1.9)
+
+### 📖 Documentation
+
+- Rewrite the README ([#26](https://github.com/AntelopeJS/interface-database-decorators/pull/26))
+- **agents:** Simplify repository guidance ([#27](https://github.com/AntelopeJS/interface-database-decorators/pull/27))
+- Correct modifier examples and model contracts ([#28](https://github.com/AntelopeJS/interface-database-decorators/pull/28))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.1.8
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.7...v0.1.8)
