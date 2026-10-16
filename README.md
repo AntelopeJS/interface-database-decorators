@@ -80,20 +80,23 @@ export async function start() {
 
 ## Documentation
 
-- [Introduction](https://interfaces.antelopejs.com/docs/database-decorators/introduction)
-- [Table definitions](https://interfaces.antelopejs.com/docs/database-decorators/table-definitions)
-- [Table modifiers](https://interfaces.antelopejs.com/docs/database-decorators/table-modifiers)
-- [Data models](https://interfaces.antelopejs.com/docs/database-decorators/data-models)
-- [Parameter decoration](https://interfaces.antelopejs.com/docs/database-decorators/parameter-decoration)
+- [Introduction](./docs/1.introduction.md)
+- [Table definitions](./docs/2.table-definitions.md)
+- [Table modifiers](./docs/3.table-modifiers.md)
+- [Data models](./docs/4.data-models.md)
+- [Parameter decoration](./docs/5.parameter-decoration.md)
 
 ## Compatibility
 
-| Package                                 | Range             |
-| --------------------------------------- | ----------------- |
-| `@antelopejs/interface-api` (peer)      | `>=0.0.13 <1.0.0` |
-| `@antelopejs/interface-core` (peer)     | `>=0.1.1 <1.0.0`  |
-| `@antelopejs/interface-database` (peer) | `>=0.1.8 <1.0.0`  |
-| `@antelopejs/core`                      | `1.x`             |
+Requires AntelopeJS core `1.x` and the following peer dependencies:
+
+<!-- docs-compat: ./package.json#peerDependencies -->
+
+| Package                          | Range             |
+| -------------------------------- | ----------------- |
+| `@antelopejs/interface-api`      | `>=0.0.13 <1.0.0` |
+| `@antelopejs/interface-core`     | `>=0.1.1 <1.0.0`  |
+| `@antelopejs/interface-database` | `>=0.1.8 <1.0.0`  |
 
 ## Contributing
 
