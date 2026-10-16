@@ -94,9 +94,9 @@ Requires AntelopeJS core `1.x` and the following peer dependencies:
 
 | Package                          | Range             |
 | -------------------------------- | ----------------- |
-| `@antelopejs/interface-api`      | `>=0.0.13 <1.0.0` |
-| `@antelopejs/interface-core`     | `>=0.1.1 <1.0.0`  |
-| `@antelopejs/interface-database` | `>=0.1.8 <1.0.0`  |
+| `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` |
+| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  |
+| `@antelopejs/interface-database` | `>=0.1.10 <1.0.0` |
 
 ## Contributing
 
