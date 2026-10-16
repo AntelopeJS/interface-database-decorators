@@ -1,14 +1,19 @@
 {
   "name": "@antelopejs/interface-database-decorators",
   "version": "0.1.8",
-  "description": "AntelopeJS interface for database schema decorators and model definitions",
+  "description": "AntelopeJS decorators for database tables and typed data models, with encrypted, hashed and localized fields",
   "keywords": [
     "antelopejs",
     "database",
     "decorators",
     "interface",
+    "model",
     "orm"
   ],
+  "homepage": "https://interfaces.antelopejs.com/docs/database-decorators",
+  "bugs": {
+    "url": "https://github.com/AntelopeJS/interface-database-decorators/issues"
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
