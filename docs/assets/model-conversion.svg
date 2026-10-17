@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 460" role="img" aria-labelledby="title desc">
+  <title id="title">Model conversion and database execution</title>
+  <desc id="desc">Writing through a model converts plain input, triggers insert or update modifier events, converts to storage, and executes an AQL write. Reading through a model converts a fetched record with fromDatabase. Static conversion functions do not persist data, and model.table returns raw AQL results.</desc>
+  <rect width="480" height="460" rx="16" fill="#f5f7fb"/>
+  <g font-family="system-ui, sans-serif" fill="#172b45">
+    <text x="24" y="36" font-size="20" font-weight="700">Conversion is not persistence</text>
+    <rect x="24" y="58" width="432" height="160" rx="10" fill="#e1ecfa"/>
+    <text x="42" y="87" font-size="18" font-weight="700">Model write · insert / update</text>
+    <text x="42" y="118" font-size="16">Input → fromPlainData</text>
+    <text x="42" y="145" font-size="16">→ insert / update modifier events</text>
+    <text x="42" y="172" font-size="16">→ toDatabase → storage representation</text>
+    <text x="42" y="199" font-size="16">→ AQL write → IDs / modified count</text>
+    <rect x="24" y="238" width="432" height="100" rx="10" fill="#d9eee8"/>
+    <text x="42" y="267" font-size="18" font-weight="700">Model read · get / getBy / getAll</text>
+    <text x="42" y="296" font-size="16">AQL read → fetched record</text>
+    <text x="42" y="323" font-size="16">→ fromDatabase → table instance</text>
+    <text x="24" y="375" font-size="16" font-weight="700">Taking the direct AQL path?</text>
+    <text x="24" y="403" font-size="16">model.table builds queries without model conversion.</text>
+    <text x="24" y="431" font-size="16">Apply fromDatabase to raw rows when needed.</text>
+  </g>
+</svg>
