@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.1.10
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.9...v0.1.10)
+
+### 🚀 Enhancements
+
+- **index:** Unique option on @Index ([#32](https://github.com/AntelopeJS/interface-database-decorators/pull/32))
+- **localization:** Read the fallback locale of a localized field ([#34](https://github.com/AntelopeJS/interface-database-decorators/pull/34))
+
+### 🩹 Fixes
+
+- **localization:** An empty value takes the fallback locale ([#33](https://github.com/AntelopeJS/interface-database-decorators/pull/33))
+
+### 📖 Documentation
+
+- Improve task-based onboarding and contract guidance ([#29](https://github.com/AntelopeJS/interface-database-decorators/pull/29))
+- Clarify learning paths and illustrate real outcomes ([#31](https://github.com/AntelopeJS/interface-database-decorators/pull/31))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.1.9
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.8...v0.1.9)
