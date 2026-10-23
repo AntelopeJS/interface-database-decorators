@@ -13,6 +13,8 @@ describe("Modifiers - localization", () => {
   it("retrieves specific locale value", async () =>
     RetrieveSpecificLocaleValueTest());
   it("falls back to default locale", async () => FallbackToDefaultLocaleTest());
+  it("reads the fallback locale of a field", async () =>
+    ReadFallbackLocaleOfFieldTest());
   it("handles missing locale gracefully", async () =>
     HandleMissingLocaleGracefullyTest());
   it("provides localize method through mixin", async () =>
@@ -96,6 +98,31 @@ async function FallbackToDefaultLocaleTest() {
   const missingValue = modifier.unlock(data, "es");
 
   expect(missingValue).to.equal("Hello World");
+}
+
+async function ReadFallbackLocaleOfFieldTest() {
+  class TestTable extends Table.with(LocalizationModifier) {
+    @Localized({ fallbackLocale: "fr" })
+    @Field("string")
+    declare title: string;
+
+    @Localized()
+    @Field("string")
+    declare summary: string;
+
+    @Field("string")
+    declare code: string;
+  }
+
+  expect(LocalizationModifier.fallbackLocaleOf(TestTable, "title")).to.equal(
+    "fr",
+  );
+  expect(LocalizationModifier.fallbackLocaleOf(TestTable, "summary")).to.equal(
+    undefined,
+  );
+  expect(LocalizationModifier.fallbackLocaleOf(TestTable, "code")).to.equal(
+    undefined,
+  );
 }
 
 async function HandleMissingLocaleGracefullyTest() {
