@@ -1,10 +1,12 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 
+import { type Constructible, getMetadata } from "../common";
 import {
   attachModifier,
   ContainerModifier,
   MixinSymbol,
+  ModifiersStaticMetadata,
   unlock,
 } from "./common";
 
@@ -40,6 +42,25 @@ export class LocalizationModifier extends ContainerModifier<
   Record<string, never>,
   Options
 > {
+  /**
+   * The fallback locale of a localized field of a table class.
+   *
+   * @param TableClass Table class declaring the field
+   * @param field Field name
+   * @returns The field's `fallbackLocale`, or `undefined` when the field is
+   * not localized or declares none
+   */
+  public static fallbackLocaleOf(
+    TableClass: Constructible,
+    field: string,
+  ): string | undefined {
+    const modified = getMetadata(TableClass, ModifiersStaticMetadata).fields[
+      field
+    ]?.find(({ id }) => id === LocalizationModifier.name);
+    return (modified?.modifier as LocalizationModifier | undefined)?.options
+      .fallbackLocale;
+  }
+
   /**
    * Stores an empty text as no text, so that the fallback locale answers for
    * it in queries too (`unlockrequest`).
