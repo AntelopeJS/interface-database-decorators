@@ -127,6 +127,7 @@ class Chef extends Table.with(
 - Hashed fields cannot be read back or queried directly — only equality-tested with `testHash`.
 - Localized fields must be written through a localized instance (`instance.localize(locale).field = ...`);
   values assigned before `localize()` are held in floating state and silently dropped on insert/update.
+- A localized value `""` is stored as no value: reads and queries in that locale get the `fallbackLocale` value.
 - `@Relation({ to: () => Target })` is declarative metadata only: no foreign-key enforcement, consumed by introspection tooling via `RelationStaticMetadata`.
 - `Model.validate` (and `{ validate: true }` on insert/update) only checks fields whose `@Field` type is an
   io-ts-style codec with `.decode`; plain string field tokens are skipped. Update validates with

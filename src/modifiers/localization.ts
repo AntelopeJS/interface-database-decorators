@@ -9,9 +9,23 @@ import {
 } from "./common";
 
 type Options = {
-  /** Fallback locale to use when no value exists for the selected locale. */
+  /**
+   * Fallback locale to use when the selected locale has no value, or an
+   * empty one.
+   */
   fallbackLocale?: string;
 };
+
+/** A text left empty in one language counts as no text in that language. */
+const EMPTY_TEXT = "";
+
+function withoutEmptyTexts(
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== EMPTY_TEXT),
+  );
+}
 
 /**
  * Localization modifier. enables the use of {@link Localized} on table fields.
@@ -26,9 +40,26 @@ export class LocalizationModifier extends ContainerModifier<
   Record<string, never>,
   Options
 > {
+  /**
+   * Stores an empty text as no text, so that the fallback locale answers for
+   * it in queries too (`unlockrequest`).
+   */
+  public override lock(
+    locked_value: Record<string, unknown> | undefined,
+    value: unknown,
+    key: string,
+  ) {
+    if (key === "*") {
+      return value && typeof value === "object"
+        ? withoutEmptyTexts(value as Record<string, unknown>)
+        : (value as Record<string, unknown>);
+    }
+    return withoutEmptyTexts(super.lock(locked_value, value, key));
+  }
+
   public override unlock(locked_value: Record<string, unknown>, key: string) {
     const unlocked = super.unlock(locked_value, key);
-    if (unlocked !== undefined) {
+    if (unlocked !== undefined && unlocked !== EMPTY_TEXT) {
       return unlocked;
     }
     if (this.options.fallbackLocale) {
