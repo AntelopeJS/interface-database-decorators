@@ -161,6 +161,13 @@ export interface IndexOptions {
    * For a group, setting it on any field applies it to the whole group.
    */
   crossInstance?: boolean;
+  /**
+   * Refuse a second row of the instance with the same key: the write throws
+   * `DuplicateKeyError` from `@antelopejs/interface-database`.
+   *
+   * For a group, setting it on any field makes the whole group's key unique.
+   */
+  unique?: boolean;
 }
 
 /**
@@ -169,6 +176,7 @@ export interface IndexOptions {
  * Available options:
  * - `group`: Index name for multi-field indexes.
  * - `crossInstance`: Also keep the index fast for cross-instance queries.
+ * - `unique`: Refuse two rows of the instance with the same key.
  *
  * @param options Options
  */
@@ -179,6 +187,7 @@ export const Index = MakePropertyDecorator(
       <string>propertyKey,
       options?.group || <string>propertyKey,
       options?.crossInstance,
+      options?.unique,
     );
   },
 );

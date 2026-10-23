@@ -59,6 +59,7 @@ function buildIndexDefinitions(
     indexes[group] = {
       fields: fields.length === 1 && fields[0] === group ? undefined : fields,
       ...(metadata.crossInstanceIndexes.has(group) && { crossInstance: true }),
+      ...(metadata.uniqueIndexes.has(group) && { unique: true }),
     };
   }
   return indexes;

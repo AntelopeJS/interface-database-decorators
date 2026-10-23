@@ -26,6 +26,8 @@ describe("Database - initialization", () => {
     MarksSingleFieldIndexCrossInstanceTest());
   it("marks a group index as cross-instance when one member sets it", async () =>
     MarksGroupIndexCrossInstanceTest());
+  it("marks a group index as unique when one member sets it", async () =>
+    MarksGroupIndexUniqueTest());
   it("leaves index definitions unchanged without crossInstance", async () =>
     LeavesIndexDefinitionsUnchangedTest());
   it("creates tables with fixture data", async () =>
@@ -137,6 +139,35 @@ async function MarksGroupIndexCrossInstanceTest() {
   expect(indexes).to.deep.equal({
     user_search: { fields: ["name", "email"], crossInstance: true },
     age_range: { fields: ["age"] },
+  });
+}
+
+async function MarksGroupIndexUniqueTest() {
+  @RegisterTable("unique_group", "test-unique-group-schema")
+  class _TestTable extends Table {
+    @Index({ unique: true })
+    declare slug: string;
+
+    @Index({ group: "full_name" })
+    declare lastName: string;
+
+    @Index({ group: "full_name", unique: true })
+    declare firstName: string;
+
+    @Index()
+    declare age: number;
+  }
+
+  await RegisterSchema("test-unique-group-schema");
+
+  const indexes = getIndexDefinitions(
+    "test-unique-group-schema",
+    "unique_group",
+  );
+  expect(indexes).to.deep.equal({
+    slug: { fields: undefined, unique: true },
+    full_name: { fields: ["lastName", "firstName"], unique: true },
+    age: { fields: undefined },
   });
 }
 

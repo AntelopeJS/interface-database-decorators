@@ -39,6 +39,7 @@ export class DatumStaticMetadata {
   public schemaName?: string;
   public readonly indexes: Record<string, Array<string>> = {};
   public readonly crossInstanceIndexes = new Set<string>();
+  public readonly uniqueIndexes = new Set<string>();
   public readonly fields: Record<string, FieldType> = {};
   public primary: string = "_id";
   public generator?: DatumGenerator;
@@ -47,13 +48,21 @@ export class DatumStaticMetadata {
    */
   public schema?: Schema<any>;
 
-  addIndex(key: string, group: string, isCrossInstance: boolean = false) {
+  addIndex(
+    key: string,
+    group: string,
+    isCrossInstance: boolean = false,
+    isUnique: boolean = false,
+  ) {
     if (!(group in this.indexes)) {
       this.indexes[group] = [];
     }
     this.indexes[group].push(key);
     if (isCrossInstance) {
       this.crossInstanceIndexes.add(group);
+    }
+    if (isUnique) {
+      this.uniqueIndexes.add(group);
     }
   }
 }
