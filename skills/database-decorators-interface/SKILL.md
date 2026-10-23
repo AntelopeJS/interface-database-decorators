@@ -136,6 +136,9 @@ class Chef extends Table.with(
 - Indexes are scoped to the schema instance. Add `@Index({ crossInstance: true })` only for indexes also queried
   across all instances (`CROSS_INSTANCE`); it never changes results, only speed. On a group, one member setting it
   applies it to the whole group.
+- `@Index({ unique: true })` refuses two rows of an instance with the same key: the write throws `DuplicateKeyError`
+  (test with `IsDuplicateKeyError` from `@antelopejs/interface-database`). On a group, one member setting it applies it
+  to the whole group.
 - `@Fixture` data is only inserted by `RegisterSchema` when the table is empty (count === 0).
 - `GetModel` caches by model class + instanceId; the same pair always returns the same instance.
 - `RegisterSchema` binds each registered table class to the `Schema` it builds; call it in the module that declares the tables. `User.table()`, `User.table(instanceId)` and `User.table(db)` then return the class's AQL table, and `GetModel` builds `BasicDataModel` models on that same schema, even when another module (bound to another database) calls them. An unbound class throws rather than looking a schema up by id.
