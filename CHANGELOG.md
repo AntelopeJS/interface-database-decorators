@@ -4,6 +4,12 @@
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.9...v0.1.10)
 
+### Upgrade notes
+
+- `@Index({ unique: true })` emits `unique: true` in the index definition; for a group, one member setting it applies it to the whole group ([#32](https://github.com/AntelopeJS/interface-database-decorators/pull/32)). The peer `@antelopejs/interface-database` is now `>=0.1.11 <1.0.0`; the driver must enforce `unique` (`@antelopejs/mongodb` ≥ 1.5.0, `@antelopejs/postgres` ≥ 0.2.2; `@antelopejs/rethinkdb` refuses unique secondary indexes).
+- **Behavior change:** with `@Localized({ fallbackLocale })`, an empty value counts as no value ([#33](https://github.com/AntelopeJS/interface-database-decorators/pull/33)). Writing `""` in one locale removes that locale, `localize("*")` drops empty entries, and filters and localized sorts fall back to the fallback locale. Rows saved before this release that still hold `""` read correctly in memory, but queries see `""` until the row is saved again (no migration).
+- `LocalizationModifier.fallbackLocaleOf(TableClass, field)` returns the `fallbackLocale` a field declares, or `undefined` ([#34](https://github.com/AntelopeJS/interface-database-decorators/pull/34)).
+
 ### 🚀 Enhancements
 
 - **index:** Unique option on @Index ([#32](https://github.com/AntelopeJS/interface-database-decorators/pull/32))
