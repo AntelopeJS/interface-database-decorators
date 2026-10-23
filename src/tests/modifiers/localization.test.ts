@@ -15,6 +15,9 @@ describe("Modifiers - localization", () => {
   it("falls back to default locale", async () => FallbackToDefaultLocaleTest());
   it("reads the fallback locale of a field", async () =>
     ReadFallbackLocaleOfFieldTest());
+  it("falls back for an empty value", async () => FallbackForEmptyValueTest());
+  it("stores an empty value as no value", async () =>
+    StoreEmptyValueAsAbsentTest());
   it("handles missing locale gracefully", async () =>
     HandleMissingLocaleGracefullyTest());
   it("provides localize method through mixin", async () =>
@@ -123,6 +126,24 @@ async function ReadFallbackLocaleOfFieldTest() {
   expect(LocalizationModifier.fallbackLocaleOf(TestTable, "code")).to.equal(
     undefined,
   );
+}
+
+async function FallbackForEmptyValueTest() {
+  const modifier = new TestableLocalizationModifier();
+  modifier.setOptions({ fallbackLocale: "en" });
+
+  expect(modifier.unlock({ en: "Hello", fr: "" }, "fr")).to.equal("Hello");
+}
+
+async function StoreEmptyValueAsAbsentTest() {
+  const modifier = new TestableLocalizationModifier();
+  modifier.setOptions({ fallbackLocale: "en" });
+
+  const cleared = modifier.lock({ en: "Hello", fr: "Bonjour" }, "", "fr");
+  const everyLanguage = modifier.lock(undefined, { en: "Hello", fr: "" }, "*");
+
+  expect(cleared).to.deep.equal({ en: "Hello" });
+  expect(everyLanguage).to.deep.equal({ en: "Hello" });
 }
 
 async function HandleMissingLocaleGracefullyTest() {
