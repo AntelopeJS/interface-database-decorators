@@ -25,6 +25,7 @@ import {
   LocalizationModifier,
   Localized,
 } from "@antelopejs/interface-database-decorators/modifiers/localization";
+import { unlockrequest } from "@antelopejs/interface-database-decorators/modifiers/common";
 
 import { asFieldType, numberCodec } from "./codec_helpers";
 
@@ -306,6 +307,25 @@ async function HandleLocalizedContentTest() {
     expect(germanContent.title).to.equal("English Title");
     expect(germanContent.description).to.equal("English Description");
   }
+
+  const untranslated = new LocalizedContent();
+  untranslated._id = "content-untranslated";
+  untranslated.category = "News";
+  untranslated.localize("en").title = "Only English";
+  untranslated.localize("fr").title = "";
+  await contentModel.insert(untranslated);
+
+  const stored = await contentModel.get("content-untranslated");
+  expect(stored?.localize("fr").title).to.equal("Only English");
+  const frenchTitles = await LocalizedContent.table(schemaInstance)
+    .filter((row) => row.key("_id").eq("content-untranslated"))
+    .map((row) =>
+      unlockrequest(LocalizedContent, row, "title", [
+        { modifier: LocalizationModifier, args: ["fr"] },
+      ]),
+    )
+    .run();
+  expect(frenchTitles).to.deep.equal(["Only English"]);
 }
 
 async function ManageEncryptedSensitiveDataTest() {

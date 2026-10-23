@@ -13,6 +13,9 @@ describe("Modifiers - localization", () => {
   it("retrieves specific locale value", async () =>
     RetrieveSpecificLocaleValueTest());
   it("falls back to default locale", async () => FallbackToDefaultLocaleTest());
+  it("falls back for an empty value", async () => FallbackForEmptyValueTest());
+  it("stores an empty value as no value", async () =>
+    StoreEmptyValueAsAbsentTest());
   it("handles missing locale gracefully", async () =>
     HandleMissingLocaleGracefullyTest());
   it("provides localize method through mixin", async () =>
@@ -96,6 +99,24 @@ async function FallbackToDefaultLocaleTest() {
   const missingValue = modifier.unlock(data, "es");
 
   expect(missingValue).to.equal("Hello World");
+}
+
+async function FallbackForEmptyValueTest() {
+  const modifier = new TestableLocalizationModifier();
+  modifier.setOptions({ fallbackLocale: "en" });
+
+  expect(modifier.unlock({ en: "Hello", fr: "" }, "fr")).to.equal("Hello");
+}
+
+async function StoreEmptyValueAsAbsentTest() {
+  const modifier = new TestableLocalizationModifier();
+  modifier.setOptions({ fallbackLocale: "en" });
+
+  const cleared = modifier.lock({ en: "Hello", fr: "Bonjour" }, "", "fr");
+  const everyLanguage = modifier.lock(undefined, { en: "Hello", fr: "" }, "*");
+
+  expect(cleared).to.deep.equal({ en: "Hello" });
+  expect(everyLanguage).to.deep.equal({ en: "Hello" });
 }
 
 async function HandleMissingLocaleGracefullyTest() {
