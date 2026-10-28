@@ -1,0 +1,71 @@
+/** @internal @packageDocumentation */
+import type { DatumStaticMetadata } from "../../common";
+import type {
+  Modifier,
+  ModifiersDynamicMetadata,
+  ModifiersStaticMetadata,
+} from "../common";
+
+type ModifiedFieldList = ModifiersStaticMetadata["fields"][string];
+type ModifiedField = ModifiedFieldList[number];
+type InternalRecord = Parameters<ModifiersDynamicMetadata["get"]>[1];
+
+export function fieldsByKey(meta: ModifiersStaticMetadata): {
+  [field: PropertyKey]: ModifiedFieldList;
+} {
+  return meta.fields;
+}
+
+export function eventsByKey(
+  meta: ModifiersStaticMetadata,
+): Map<
+  string,
+  Array<[field: PropertyKey, modified: ModifiedFieldList[number]]>
+> {
+  return meta.events;
+}
+
+export function unlockArgsOf(
+  meta: ModifiersDynamicMetadata,
+  field: PropertyKey,
+): ModifiersDynamicMetadata["fields"][string] {
+  const byKey: {
+    [field: PropertyKey]: ModifiersDynamicMetadata["fields"][string];
+  } = meta.fields;
+  return byKey[field];
+}
+
+export function fieldTypesByKey(meta: DatumStaticMetadata): {
+  [field: PropertyKey]: DatumStaticMetadata["fields"][string];
+} {
+  return meta.fields;
+}
+
+export function floatingOf<V>(
+  meta: { floating: Record<string, V> },
+  field: PropertyKey,
+): V {
+  const byKey: { [field: PropertyKey]: V } = meta.floating;
+  return byKey[field];
+}
+
+export function dataByKey<V>(internal: { data: Record<string, V> }): {
+  [field: PropertyKey]: V;
+} {
+  return internal.data;
+}
+
+export function withRef<T extends Modifier, U>(
+  internal: InternalRecord,
+  id: ModifiedField["id"],
+  modifier: T,
+  metaRef: ModifiedField["metaRef"],
+  callback: (modifier: T) => U,
+): U {
+  metaRef._ref = internal.meta[id];
+  const ret = callback(modifier);
+  if (metaRef._ref !== internal.meta[id]) {
+    internal.meta[id] = metaRef._ref;
+  }
+  return ret;
+}

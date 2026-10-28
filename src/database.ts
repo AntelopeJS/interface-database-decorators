@@ -10,7 +10,7 @@ import { DatumStaticMetadata, getMetadata } from "./common";
 import { fromPlainData, toDatabase, triggerEvent } from "./modifiers/common";
 
 type TableDefinitions = Record<string, Class<Table>>;
-type TableEntry = Record<string, unknown>;
+type TableEntry = ReturnType<typeof toDatabase>;
 
 /**
  * Registers a schema with the database adapter and runs any fixtures.
@@ -51,9 +51,7 @@ function buildSchemaDefinition(tables: TableDefinitions): SchemaDefinition {
   return definition;
 }
 
-function buildIndexDefinitions(
-  metadata: DatumStaticMetadata,
-): Record<string, IndexDefinition> {
+function buildIndexDefinitions(metadata: DatumStaticMetadata) {
   const indexes: Record<string, IndexDefinition> = {};
   for (const [group, fields] of Object.entries(metadata.indexes)) {
     indexes[group] = {
@@ -116,7 +114,7 @@ function toFixtureRows(
   return entries.filter(isTableEntry).map((entry) => {
     const instance = fromPlainData(entry, tableClass);
     triggerEvent(instance, "insert");
-    return toDatabase(instance) as TableEntry;
+    return toDatabase(instance);
   });
 }
 

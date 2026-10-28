@@ -7,14 +7,16 @@ export type DecodeLeft = {
 export type DecodeRight<T> = { _tag: "Right"; right: T };
 export type DecodeResult<T> = DecodeLeft | DecodeRight<T>;
 
+type FieldCodec = Extract<FieldType, { decode: unknown }>;
+
 export type TestCodec<T> = {
   readonly _A: T;
   readonly _O: T;
   readonly _I: unknown;
   readonly name: string;
   is(u: unknown): u is T;
-  encode(a: T): unknown;
-  decode(u: unknown): DecodeResult<T>;
+  encode(a: T): ReturnType<FieldCodec["encode"]>;
+  decode(u: Parameters<FieldCodec["decode"]>[0]): DecodeResult<T>;
 };
 
 export function makeCodec<T>(
@@ -24,7 +26,7 @@ export function makeCodec<T>(
   return {
     _A: undefined as unknown as T,
     _O: undefined as unknown as T,
-    _I: undefined as unknown,
+    _I: undefined,
     name,
     is: guard,
     encode: (a) => a,
@@ -48,5 +50,5 @@ export const numberCodec: TestCodec<number> = makeCodec(
 );
 
 export function asFieldType(codec: TestCodec<unknown>): FieldType {
-  return codec as unknown as FieldType;
+  return codec;
 }

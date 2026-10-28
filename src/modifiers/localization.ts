@@ -21,9 +21,7 @@ type Options = {
 /** A text left empty in one language counts as no text in that language. */
 const EMPTY_TEXT = "";
 
-function withoutEmptyTexts(
-  values: Record<string, unknown>,
-): Record<string, unknown> {
+function withoutEmptyTexts<V>(values: Record<string, V>): Record<string, V> {
   return Object.fromEntries(
     Object.entries(values).filter(([, value]) => value !== EMPTY_TEXT),
   );

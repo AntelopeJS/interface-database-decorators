@@ -33,11 +33,11 @@ class Orphan extends Decorators.Table {}
 Decorators.RegisterTable("orphans", "cross-instance-never-registered")(Orphan);
 
 class Prefix extends Decorators.TwoWayModifier<string, [string]> {
-  lock(_: string | undefined, value: unknown, prefix: string): string {
+  lock(_: string | undefined, value: string, prefix: string): string {
     return `${prefix}_${String(value)}`;
   }
 
-  unlock(lockedValue: string, prefix: string): unknown {
+  unlock(lockedValue: string, prefix: string): string {
     return lockedValue.replace(`${prefix}_`, "");
   }
 }

@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { Schema } from "@antelopejs/interface-database";
 import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
-import type { FieldError } from "@antelopejs/interface-database-decorators/model";
 import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
 import {
   BasicDataModel,
@@ -36,558 +35,537 @@ function getDatabase(schemaId: string) {
 }
 
 describe("Integration - real database operations", () => {
-  it("creates and queries user with modifiers", async () =>
-    CreateAndQueryUserWithModifiersTest());
-  it("performs CRUD operations on products", async () =>
-    PerformCrudOperationsOnProductsTest());
-  it("handles localized content", async () => HandleLocalizedContentTest());
-  it("manages encrypted sensitive data", async () =>
-    ManageEncryptedSensitiveDataTest());
-  it("validates hashed passwords", async () => ValidateHashedPasswordsTest());
-  it("works with schema registration", async () =>
-    WorkWithSchemaRegistrationTest());
-  it("handles complex relationships", async () =>
-    HandleComplexRelationshipsTest());
-  it("performs bulk operations", async () => PerformBulkOperationsTest());
-  it("manages database initialization", async () =>
-    ManageDatabaseInitializationTest());
+  it("creates and queries user with modifiers", async () => {
+    @RegisterTable("users", "integration-modifiers-schema")
+    class User extends Table.with(HashModifier, EncryptionModifier) {
+      @Index()
+      declare email: string;
+
+      @Hashed({ algorithm: "sha256" })
+      declare password: string;
+
+      @Encrypted({ secretKey: "12345678901234567890123456789012" })
+      declare secretData: { token: string };
+
+      declare name: string;
+      declare age: number;
+    }
+
+    const UserModel = BasicDataModel(User, "users");
+
+    await RegisterSchema("integration-modifiers-schema");
+    const schemaInstance = getDatabase("integration-modifiers-schema");
+    const userModel = new UserModel(schemaInstance);
+
+    const userData = {
+      email: "test@example.com",
+      password: "securePassword123",
+      secretData: { token: "secret-token-123" },
+      name: "John Doe",
+      age: 30,
+    };
+
+    const insertResult = await userModel.insert(userData);
+    expect(insertResult).to.have.length(1);
+
+    const userId = insertResult[0];
+    const retrievedUserFromModel = await userModel.get(userId);
+    const retrievedUserFromDatabase = await schemaInstance
+      .table("users")
+      .get(userId)
+      .run();
+
+    expect(retrievedUserFromModel)
+      .to.have.property("email")
+      .that.equals("test@example.com");
+    expect(retrievedUserFromModel)
+      .to.have.property("name")
+      .that.equals("John Doe");
+    expect(retrievedUserFromModel).to.have.property("age").that.equals(30);
+    expect(retrievedUserFromModel?.password).to.not.equal("securePassword123");
+    expect(retrievedUserFromModel?.secretData).to.deep.equal({
+      token: "secret-token-123",
+    });
+    expect(retrievedUserFromDatabase?.secretData).to.not.deep.equal({
+      token: "secret-token-123",
+    });
+
+    if (retrievedUserFromModel?.testHash) {
+      const isPasswordValid = retrievedUserFromModel.testHash(
+        "password",
+        "securePassword123",
+      );
+      expect(isPasswordValid).to.equal(true);
+    }
+
+    const dbUser = await schemaInstance.table("users").get(userId).run();
+    expect(dbUser).to.have.property("email").that.equals("test@example.com");
+    expect(dbUser).to.have.property("name").that.equals("John Doe");
+  });
+  it("performs CRUD operations on products", async () => {
+    @RegisterTable("products", "integration-crud-schema")
+    class Product extends Table {
+      @Index()
+      declare name: string;
+
+      @Index()
+      declare category: string;
+
+      declare price: number;
+      declare stockQuantity: number;
+      declare isActive: boolean;
+    }
+
+    const ProductModel = BasicDataModel(Product, "products");
+
+    await RegisterSchema("integration-crud-schema");
+    const schemaInstance = getDatabase("integration-crud-schema");
+    const productModel = new ProductModel(schemaInstance);
+
+    const productData = {
+      name: "Test Product",
+      category: "Electronics",
+      price: 99.99,
+      stockQuantity: 50,
+      isActive: true,
+    };
+
+    const insertResult = await productModel.insert(productData);
+    const productId = insertResult[0];
+
+    const retrievedProduct = await productModel.get(productId);
+    expect(retrievedProduct)
+      .to.have.property("name")
+      .that.equals("Test Product");
+    expect(retrievedProduct).to.have.property("price").that.equals(99.99);
+
+    const updateData = { price: 89.99, stockQuantity: 45 };
+    await productModel.update(productId, updateData);
+
+    const updatedProduct = await productModel.get(productId);
+    expect(updatedProduct).to.have.property("price").that.equals(89.99);
+    expect(updatedProduct).to.have.property("stockQuantity").that.equals(45);
+
+    await productModel.delete(productId);
+
+    const deletedProduct = await productModel.get(productId);
+    expect(deletedProduct).to.equal(undefined);
+  });
+});
+
+describe("Integration - real database operations", () => {
+  it("handles localized content", async () => {
+    @RegisterTable("localized_content", "integration-l10n-schema")
+    class LocalizedContent extends Table.with(LocalizationModifier) {
+      declare category: string;
+
+      @Localized({ fallbackLocale: "en" })
+      declare title: string;
+
+      @Localized({ fallbackLocale: "en" })
+      declare description: string;
+    }
+
+    const ContentModel = BasicDataModel(LocalizedContent, "localized_content");
+
+    await RegisterSchema("integration-l10n-schema");
+    const schemaInstance = getDatabase("integration-l10n-schema");
+    const contentModel = new ContentModel(schemaInstance);
+
+    const content = new LocalizedContent();
+    content._id = "content-123";
+    content.category = "News";
+
+    content.localize("en").title = "English Title";
+    content.localize("fr").title = "French Title";
+    content.localize("en").description = "English Description";
+    content.localize("fr").description = "French Description";
+
+    const insertResult = await contentModel.insert(content);
+    const contentId = insertResult[0];
+
+    const retrievedContent = await contentModel.get(contentId);
+    expect(retrievedContent).to.have.property("title");
+    expect(retrievedContent).to.have.property("description");
+    expect(retrievedContent).to.have.property("category").that.equals("News");
+
+    if (retrievedContent?.localize) {
+      const frenchContent = retrievedContent.localize("fr");
+      expect(frenchContent.title).to.equal("French Title");
+      expect(frenchContent.description).to.equal("French Description");
+
+      const englishContent = retrievedContent.localize("en");
+      expect(englishContent.title).to.equal("English Title");
+      expect(englishContent.description).to.equal("English Description");
+
+      const germanContent = retrievedContent.localize("de");
+      expect(germanContent.title).to.equal("English Title");
+      expect(germanContent.description).to.equal("English Description");
+    }
+
+    const untranslated = new LocalizedContent();
+    untranslated._id = "content-untranslated";
+    untranslated.category = "News";
+    untranslated.localize("en").title = "Only English";
+    untranslated.localize("fr").title = "";
+    await contentModel.insert(untranslated);
+
+    const stored = await contentModel.get("content-untranslated");
+    expect(stored?.localize("fr").title).to.equal("Only English");
+    const frenchTitles = await LocalizedContent.table(schemaInstance)
+      .filter((row) => row.key("_id").eq("content-untranslated"))
+      .map((row) =>
+        unlockrequest(LocalizedContent, row, "title", [
+          { modifier: LocalizationModifier, args: ["fr"] },
+        ]),
+      )
+      .run();
+    expect(frenchTitles).to.deep.equal(["Only English"]);
+  });
+  it("manages encrypted sensitive data", async () => {
+    @RegisterTable("sensitive_data", "integration-encrypt-schema")
+    class SensitiveData extends Table.with(EncryptionModifier) {
+      @Encrypted({ secretKey: "12345678901234567890123456789012" })
+      declare creditCard: string;
+
+      @Encrypted({ secretKey: "12345678901234567890123456789012" })
+      declare ssn: string;
+
+      declare userId: string;
+    }
+
+    const SensitiveDataModel = BasicDataModel(SensitiveData, "sensitive_data");
+
+    await RegisterSchema("integration-encrypt-schema");
+    const schemaInstance = getDatabase("integration-encrypt-schema");
+    const sensitiveDataModel = new SensitiveDataModel(schemaInstance);
+
+    const sensitiveData = {
+      creditCard: "4111-1111-1111-1111",
+      ssn: "123-45-6789",
+      userId: "user123",
+    };
+
+    const insertResult = await sensitiveDataModel.insert(sensitiveData);
+    const dataId = insertResult[0];
+
+    const retrievedData = await sensitiveDataModel.get(dataId);
+    expect(retrievedData).to.have.property("userId").that.equals("user123");
+    expect(retrievedData?.creditCard).to.equal("4111-1111-1111-1111");
+    expect(retrievedData?.ssn).to.equal("123-45-6789");
+
+    const dbData = await schemaInstance
+      .table("sensitive_data")
+      .get(dataId)
+      .run();
+    expect(dbData).to.have.property("userId").that.equals("user123");
+    expect(dbData?.creditCard).to.not.equal("4111-1111-1111-1111");
+    expect(dbData?.ssn).to.not.equal("123-45-6789");
+  });
+});
+
+describe("Integration - real database operations", () => {
+  it("validates hashed passwords", async () => {
+    @RegisterTable("user_accounts", "integration-hash-schema")
+    class UserAccount extends Table.with(HashModifier) {
+      @Index()
+      declare username: string;
+
+      @Hashed({ algorithm: "sha256" })
+      declare password: string;
+
+      declare email: string;
+    }
+
+    const UserAccountModel = BasicDataModel(UserAccount, "user_accounts");
+
+    await RegisterSchema("integration-hash-schema");
+    const schemaInstance = getDatabase("integration-hash-schema");
+    const userAccountModel = new UserAccountModel(schemaInstance);
+
+    const accountData = {
+      username: "testuser",
+      password: "mySecurePassword123",
+      email: "test@example.com",
+    };
+
+    const insertResult = await userAccountModel.insert(accountData);
+    const accountId = insertResult[0];
+
+    const retrievedAccount = await userAccountModel.get(accountId);
+    expect(retrievedAccount)
+      .to.have.property("username")
+      .that.equals("testuser");
+    expect(retrievedAccount?.password).to.not.equal("mySecurePassword123");
+
+    if (retrievedAccount?.testHash) {
+      const isPasswordValid = retrievedAccount.testHash(
+        "password",
+        "mySecurePassword123",
+      );
+      const isPasswordInvalid = retrievedAccount.testHash(
+        "password",
+        "wrongPassword",
+      );
+
+      expect(isPasswordValid).to.equal(true);
+      expect(isPasswordInvalid).to.equal(false);
+    }
+  });
+  it("works with schema registration", async () => {
+    @RegisterTable("schema_users", "integration-schema-reg")
+    class SchemaUser extends Table {
+      @Index()
+      declare email: string;
+
+      declare name: string;
+    }
+
+    @RegisterTable("schema_products", "integration-schema-reg")
+    class SchemaProduct extends Table {
+      @Index()
+      declare name: string;
+
+      declare price: number;
+    }
+
+    await RegisterSchema("integration-schema-reg");
+
+    const schemaInstance = getDatabase("integration-schema-reg");
+    const UserModel = BasicDataModel(SchemaUser, "schema_users");
+    const ProductModel = BasicDataModel(SchemaProduct, "schema_products");
+
+    const userModel = new UserModel(schemaInstance);
+    const productModel = new ProductModel(schemaInstance);
+
+    const userData = { email: "user@example.com", name: "Test User" };
+    const productData = { name: "Test Product", price: 29.99 };
+
+    const userResult = await userModel.insert(userData);
+    const productResult = await productModel.insert(productData);
+
+    expect(userResult).to.have.length(1);
+    expect(productResult).to.have.length(1);
+
+    const retrievedUser = await userModel.get(userResult[0]);
+    const retrievedProduct = await productModel.get(productResult[0]);
+
+    expect(retrievedUser)
+      .to.have.property("email")
+      .that.equals("user@example.com");
+    expect(retrievedProduct)
+      .to.have.property("name")
+      .that.equals("Test Product");
+  });
+});
+
+describe("Integration - real database operations", () => {
+  it("handles complex relationships", async () => {
+    @RegisterTable("orders", "integration-rel-schema")
+    class Order extends Table {
+      @Index()
+      declare customerId: string;
+
+      @Index()
+      declare orderDate: Date;
+
+      declare totalAmount: number;
+      declare status: string;
+    }
+
+    @RegisterTable("order_items", "integration-rel-schema")
+    class OrderItem extends Table {
+      @Index()
+      declare orderId: string;
+
+      @Index()
+      declare productId: string;
+
+      declare quantity: number;
+      declare unitPrice: number;
+    }
+
+    const OrderModel = BasicDataModel(Order, "orders");
+    const OrderItemModel = BasicDataModel(OrderItem, "order_items");
+
+    await RegisterSchema("integration-rel-schema");
+    const schemaInstance = getDatabase("integration-rel-schema");
+
+    const orderModel = new OrderModel(schemaInstance);
+    const orderItemModel = new OrderItemModel(schemaInstance);
+
+    const orderData = {
+      customerId: "customer123",
+      orderDate: new Date(),
+      totalAmount: 299.97,
+      status: "pending",
+    };
+
+    const orderResult = await orderModel.insert(orderData);
+    const orderId = orderResult[0];
+
+    const orderItemsData = [
+      { orderId, productId: "product1", quantity: 2, unitPrice: 99.99 },
+      { orderId, productId: "product2", quantity: 1, unitPrice: 99.99 },
+    ];
+
+    const orderItemsResult = await orderItemModel.insert(orderItemsData);
+    expect(orderItemsResult).to.have.length(2);
+
+    const retrievedOrder = await orderModel.get(orderId);
+    expect(retrievedOrder)
+      .to.have.property("customerId")
+      .that.equals("customer123");
+    expect(retrievedOrder).to.have.property("totalAmount").that.equals(299.97);
+
+    const orderItems = await orderItemModel.getBy("orderId", orderId);
+    expect(orderItems).to.be.an("array");
+    expect(orderItems).to.have.length(2);
+  });
+  it("performs bulk operations", async () => {
+    @RegisterTable("bulk_products", "integration-bulk-schema")
+    class BulkProduct extends Table {
+      @Index()
+      declare category: string;
+
+      declare name: string;
+      declare price: number;
+    }
+
+    const BulkProductModel = BasicDataModel(BulkProduct, "bulk_products");
+
+    await RegisterSchema("integration-bulk-schema");
+    const schemaInstance = getDatabase("integration-bulk-schema");
+    const bulkProductModel = new BulkProductModel(schemaInstance);
+
+    const bulkData = [
+      { name: "Product 1", category: "Electronics", price: 99.99 },
+      { name: "Product 2", category: "Electronics", price: 149.99 },
+      { name: "Product 3", category: "Books", price: 19.99 },
+      { name: "Product 4", category: "Books", price: 29.99 },
+      { name: "Product 5", category: "Clothing", price: 49.99 },
+    ];
+
+    const insertResult = await bulkProductModel.insert(bulkData);
+    expect(insertResult).to.have.length(5);
+
+    const allProducts = await bulkProductModel.getAll();
+    expect(allProducts).to.be.an("array");
+    expect(allProducts).to.have.length(5);
+
+    const electronicsProducts = await bulkProductModel.getBy(
+      "category",
+      "Electronics",
+    );
+    expect(electronicsProducts).to.be.an("array");
+    expect(electronicsProducts).to.have.length(2);
+
+    const booksProducts = await bulkProductModel.getBy("category", "Books");
+    expect(booksProducts).to.be.an("array");
+    expect(booksProducts).to.have.length(2);
+  });
+  it("manages database initialization", async () => {
+    @Fixture(() => [
+      { id: "1", name: "Fixture User 1", email: "fixture1@example.com" },
+      { id: "2", name: "Fixture User 2", email: "fixture2@example.com" },
+    ])
+    @RegisterTable("fixture_users", "integration-fixture-schema")
+    class FixtureUser extends Table {
+      @Index()
+      declare email: string;
+
+      declare name: string;
+    }
+
+    await RegisterSchema("integration-fixture-schema");
+
+    const schemaInstance = getDatabase("integration-fixture-schema");
+    const FixtureUserModel = BasicDataModel(FixtureUser, "fixture_users");
+    const fixtureUserModel = new FixtureUserModel(schemaInstance);
+
+    const allUsers = await fixtureUserModel.getAll();
+    expect(allUsers.length).to.be.greaterThan(0);
+  });
 });
 
 describe("Model - validate-on-write", () => {
-  it("rejects insert with validate:true on bad input", () =>
-    ValidateOnInsertRejectsTest());
-  it("accepts insert with validate:true on good input", () =>
-    ValidateOnInsertAcceptsTest());
-  it("rejects update with validate:true on bad input", () =>
-    ValidateOnUpdateRejectsTest());
-  it("accepts partial update with validate:true when omitted fields are absent", () =>
-    ValidateOnUpdateAcceptsPartialTest());
+  it("rejects insert with validate:true on bad input", async () => {
+    @RegisterTable("v_insert_bad", "model-vow-schema-1")
+    class _T extends Table {
+      @Field(asFieldType(numberCodec))
+      declare age: unknown;
+    }
+    const TM = BasicDataModel(_T, "v_insert_bad");
+    await RegisterSchema("model-vow-schema-1");
+    const model = GetModel(TM);
+    let threw = false;
+    try {
+      await model.insert({ age: "old" }, { validate: true });
+    } catch (e) {
+      threw = true;
+      expect(e).to.have.property("errors").that.is.an("array");
+      expect(e).to.have.nested.property("errors[0].field", "age");
+    }
+    expect(threw).to.equal(true);
+  });
+  it("accepts insert with validate:true on good input", async () => {
+    @RegisterTable("v_insert_ok", "model-vow-schema-2")
+    class _T extends Table {
+      @Field(asFieldType(numberCodec))
+      declare age: number;
+    }
+    const TM = BasicDataModel(_T, "v_insert_ok");
+    await RegisterSchema("model-vow-schema-2");
+    const model = GetModel(TM);
+    const ids = await model.insert({ age: 30 }, { validate: true });
+    expect(ids).to.not.equal(undefined);
+  });
+  it("rejects update with validate:true on bad input", async () => {
+    @RegisterTable("v_update_bad", "model-vow-schema-3")
+    class _T extends Table {
+      @Field(asFieldType(numberCodec))
+      declare age: unknown;
+    }
+    const TM = BasicDataModel(_T, "v_update_bad");
+    await RegisterSchema("model-vow-schema-3");
+    const model = GetModel(TM);
+    const inserted = await model.insert({ age: 30 });
+    const id = Array.isArray(inserted) ? inserted[0] : inserted;
+    let threw = false;
+    try {
+      await model.update(
+        id,
+        { age: "old" },
+        {
+          validate: true,
+        },
+      );
+    } catch (e) {
+      threw = true;
+      expect(e).to.have.property("message").that.contains("validation failed");
+    }
+    expect(threw).to.equal(true);
+  });
+  it("accepts partial update with validate:true when omitted fields are absent", async () => {
+    @RegisterTable("v_update_partial", "model-vow-schema-4")
+    class _T extends Table {
+      @Field(asFieldType(numberCodec))
+      declare age: number;
+      @Field(asFieldType(numberCodec))
+      declare score: number;
+    }
+    const TM = BasicDataModel(_T, "v_update_partial");
+    await RegisterSchema("model-vow-schema-4");
+    const model = GetModel(TM);
+    const inserted = await model.insert({ age: 30, score: 100 });
+    const id = Array.isArray(inserted) ? inserted[0] : inserted;
+    const updated = await model.update(
+      id,
+      { age: 31 },
+      {
+        validate: true,
+      },
+    );
+    expect(updated).to.not.equal(undefined);
+  });
 });
-
-async function ValidateOnInsertRejectsTest() {
-  @RegisterTable("v_insert_bad", "model-vow-schema-1")
-  class _T extends Table {
-    @Field(asFieldType(numberCodec))
-    declare age: number;
-  }
-  const TM = BasicDataModel(_T, "v_insert_bad");
-  await RegisterSchema("model-vow-schema-1");
-  const model = GetModel(TM);
-  let threw = false;
-  try {
-    await model.insert({ age: "old" } as any, { validate: true });
-  } catch (e) {
-    threw = true;
-    const errors = (e as Error & { errors?: FieldError[] }).errors;
-    expect(Array.isArray(errors)).to.equal(true);
-    expect(errors?.[0].field).to.equal("age");
-  }
-  expect(threw).to.equal(true);
-}
-
-async function ValidateOnInsertAcceptsTest() {
-  @RegisterTable("v_insert_ok", "model-vow-schema-2")
-  class _T extends Table {
-    @Field(asFieldType(numberCodec))
-    declare age: number;
-  }
-  const TM = BasicDataModel(_T, "v_insert_ok");
-  await RegisterSchema("model-vow-schema-2");
-  const model = GetModel(TM);
-  const ids = await model.insert({ age: 30 } as any, { validate: true });
-  expect(ids).to.not.equal(undefined);
-}
-
-async function ValidateOnUpdateRejectsTest() {
-  @RegisterTable("v_update_bad", "model-vow-schema-3")
-  class _T extends Table {
-    @Field(asFieldType(numberCodec))
-    declare age: number;
-  }
-  const TM = BasicDataModel(_T, "v_update_bad");
-  await RegisterSchema("model-vow-schema-3");
-  const model = GetModel(TM);
-  const inserted = await model.insert({ age: 30 } as any);
-  const id = Array.isArray(inserted) ? inserted[0] : inserted;
-  let threw = false;
-  try {
-    await model.update(id as string, { age: "old" } as any, { validate: true });
-  } catch (e) {
-    threw = true;
-    expect((e as Error).message).to.contain("validation failed");
-  }
-  expect(threw).to.equal(true);
-}
-
-async function ValidateOnUpdateAcceptsPartialTest() {
-  @RegisterTable("v_update_partial", "model-vow-schema-4")
-  class _T extends Table {
-    @Field(asFieldType(numberCodec))
-    declare age: number;
-    @Field(asFieldType(numberCodec))
-    declare score: number;
-  }
-  const TM = BasicDataModel(_T, "v_update_partial");
-  await RegisterSchema("model-vow-schema-4");
-  const model = GetModel(TM);
-  const inserted = await model.insert({ age: 30, score: 100 } as any);
-  const id = Array.isArray(inserted) ? inserted[0] : inserted;
-  const updated = await model.update(id as string, { age: 31 } as any, {
-    validate: true,
-  });
-  expect(updated).to.not.equal(undefined);
-}
-
-async function CreateAndQueryUserWithModifiersTest() {
-  @RegisterTable("users", "integration-modifiers-schema")
-  class User extends Table.with(HashModifier, EncryptionModifier) {
-    @Index()
-    declare email: string;
-
-    @Hashed({ algorithm: "sha256" })
-    declare password: string;
-
-    @Encrypted({ secretKey: "12345678901234567890123456789012" })
-    declare secretData: Record<string, unknown>;
-
-    declare name: string;
-    declare age: number;
-  }
-
-  const UserModel = BasicDataModel(User, "users");
-
-  await RegisterSchema("integration-modifiers-schema");
-  const schemaInstance = getDatabase("integration-modifiers-schema");
-  const userModel = new UserModel(schemaInstance);
-
-  const userData = {
-    email: "test@example.com",
-    password: "securePassword123",
-    secretData: { token: "secret-token-123" },
-    name: "John Doe",
-    age: 30,
-  };
-
-  const insertResult = await userModel.insert(userData);
-  expect(insertResult).to.have.length(1);
-
-  const userId = insertResult[0];
-  const retrievedUserFromModel = await userModel.get(userId);
-  const retrievedUserFromDatabase = await schemaInstance
-    .table("users")
-    .get(userId)
-    .run();
-
-  expect(retrievedUserFromModel)
-    .to.have.property("email")
-    .that.equals("test@example.com");
-  expect(retrievedUserFromModel)
-    .to.have.property("name")
-    .that.equals("John Doe");
-  expect(retrievedUserFromModel).to.have.property("age").that.equals(30);
-  expect(retrievedUserFromModel?.password).to.not.equal("securePassword123");
-  expect(retrievedUserFromModel?.secretData).to.deep.equal({
-    token: "secret-token-123",
-  });
-  expect(retrievedUserFromDatabase?.secretData).to.not.deep.equal({
-    token: "secret-token-123",
-  });
-
-  if (retrievedUserFromModel?.testHash) {
-    const isPasswordValid = retrievedUserFromModel.testHash(
-      "password",
-      "securePassword123",
-    );
-    expect(isPasswordValid).to.equal(true);
-  }
-
-  const dbUser = (await schemaInstance.table("users").get(userId).run()) as {
-    email: string;
-    name: string;
-    password: string;
-    secretData: string;
-  };
-  expect(dbUser).to.have.property("email").that.equals("test@example.com");
-  expect(dbUser).to.have.property("name").that.equals("John Doe");
-}
-
-async function PerformCrudOperationsOnProductsTest() {
-  @RegisterTable("products", "integration-crud-schema")
-  class Product extends Table {
-    @Index()
-    declare name: string;
-
-    @Index()
-    declare category: string;
-
-    declare price: number;
-    declare stockQuantity: number;
-    declare isActive: boolean;
-  }
-
-  const ProductModel = BasicDataModel(Product, "products");
-
-  await RegisterSchema("integration-crud-schema");
-  const schemaInstance = getDatabase("integration-crud-schema");
-  const productModel = new ProductModel(schemaInstance);
-
-  const productData = {
-    name: "Test Product",
-    category: "Electronics",
-    price: 99.99,
-    stockQuantity: 50,
-    isActive: true,
-  };
-
-  const insertResult = await productModel.insert(productData);
-  const productId = insertResult[0];
-
-  const retrievedProduct = await productModel.get(productId);
-  expect(retrievedProduct).to.have.property("name").that.equals("Test Product");
-  expect(retrievedProduct).to.have.property("price").that.equals(99.99);
-
-  const updateData = { price: 89.99, stockQuantity: 45 };
-  await productModel.update(productId, updateData);
-
-  const updatedProduct = await productModel.get(productId);
-  expect(updatedProduct).to.have.property("price").that.equals(89.99);
-  expect(updatedProduct).to.have.property("stockQuantity").that.equals(45);
-
-  await productModel.delete(productId);
-
-  const deletedProduct = await productModel.get(productId);
-  expect(deletedProduct).to.equal(undefined);
-}
-
-async function HandleLocalizedContentTest() {
-  @RegisterTable("localized_content", "integration-l10n-schema")
-  class LocalizedContent extends Table.with(LocalizationModifier) {
-    declare category: string;
-
-    @Localized({ fallbackLocale: "en" })
-    declare title: string;
-
-    @Localized({ fallbackLocale: "en" })
-    declare description: string;
-  }
-
-  const ContentModel = BasicDataModel(LocalizedContent, "localized_content");
-
-  await RegisterSchema("integration-l10n-schema");
-  const schemaInstance = getDatabase("integration-l10n-schema");
-  const contentModel = new ContentModel(schemaInstance);
-
-  const content = new LocalizedContent();
-  content._id = "content-123";
-  content.category = "News";
-
-  content.localize("en").title = "English Title";
-  content.localize("fr").title = "French Title";
-  content.localize("en").description = "English Description";
-  content.localize("fr").description = "French Description";
-
-  const insertResult = await contentModel.insert(content);
-  const contentId = insertResult[0];
-
-  const retrievedContent = await contentModel.get(contentId);
-  expect(retrievedContent).to.have.property("title");
-  expect(retrievedContent).to.have.property("description");
-  expect(retrievedContent).to.have.property("category").that.equals("News");
-
-  if (retrievedContent?.localize) {
-    const frenchContent = retrievedContent.localize("fr");
-    expect(frenchContent.title).to.equal("French Title");
-    expect(frenchContent.description).to.equal("French Description");
-
-    const englishContent = retrievedContent.localize("en");
-    expect(englishContent.title).to.equal("English Title");
-    expect(englishContent.description).to.equal("English Description");
-
-    const germanContent = retrievedContent.localize("de");
-    expect(germanContent.title).to.equal("English Title");
-    expect(germanContent.description).to.equal("English Description");
-  }
-
-  const untranslated = new LocalizedContent();
-  untranslated._id = "content-untranslated";
-  untranslated.category = "News";
-  untranslated.localize("en").title = "Only English";
-  untranslated.localize("fr").title = "";
-  await contentModel.insert(untranslated);
-
-  const stored = await contentModel.get("content-untranslated");
-  expect(stored?.localize("fr").title).to.equal("Only English");
-  const frenchTitles = await LocalizedContent.table(schemaInstance)
-    .filter((row) => row.key("_id").eq("content-untranslated"))
-    .map((row) =>
-      unlockrequest(LocalizedContent, row, "title", [
-        { modifier: LocalizationModifier, args: ["fr"] },
-      ]),
-    )
-    .run();
-  expect(frenchTitles).to.deep.equal(["Only English"]);
-}
-
-async function ManageEncryptedSensitiveDataTest() {
-  @RegisterTable("sensitive_data", "integration-encrypt-schema")
-  class SensitiveData extends Table.with(EncryptionModifier) {
-    @Encrypted({ secretKey: "12345678901234567890123456789012" })
-    declare creditCard: string;
-
-    @Encrypted({ secretKey: "12345678901234567890123456789012" })
-    declare ssn: string;
-
-    declare userId: string;
-  }
-
-  const SensitiveDataModel = BasicDataModel(SensitiveData, "sensitive_data");
-
-  await RegisterSchema("integration-encrypt-schema");
-  const schemaInstance = getDatabase("integration-encrypt-schema");
-  const sensitiveDataModel = new SensitiveDataModel(schemaInstance);
-
-  const sensitiveData = {
-    creditCard: "4111-1111-1111-1111",
-    ssn: "123-45-6789",
-    userId: "user123",
-  };
-
-  const insertResult = await sensitiveDataModel.insert(sensitiveData);
-  const dataId = insertResult[0];
-
-  const retrievedData = await sensitiveDataModel.get(dataId);
-  expect(retrievedData).to.have.property("userId").that.equals("user123");
-  expect(retrievedData?.creditCard).to.equal("4111-1111-1111-1111");
-  expect(retrievedData?.ssn).to.equal("123-45-6789");
-
-  const dbData = (await schemaInstance
-    .table("sensitive_data")
-    .get(dataId)
-    .run()) as {
-    userId: string;
-    creditCard: string;
-    ssn: string;
-  };
-  expect(dbData).to.have.property("userId").that.equals("user123");
-  expect(dbData?.creditCard).to.not.equal("4111-1111-1111-1111");
-  expect(dbData?.ssn).to.not.equal("123-45-6789");
-}
-
-async function ValidateHashedPasswordsTest() {
-  @RegisterTable("user_accounts", "integration-hash-schema")
-  class UserAccount extends Table.with(HashModifier) {
-    @Index()
-    declare username: string;
-
-    @Hashed({ algorithm: "sha256" })
-    declare password: string;
-
-    declare email: string;
-  }
-
-  const UserAccountModel = BasicDataModel(UserAccount, "user_accounts");
-
-  await RegisterSchema("integration-hash-schema");
-  const schemaInstance = getDatabase("integration-hash-schema");
-  const userAccountModel = new UserAccountModel(schemaInstance);
-
-  const accountData = {
-    username: "testuser",
-    password: "mySecurePassword123",
-    email: "test@example.com",
-  };
-
-  const insertResult = await userAccountModel.insert(accountData);
-  const accountId = insertResult[0];
-
-  const retrievedAccount = await userAccountModel.get(accountId);
-  expect(retrievedAccount).to.have.property("username").that.equals("testuser");
-  expect(retrievedAccount?.password).to.not.equal("mySecurePassword123");
-
-  if (retrievedAccount?.testHash) {
-    const isPasswordValid = retrievedAccount.testHash(
-      "password",
-      "mySecurePassword123",
-    );
-    const isPasswordInvalid = retrievedAccount.testHash(
-      "password",
-      "wrongPassword",
-    );
-
-    expect(isPasswordValid).to.equal(true);
-    expect(isPasswordInvalid).to.equal(false);
-  }
-}
-
-async function WorkWithSchemaRegistrationTest() {
-  @RegisterTable("schema_users", "integration-schema-reg")
-  class SchemaUser extends Table {
-    @Index()
-    declare email: string;
-
-    declare name: string;
-  }
-
-  @RegisterTable("schema_products", "integration-schema-reg")
-  class SchemaProduct extends Table {
-    @Index()
-    declare name: string;
-
-    declare price: number;
-  }
-
-  await RegisterSchema("integration-schema-reg");
-
-  const schemaInstance = getDatabase("integration-schema-reg");
-  const UserModel = BasicDataModel(SchemaUser, "schema_users");
-  const ProductModel = BasicDataModel(SchemaProduct, "schema_products");
-
-  const userModel = new UserModel(schemaInstance);
-  const productModel = new ProductModel(schemaInstance);
-
-  const userData = { email: "user@example.com", name: "Test User" };
-  const productData = { name: "Test Product", price: 29.99 };
-
-  const userResult = await userModel.insert(userData);
-  const productResult = await productModel.insert(productData);
-
-  expect(userResult).to.have.length(1);
-  expect(productResult).to.have.length(1);
-
-  const retrievedUser = await userModel.get(userResult[0]);
-  const retrievedProduct = await productModel.get(productResult[0]);
-
-  expect(retrievedUser)
-    .to.have.property("email")
-    .that.equals("user@example.com");
-  expect(retrievedProduct).to.have.property("name").that.equals("Test Product");
-}
-
-async function HandleComplexRelationshipsTest() {
-  @RegisterTable("orders", "integration-rel-schema")
-  class Order extends Table {
-    @Index()
-    declare customerId: string;
-
-    @Index()
-    declare orderDate: Date;
-
-    declare totalAmount: number;
-    declare status: string;
-  }
-
-  @RegisterTable("order_items", "integration-rel-schema")
-  class OrderItem extends Table {
-    @Index()
-    declare orderId: string;
-
-    @Index()
-    declare productId: string;
-
-    declare quantity: number;
-    declare unitPrice: number;
-  }
-
-  const OrderModel = BasicDataModel(Order, "orders");
-  const OrderItemModel = BasicDataModel(OrderItem, "order_items");
-
-  await RegisterSchema("integration-rel-schema");
-  const schemaInstance = getDatabase("integration-rel-schema");
-
-  const orderModel = new OrderModel(schemaInstance);
-  const orderItemModel = new OrderItemModel(schemaInstance);
-
-  const orderData = {
-    customerId: "customer123",
-    orderDate: new Date(),
-    totalAmount: 299.97,
-    status: "pending",
-  };
-
-  const orderResult = await orderModel.insert(orderData);
-  const orderId = orderResult[0];
-
-  const orderItemsData = [
-    { orderId, productId: "product1", quantity: 2, unitPrice: 99.99 },
-    { orderId, productId: "product2", quantity: 1, unitPrice: 99.99 },
-  ];
-
-  const orderItemsResult = await orderItemModel.insert(orderItemsData);
-  expect(orderItemsResult).to.have.length(2);
-
-  const retrievedOrder = await orderModel.get(orderId);
-  expect(retrievedOrder)
-    .to.have.property("customerId")
-    .that.equals("customer123");
-  expect(retrievedOrder).to.have.property("totalAmount").that.equals(299.97);
-
-  const orderItems = await orderItemModel.getBy("orderId", orderId);
-  expect(orderItems).to.be.an("array");
-  expect(orderItems).to.have.length(2);
-}
-
-async function PerformBulkOperationsTest() {
-  @RegisterTable("bulk_products", "integration-bulk-schema")
-  class BulkProduct extends Table {
-    @Index()
-    declare category: string;
-
-    declare name: string;
-    declare price: number;
-  }
-
-  const BulkProductModel = BasicDataModel(BulkProduct, "bulk_products");
-
-  await RegisterSchema("integration-bulk-schema");
-  const schemaInstance = getDatabase("integration-bulk-schema");
-  const bulkProductModel = new BulkProductModel(schemaInstance);
-
-  const bulkData = [
-    { name: "Product 1", category: "Electronics", price: 99.99 },
-    { name: "Product 2", category: "Electronics", price: 149.99 },
-    { name: "Product 3", category: "Books", price: 19.99 },
-    { name: "Product 4", category: "Books", price: 29.99 },
-    { name: "Product 5", category: "Clothing", price: 49.99 },
-  ];
-
-  const insertResult = await bulkProductModel.insert(bulkData);
-  expect(insertResult).to.have.length(5);
-
-  const allProducts = await bulkProductModel.getAll();
-  expect(allProducts).to.be.an("array");
-  expect(allProducts).to.have.length(5);
-
-  const electronicsProducts = await bulkProductModel.getBy(
-    "category",
-    "Electronics",
-  );
-  expect(electronicsProducts).to.be.an("array");
-  expect(electronicsProducts).to.have.length(2);
-
-  const booksProducts = await bulkProductModel.getBy("category", "Books");
-  expect(booksProducts).to.be.an("array");
-  expect(booksProducts).to.have.length(2);
-}
-
-async function ManageDatabaseInitializationTest() {
-  @Fixture(() => [
-    { id: "1", name: "Fixture User 1", email: "fixture1@example.com" },
-    { id: "2", name: "Fixture User 2", email: "fixture2@example.com" },
-  ])
-  @RegisterTable("fixture_users", "integration-fixture-schema")
-  class FixtureUser extends Table {
-    @Index()
-    declare email: string;
-
-    declare name: string;
-  }
-
-  await RegisterSchema("integration-fixture-schema");
-
-  const schemaInstance = getDatabase("integration-fixture-schema");
-  const FixtureUserModel = BasicDataModel(FixtureUser, "fixture_users");
-  const fixtureUserModel = new FixtureUserModel(schemaInstance);
-
-  const allUsers = await fixtureUserModel.getAll();
-  expect(allUsers.length).to.be.greaterThan(0);
-}

@@ -6,12 +6,14 @@ import type {
 } from "@antelopejs/interface-database";
 import type { FieldType } from "@antelopejs/interface-database/schema";
 import {
+  type Class,
   type ClassDecorator,
   MakeClassDecorator,
   MakePropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
 
 import { MixinSymbol, type MixinType } from "./modifiers/common";
+import { fieldTypesByKey } from "./modifiers/internal/records";
 import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
@@ -38,7 +40,7 @@ export interface TableClass<
   ): { _id: string } & Base &
     (Meta extends object ? { [TableMetaSymbol]: Meta } : object);
 
-  /* public static */ with<
+  with<
     This extends TableClass,
     T extends Constructible<{ [MixinSymbol]: Constructible }>[] = [],
   >(
@@ -52,7 +54,7 @@ export interface TableClass<
     | ExtractTableMeta<InstanceType<T[number]>>
   >;
 
-  /* public static */ table<This extends TableClass>(
+  table<This extends TableClass>(
     this: This,
     target?: TableTarget,
   ): QueryTable<InstanceType<This>>;
@@ -68,6 +70,10 @@ function isSchemaInstance(
   target: TableTarget | undefined,
 ): target is SchemaInstance<any> {
   return typeof target === "object" && target !== null;
+}
+
+function extendTable(Base: Class<Table>) {
+  return class _internal_table extends Base {};
 }
 
 /**
@@ -125,19 +131,29 @@ export class Table {
     | ExtractTableMeta<InstanceType<This>>
     | ExtractTableMeta<InstanceType<T[number]>>
   > {
-    const c = class _internal_table extends (this as any) {};
+    const c = extendTable(this);
     for (const mixin of others
       .map((otherClass) => otherClass.prototype && new otherClass())
       .map((other) => other?.[MixinSymbol])
       .filter((mixin) => mixin?.prototype)) {
       for (const key of Object.getOwnPropertyNames(mixin.prototype)) {
         if (key !== "constructor" && !(key in c.prototype)) {
-          (<any>c.prototype)[key] = mixin.prototype[key];
+          Object.defineProperty(c.prototype, key, {
+            value: mixin.prototype[key],
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          });
         }
       }
       for (const key of Object.getOwnPropertySymbols(mixin.prototype)) {
         if (!(key in c.prototype)) {
-          (<any>c.prototype)[key] = mixin.prototype[key];
+          Object.defineProperty(c.prototype, key, {
+            value: mixin.prototype[key],
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          });
         }
       }
     }
@@ -198,7 +214,7 @@ export const Index = MakePropertyDecorator(
 export const Field = MakePropertyDecorator(
   (target, propertyKey, type: FieldType) => {
     const metadata = getMetadata(target.constructor, DatumStaticMetadata);
-    metadata.fields[propertyKey as string] = type;
+    fieldTypesByKey(metadata)[propertyKey] = type;
   },
 );
 

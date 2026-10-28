@@ -1,10 +1,12 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 import {
-  type CipherCCM,
+  type Cipher,
+  type CipherGCM,
   createCipheriv,
   createDecipheriv,
-  type DecipherCCM,
+  type Decipher,
+  type DecipherGCM,
   randomBytes,
 } from "node:crypto";
 
@@ -41,6 +43,18 @@ function date_decoder(_key: string, value: any) {
     : value;
 }
 
+function hasAuthTag(
+  cipher: Cipher,
+): cipher is Cipher & Pick<CipherGCM, "getAuthTag"> {
+  return "getAuthTag" in cipher;
+}
+
+function acceptsAuthTag(
+  decipher: Decipher,
+): decipher is Decipher & Pick<DecipherGCM, "setAuthTag"> {
+  return "setAuthTag" in decipher;
+}
+
 /**
  * Encryption modifier. enables the use of {@link Encrypted} on table fields.
  *
@@ -71,13 +85,10 @@ export class EncryptionModifier extends TwoWayModifier<
 
     let authTag: string | undefined;
     try {
-      authTag =
-        "getAuthTag" in cipher
-          ? (<CipherCCM>cipher).getAuthTag().toString("base64")
-          : undefined;
-    } catch {
-      // Ignore error if getAuthTag is not available
-    }
+      authTag = hasAuthTag(cipher)
+        ? cipher.getAuthTag().toString("base64")
+        : undefined;
+    } catch {}
 
     return [encrypted, iv.toString("base64"), authTag];
   }
@@ -91,17 +102,18 @@ export class EncryptionModifier extends TwoWayModifier<
       Buffer.from(iv_str, "base64"),
     );
 
-    if ("setAuthTag" in decipher && authTag) {
-      (<DecipherCCM>decipher).setAuthTag(Buffer.from(authTag, "base64"));
+    if (acceptsAuthTag(decipher) && authTag) {
+      decipher.setAuthTag(Buffer.from(authTag, "base64"));
     }
 
-    return JSON.parse(
+    const decoded: unknown = JSON.parse(
       Buffer.concat([
         decipher.update(Buffer.from(locked_value, "base64")),
         decipher.final(),
       ]).toString("utf8"),
       date_decoder,
-    ) as unknown;
+    );
+    return decoded;
   }
 
   public override unlockrequest(

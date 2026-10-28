@@ -2,9 +2,11 @@ import Module from "node:module";
 import { realpathSync } from "node:fs";
 import path from "node:path";
 
-interface ModuleInternals {
-  _resolveFilename(request: string, parent: Module): string;
-  _nodeModulePaths(directory: string): string[];
+declare module "module" {
+  namespace Module {
+    function _resolveFilename(request: string, parent: Module): string;
+    function _nodeModulePaths(directory: string): string[];
+  }
 }
 
 interface LoadableModule {
@@ -12,8 +14,6 @@ interface LoadableModule {
 }
 
 type ModuleRequire = (request: string) => unknown;
-
-const internals = Module as unknown as ModuleInternals;
 
 /**
  * Evaluates built packages a second time, the way the core gives each
@@ -36,7 +36,7 @@ export function CreateOtherInstance(folders: string[]): ModuleRequire {
     }
     const loaded = new Module(filename, parent);
     loaded.filename = filename;
-    loaded.paths = internals._nodeModulePaths(path.dirname(filename));
+    loaded.paths = Module._nodeModulePaths(path.dirname(filename));
     loaded.require = ((request: string) =>
       requireFrom(loaded, request)) as Module["require"];
     modules.set(filename, loaded);
@@ -45,7 +45,7 @@ export function CreateOtherInstance(folders: string[]): ModuleRequire {
   };
 
   const requireFrom = (parent: Module, request: string): unknown => {
-    const filename = internals._resolveFilename(request, parent);
+    const filename = Module._resolveFilename(request, parent);
     const isOwned = owned.some((root) => filename.startsWith(root));
     return isOwned
       ? load(filename, parent)
