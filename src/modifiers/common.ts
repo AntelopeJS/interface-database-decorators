@@ -8,7 +8,12 @@ import {
   isTwoWay,
   isWriteOnly,
 } from "./internal/kinds";
-import { eventsByKey, fieldsByKey, unlockArgsOf } from "./internal/records";
+import {
+  eventsByKey,
+  fieldsByKey,
+  unlockArgsOf,
+  withRef,
+} from "./internal/records";
 
 export const MixinSymbol = Symbol();
 
@@ -131,21 +136,6 @@ export class ModifiersStaticMetadata {
     string,
     Array<[field: string, modified: ModifiedField]>
   >();
-}
-
-function withRef<T extends Modifier, U>(
-  internal: InternalType,
-  id: ModifiedField["id"],
-  modifier: T,
-  metaRef: ModifiedField["metaRef"],
-  callback: (modifier: T) => U,
-): U {
-  metaRef._ref = internal.meta[id];
-  const ret = callback(modifier);
-  if (metaRef._ref !== internal.meta[id]) {
-    internal.meta[id] = metaRef._ref;
-  }
-  return ret;
 }
 
 export class ModifiersDynamicMetadata {
