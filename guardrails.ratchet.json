@@ -10,7 +10,5 @@
     "anti-slop/require-safety-comment-for-type-assertion": 52,
     "typescript/unbound-method": 2
   },
-  "oversizeFiles": {
-    "src/modifiers/common.ts": 16619
-  }
+  "oversizeFiles": {}
 }

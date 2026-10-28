@@ -1,6 +1,13 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
 
 import { type Constructible, getMetadata } from "../common";
+import {
+  ignoredEventNames,
+  isLocking,
+  isOnlyEvents,
+  isTwoWay,
+  isWriteOnly,
+} from "./internal/kinds";
 import { eventsByKey, fieldsByKey, unlockArgsOf } from "./internal/records";
 
 export const MixinSymbol = Symbol();
@@ -93,22 +100,6 @@ export class ContainerModifier<
   ): DatabaseDev.ValueProxy<unknown> {
     return data.key(key);
   }
-}
-
-function isWriteOnly(m: Modifier): m is OneWayModifier<unknown, any[]> {
-  return "lock" in m && !("unlock" in m);
-}
-
-function isLocking(m: Modifier): m is OneWayModifier<unknown, any[]> {
-  return "lock" in m;
-}
-
-function isTwoWay(m: Modifier): m is TwoWayModifier<unknown, any[]> {
-  return "unlock" in m;
-}
-
-function isOnlyEvents(modifier: Modifier) {
-  return !("lock" in modifier);
 }
 
 interface InternalType {
@@ -347,12 +338,6 @@ type ExtractModifierOptions<T> =
   T extends Modifier<any, infer Options> ? Options : undefined;
 type ExtractModifierArgs<T> =
   T extends OneWayModifier<any, infer Args> ? Args : [];
-
-const ignoredEventNames = {
-  constructor: true,
-  lock: true,
-  unlock: true,
-};
 
 export function attachModifier<
   T extends Constructible,
