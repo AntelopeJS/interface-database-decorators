@@ -5,28 +5,221 @@ import {
   Localized,
 } from "@antelopejs/interface-database-decorators/modifiers/localization";
 
-describe("Modifiers - localization", () => {
-  it("creates localization modifier", async () =>
-    CreateLocalizationModifierTest());
-  it("stores multiple locale values", async () =>
-    StoreMultipleLocaleValuesTest());
-  it("retrieves specific locale value", async () =>
-    RetrieveSpecificLocaleValueTest());
-  it("falls back to default locale", async () => FallbackToDefaultLocaleTest());
-  it("reads the fallback locale of a field", async () =>
-    ReadFallbackLocaleOfFieldTest());
-  it("falls back for an empty value", async () => FallbackForEmptyValueTest());
-  it("stores an empty value as no value", async () =>
-    StoreEmptyValueAsAbsentTest());
-  it("handles missing locale gracefully", async () =>
-    HandleMissingLocaleGracefullyTest());
-  it("provides localize method through mixin", async () =>
-    ProvideLocalizeMethodTest());
-  it("handles localization decorator", async () =>
-    HandleLocalizationDecoratorTest());
-  it("localizes specific fields", async () => LocalizeSpecificFieldsTest());
-  it("maintains data structure integrity", async () =>
-    MaintainDataStructureIntegrityTest());
+describe("Modifiers - localization: values and fallbacks", () => {
+  it("creates localization modifier", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    expect(modifier).to.be.instanceOf(LocalizationModifier);
+    expect(modifier.getOptions().fallbackLocale).to.equal("en");
+  });
+  it("stores multiple locale values", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    const enValue = "Hello World";
+    const frValue = "Bonjour le Monde";
+    const esValue = "Hola Mundo";
+
+    const locked1 = modifier.lock(undefined, enValue, "en");
+    const locked2 = modifier.lock(locked1, frValue, "fr");
+    const locked3 = modifier.lock(locked2, esValue, "es");
+
+    expect(locked3).to.deep.equal({
+      en: enValue,
+      fr: frValue,
+      es: esValue,
+    });
+  });
+  it("retrieves specific locale value", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    const data = {
+      en: "Hello World",
+      fr: "Bonjour le Monde",
+      es: "Hola Mundo",
+    };
+
+    const enValue = modifier.unlock(data, "en");
+    const frValue = modifier.unlock(data, "fr");
+    const esValue = modifier.unlock(data, "es");
+
+    expect(enValue).to.equal("Hello World");
+    expect(frValue).to.equal("Bonjour le Monde");
+    expect(esValue).to.equal("Hola Mundo");
+  });
+  it("falls back to default locale", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    const data = {
+      en: "Hello World",
+      fr: "Bonjour le Monde",
+    };
+
+    const missingValue = modifier.unlock(data, "es");
+
+    expect(missingValue).to.equal("Hello World");
+  });
+  it("reads the fallback locale of a field", async () => {
+    class TestTable extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "fr" })
+      @Field("string")
+      declare title: string;
+
+      @Localized()
+      @Field("string")
+      declare summary: string;
+
+      @Field("string")
+      declare code: string;
+    }
+
+    expect(LocalizationModifier.fallbackLocaleOf(TestTable, "title")).to.equal(
+      "fr",
+    );
+    expect(
+      LocalizationModifier.fallbackLocaleOf(TestTable, "summary"),
+    ).to.equal(undefined);
+    expect(LocalizationModifier.fallbackLocaleOf(TestTable, "code")).to.equal(
+      undefined,
+    );
+  });
+  it("falls back for an empty value", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    expect(modifier.unlock({ en: "Hello", fr: "" }, "fr")).to.equal("Hello");
+  });
+  it("stores an empty value as no value", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    const cleared = modifier.lock({ en: "Hello", fr: "Bonjour" }, "", "fr");
+    const everyLanguage = modifier.lock(
+      undefined,
+      { en: "Hello", fr: "" },
+      "*",
+    );
+
+    expect(cleared).to.deep.equal({ en: "Hello" });
+    expect(everyLanguage).to.deep.equal({ en: "Hello" });
+  });
+  it("handles missing locale gracefully", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({});
+
+    const data = {
+      en: "Hello World",
+    };
+
+    const missingValue = modifier.unlock(data, "fr");
+
+    expect(missingValue).to.equal(undefined);
+  });
+});
+
+describe("Modifiers - localization: mixin and decorator", () => {
+  it("provides localize method through mixin", async () => {
+    const TestTableWithMixin = Table.with(LocalizationModifier);
+
+    class TestTable extends TestTableWithMixin {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare description: string;
+    }
+
+    const instance = new TestTable();
+
+    expect(instance).to.have.property("localize").that.is.a("function");
+    expect(instance.localize("fr")).to.equal(instance);
+  });
+  it("handles localization decorator", async () => {
+    class TestTable extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+
+      @Localized({ fallbackLocale: "fr" })
+      @Field("string")
+      declare description: string;
+    }
+
+    const instance = new TestTable();
+
+    instance.localize("fr");
+    instance.title = "French Title";
+    instance.description = "French Description";
+
+    instance.localize("en").title = "English Title";
+    instance.localize("en").description = "English Description";
+
+    instance.localize("be");
+    expect(instance.title).to.equal("English Title");
+    expect(instance.description).to.equal("French Description");
+  });
+  it("localizes specific fields", async () => {
+    const TestTableWithMixin = Table.with(LocalizationModifier);
+
+    class TestTable extends TestTableWithMixin {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare description: string;
+
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare content: string;
+    }
+
+    const instance = new TestTable();
+
+    instance.localize("en");
+    instance.title = "English Title";
+    instance.description = "English Description";
+    instance.content = "English Content";
+
+    instance.localize("fr");
+    instance.title = "French Title";
+    instance.description = "French Description";
+    instance.content = "French Content";
+
+    instance.localize("en");
+    instance.localize("fr", ["title", "content"]);
+
+    expect(instance.title).to.equal("French Title");
+    expect(instance.content).to.equal("French Content");
+    expect(instance.description).to.equal("English Description");
+  });
+  it("maintains data structure integrity", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    const complexData = {
+      en: { title: "English Title", content: "English Content" },
+      fr: { title: "French Title", content: "French Content" },
+    };
+
+    const enValue = modifier.unlock(complexData, "en");
+    const frValue = modifier.unlock(complexData, "fr");
+
+    expect(enValue).to.deep.equal({
+      title: "English Title",
+      content: "English Content",
+    });
+    expect(frValue).to.deep.equal({
+      title: "French Title",
+      content: "French Content",
+    });
+  });
 });
 
 interface LocalizationOptions {
@@ -41,222 +234,4 @@ class TestableLocalizationModifier extends LocalizationModifier {
   public getOptions(): LocalizationOptions {
     return this.options;
   }
-}
-
-async function CreateLocalizationModifierTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({ fallbackLocale: "en" });
-
-  expect(modifier).to.be.instanceOf(LocalizationModifier);
-  expect(modifier.getOptions().fallbackLocale).to.equal("en");
-}
-
-async function StoreMultipleLocaleValuesTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({ fallbackLocale: "en" });
-
-  const enValue = "Hello World";
-  const frValue = "Bonjour le Monde";
-  const esValue = "Hola Mundo";
-
-  const locked1 = modifier.lock(undefined, enValue, "en");
-  const locked2 = modifier.lock(locked1, frValue, "fr");
-  const locked3 = modifier.lock(locked2, esValue, "es");
-
-  expect(locked3).to.deep.equal({
-    en: enValue,
-    fr: frValue,
-    es: esValue,
-  });
-}
-
-async function RetrieveSpecificLocaleValueTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({ fallbackLocale: "en" });
-
-  const data = {
-    en: "Hello World",
-    fr: "Bonjour le Monde",
-    es: "Hola Mundo",
-  };
-
-  const enValue = modifier.unlock(data, "en");
-  const frValue = modifier.unlock(data, "fr");
-  const esValue = modifier.unlock(data, "es");
-
-  expect(enValue).to.equal("Hello World");
-  expect(frValue).to.equal("Bonjour le Monde");
-  expect(esValue).to.equal("Hola Mundo");
-}
-
-async function FallbackToDefaultLocaleTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({ fallbackLocale: "en" });
-
-  const data = {
-    en: "Hello World",
-    fr: "Bonjour le Monde",
-  };
-
-  const missingValue = modifier.unlock(data, "es");
-
-  expect(missingValue).to.equal("Hello World");
-}
-
-async function ReadFallbackLocaleOfFieldTest() {
-  class TestTable extends Table.with(LocalizationModifier) {
-    @Localized({ fallbackLocale: "fr" })
-    @Field("string")
-    declare title: string;
-
-    @Localized()
-    @Field("string")
-    declare summary: string;
-
-    @Field("string")
-    declare code: string;
-  }
-
-  expect(LocalizationModifier.fallbackLocaleOf(TestTable, "title")).to.equal(
-    "fr",
-  );
-  expect(LocalizationModifier.fallbackLocaleOf(TestTable, "summary")).to.equal(
-    undefined,
-  );
-  expect(LocalizationModifier.fallbackLocaleOf(TestTable, "code")).to.equal(
-    undefined,
-  );
-}
-
-async function FallbackForEmptyValueTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({ fallbackLocale: "en" });
-
-  expect(modifier.unlock({ en: "Hello", fr: "" }, "fr")).to.equal("Hello");
-}
-
-async function StoreEmptyValueAsAbsentTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({ fallbackLocale: "en" });
-
-  const cleared = modifier.lock({ en: "Hello", fr: "Bonjour" }, "", "fr");
-  const everyLanguage = modifier.lock(undefined, { en: "Hello", fr: "" }, "*");
-
-  expect(cleared).to.deep.equal({ en: "Hello" });
-  expect(everyLanguage).to.deep.equal({ en: "Hello" });
-}
-
-async function HandleMissingLocaleGracefullyTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({});
-
-  const data = {
-    en: "Hello World",
-  };
-
-  const missingValue = modifier.unlock(data, "fr");
-
-  expect(missingValue).to.equal(undefined);
-}
-
-async function ProvideLocalizeMethodTest() {
-  const TestTableWithMixin = Table.with(LocalizationModifier);
-
-  class TestTable extends TestTableWithMixin {
-    @Localized({ fallbackLocale: "en" })
-    @Field("string")
-    declare title: string;
-
-    @Localized({ fallbackLocale: "en" })
-    @Field("string")
-    declare description: string;
-  }
-
-  const instance = new TestTable();
-
-  expect(typeof instance.localize).to.equal("function");
-  expect(instance.localize("fr")).to.equal(instance);
-}
-
-async function HandleLocalizationDecoratorTest() {
-  class TestTable extends Table.with(LocalizationModifier) {
-    @Localized({ fallbackLocale: "en" })
-    @Field("string")
-    declare title: string;
-
-    @Localized({ fallbackLocale: "fr" })
-    @Field("string")
-    declare description: string;
-  }
-
-  const instance = new TestTable();
-
-  instance.localize("fr");
-  instance.title = "French Title";
-  instance.description = "French Description";
-
-  instance.localize("en").title = "English Title";
-  instance.localize("en").description = "English Description";
-
-  instance.localize("be");
-  expect(instance.title).to.equal("English Title");
-  expect(instance.description).to.equal("French Description");
-}
-async function LocalizeSpecificFieldsTest() {
-  const TestTableWithMixin = Table.with(LocalizationModifier);
-
-  class TestTable extends TestTableWithMixin {
-    @Localized({ fallbackLocale: "en" })
-    @Field("string")
-    declare title: string;
-
-    @Localized({ fallbackLocale: "en" })
-    @Field("string")
-    declare description: string;
-
-    @Localized({ fallbackLocale: "en" })
-    @Field("string")
-    declare content: string;
-  }
-
-  const instance = new TestTable();
-
-  instance.localize("en");
-  instance.title = "English Title";
-  instance.description = "English Description";
-  instance.content = "English Content";
-
-  instance.localize("fr");
-  instance.title = "French Title";
-  instance.description = "French Description";
-  instance.content = "French Content";
-
-  instance.localize("en");
-  instance.localize("fr", ["title", "content"]);
-
-  expect(instance.title).to.equal("French Title");
-  expect(instance.content).to.equal("French Content");
-  expect(instance.description).to.equal("English Description");
-}
-
-async function MaintainDataStructureIntegrityTest() {
-  const modifier = new TestableLocalizationModifier();
-  modifier.setOptions({ fallbackLocale: "en" });
-
-  const complexData = {
-    en: { title: "English Title", content: "English Content" },
-    fr: { title: "French Title", content: "French Content" },
-  };
-
-  const enValue = modifier.unlock(complexData, "en");
-  const frValue = modifier.unlock(complexData, "fr");
-
-  expect(enValue).to.deep.equal({
-    title: "English Title",
-    content: "English Content",
-  });
-  expect(frValue).to.deep.equal({
-    title: "French Title",
-    content: "French Content",
-  });
 }

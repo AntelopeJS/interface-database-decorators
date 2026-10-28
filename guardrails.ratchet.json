@@ -1,16 +1,15 @@
 {
   "rules": {
     "antelopejs/no-comments": 29,
-    "antelopejs/require-assertion": 110,
     "anti-slop/no-chained-type-assertions": 7,
-    "anti-slop/no-known-value-widening": 5,
+    "anti-slop/no-known-value-widening": 3,
     "anti-slop/no-reflect-get": 1,
-    "anti-slop/no-runtime-typeof": 15,
-    "anti-slop/no-unknown-parameters": 20,
-    "anti-slop/no-unknown-returns": 8,
-    "anti-slop/no-unsafe-dictionary-type": 32,
-    "anti-slop/require-safety-comment-for-type-assertion": 100,
-    "typescript/unbound-method": 5
+    "anti-slop/no-runtime-typeof": 13,
+    "anti-slop/no-unknown-parameters": 11,
+    "anti-slop/no-unknown-returns": 6,
+    "anti-slop/no-unsafe-dictionary-type": 25,
+    "anti-slop/require-safety-comment-for-type-assertion": 87,
+    "typescript/unbound-method": 3
   },
   "oversizeFiles": {
     "src/modifiers/common.ts": 16929
