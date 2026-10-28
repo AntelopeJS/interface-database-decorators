@@ -5,7 +5,7 @@ import {
   Localized,
 } from "@antelopejs/interface-database-decorators/modifiers/localization";
 
-describe("Modifiers - localization: values and fallbacks", () => {
+describe("Modifiers - localization", () => {
   it("creates localization modifier", async () => {
     const modifier = new TestableLocalizationModifier();
     modifier.setOptions({ fallbackLocale: "en" });
@@ -120,7 +120,7 @@ describe("Modifiers - localization: values and fallbacks", () => {
   });
 });
 
-describe("Modifiers - localization: mixin and decorator", () => {
+describe("Modifiers - localization", () => {
   it("provides localize method through mixin", async () => {
     const TestTableWithMixin = Table.with(LocalizationModifier);
 

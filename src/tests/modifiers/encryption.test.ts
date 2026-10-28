@@ -5,7 +5,7 @@ import {
   EncryptionModifier,
 } from "@antelopejs/interface-database-decorators/modifiers/encryption";
 
-describe("Modifiers - encryption: encrypting values", () => {
+describe("Modifiers - encryption", () => {
   it("creates encryption modifier", async () => {
     const Mixed = Table.with(EncryptionModifier);
     class Sample extends Mixed {
@@ -79,7 +79,7 @@ describe("Modifiers - encryption: encrypting values", () => {
   });
 });
 
-describe("Modifiers - encryption: decorator and integrity", () => {
+describe("Modifiers - encryption", () => {
   it("handles encryption decorator", async () => {
     class Secured extends Table.with(EncryptionModifier) {
       @Encrypted({

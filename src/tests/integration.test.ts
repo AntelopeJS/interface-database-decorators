@@ -34,7 +34,7 @@ function getDatabase(schemaId: string) {
   return instance;
 }
 
-describe("Integration - real database operations: users and products", () => {
+describe("Integration - real database operations", () => {
   it("creates and queries user with modifiers", async () => {
     @RegisterTable("users", "integration-modifiers-schema")
     class User extends Table.with(HashModifier, EncryptionModifier) {
@@ -153,7 +153,7 @@ describe("Integration - real database operations: users and products", () => {
   });
 });
 
-describe("Integration - real database operations: localized and encrypted fields", () => {
+describe("Integration - real database operations", () => {
   it("handles localized content", async () => {
     @RegisterTable("localized_content", "integration-l10n-schema")
     class LocalizedContent extends Table.with(LocalizationModifier) {
@@ -264,7 +264,7 @@ describe("Integration - real database operations: localized and encrypted fields
   });
 });
 
-describe("Integration - real database operations: hashed fields and schema registration", () => {
+describe("Integration - real database operations", () => {
   it("validates hashed passwords", async () => {
     @RegisterTable("user_accounts", "integration-hash-schema")
     class UserAccount extends Table.with(HashModifier) {
@@ -359,7 +359,7 @@ describe("Integration - real database operations: hashed fields and schema regis
   });
 });
 
-describe("Integration - real database operations: relationships, bulk writes and fixtures", () => {
+describe("Integration - real database operations", () => {
   it("handles complex relationships", async () => {
     @RegisterTable("orders", "integration-rel-schema")
     class Order extends Table {

@@ -15,7 +15,7 @@ import {
 
 import { asFieldType, numberCodec } from "./codec_helpers";
 
-describe("Database - initialization: tables and indexes", () => {
+describe("Database - initialization", () => {
   it("creates a schema", async () => {
     @RegisterTable("test_table", "test-new-schema")
     class _TestTable extends Table {
@@ -146,7 +146,7 @@ describe("Database - initialization: tables and indexes", () => {
   });
 });
 
-describe("Database - initialization: index flags, fixtures and bindings", () => {
+describe("Database - initialization", () => {
   it("leaves index definitions unchanged without crossInstance", async () => {
     @RegisterTable("cross_none", "test-cross-none-schema")
     class _TestTable extends Table {

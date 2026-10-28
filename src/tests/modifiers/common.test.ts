@@ -11,7 +11,7 @@ import {
   toDatabase,
 } from "@antelopejs/interface-database-decorators/modifiers/common";
 
-describe("Modifiers - common: modifier classes", () => {
+describe("Modifiers - common", () => {
   it("creates basic modifier", async () => {
     class TestModifier extends Modifier<any, any> {
       public lock(v: any): any {
@@ -91,7 +91,7 @@ describe("Modifiers - common: modifier classes", () => {
   });
 });
 
-describe("Modifiers - common: attachment and conversion", () => {
+describe("Modifiers - common", () => {
   it("attaches multiple modifiers on same field", async () => {
     class Prefix extends OneWayModifier<
       string,

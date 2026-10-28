@@ -16,7 +16,7 @@ import {
 
 import { asFieldType, numberCodec, stringCodec } from "./codec_helpers";
 
-describe("Model - data operations: conversion", () => {
+describe("Model - data operations", () => {
   it("creates basic data model", async () => {
     class TestTable extends Table {
       name!: string;
@@ -98,7 +98,7 @@ describe("Model - data operations: conversion", () => {
   });
 });
 
-describe("Model - data operations: model cache", () => {
+describe("Model - data operations", () => {
   it("gets model from cache", async () => {
     @RegisterTable("cache_table", "model-cache-schema")
     class TestTable extends Table {
