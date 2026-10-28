@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "table-relations",
+      "area": "framework",
+      "style": "clean",
+      "prompt": "How do I define relations between tables?",
+      "origin": "docs-assistant",
+      "expect": {
+        "skills": ["database-decorators-interface"],
+        "acceptable": ["database-interface"],
+        "mustMention": ["Relation"]
+      }
+    },
+    {
+      "id": "table-relations-casual",
+      "area": "framework",
+      "style": "casual",
+      "prompt": "how do i link two tables together",
+      "origin": "docs-assistant",
+      "expect": {
+        "skills": ["database-decorators-interface"],
+        "acceptable": ["database-interface"],
+        "mustMention": ["Relation"]
+      }
+    },
+    {
+      "id": "database-decorators-interface-aql-neighbour",
+      "area": "framework",
+      "style": "clean",
+      "prompt": "Write a query that returns the novels with at least 300 pages, sorted by page count descending, and watch the table for changes.",
+      "expect": {
+        "skills": ["database-interface"],
+        "acceptable": ["antelopejs", "ajs-consume-interface"],
+        "avoid": ["database-decorators-interface"]
+      }
+    },
+    {
+      "id": "database-decorators-interface-modifiers",
+      "area": "framework",
+      "style": "clean",
+      "prompt": "On my user table class, store the password so it can only be verified, encrypt the API key transparently, and keep created and updated timestamps.",
+      "expect": {
+        "skills": ["database-decorators-interface"],
+        "acceptable": [
+          "database-interface",
+          "antelopejs",
+          "ajs-consume-interface"
+        ],
+        "mustMention": [
+          "Hashed",
+          "Encrypted",
+          "HashModifier",
+          "EncryptionModifier"
+        ]
+      }
+    },
+    {
+      "id": "database-decorators-interface-fixture-casual",
+      "area": "framework",
+      "style": "casual",
+      "prompt": "how do i seed some default rows when the table is empty",
+      "expect": {
+        "skills": ["database-decorators-interface"],
+        "acceptable": ["database-interface", "antelopejs"],
+        "mustMention": ["Fixture", "RegisterSchema"]
+      }
+    }
+  ]
+}
