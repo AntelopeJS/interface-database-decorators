@@ -9,8 +9,10 @@ import {
   isWriteOnly,
 } from "./internal/kinds";
 import {
+  dataByKey,
   eventsByKey,
   fieldsByKey,
+  floatingOf,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -290,7 +292,7 @@ export function toPlainData<T extends { constructor: any }>(
 ): Record<string, any> {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
   const result = { ...object };
-  delete (<any>result)._internal;
+  if ("_internal" in result) delete result._internal;
   for (const field of Object.keys(metaTable.fields)) {
     result[<keyof T>field] = object[<keyof T>field]; // Populate unlocked fields
   }
@@ -446,7 +448,7 @@ export function unlock<
   for (const field of usedFields) {
     unlockArgsOf(meta, field)[Modifier.name] = args;
     if (field in meta.floating) {
-      object[field] = meta.floating[<string>field];
+      object[field] = floatingOf(meta, field);
     }
   }
 }
@@ -513,7 +515,7 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   const internal = getInternal(object);
-  const val: unknown = internal.data[<string>field];
+  const val: unknown = dataByKey(internal)[field];
   for (const { id, modifier, metaRef } of fieldsByKey(metaTable)[field]) {
     const args =
       unlockArgsOf(meta, field)[id] ||

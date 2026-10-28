@@ -41,6 +41,20 @@ export function fieldTypesByKey(meta: DatumStaticMetadata): {
   return meta.fields;
 }
 
+export function floatingOf<V>(
+  meta: { floating: Record<string, V> },
+  field: PropertyKey,
+): V {
+  const byKey: { [field: PropertyKey]: V } = meta.floating;
+  return byKey[field];
+}
+
+export function dataByKey<V>(internal: { data: Record<string, V> }): {
+  [field: PropertyKey]: V;
+} {
+  return internal.data;
+}
+
 export function withRef<T extends Modifier, U>(
   internal: InternalRecord,
   id: ModifiedField["id"],
