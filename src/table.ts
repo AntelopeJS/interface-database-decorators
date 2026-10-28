@@ -38,7 +38,7 @@ export interface TableClass<
   ): { _id: string } & Base &
     (Meta extends object ? { [TableMetaSymbol]: Meta } : object);
 
-  /* public static */ with<
+  with<
     This extends TableClass,
     T extends Constructible<{ [MixinSymbol]: Constructible }>[] = [],
   >(
@@ -52,7 +52,7 @@ export interface TableClass<
     | ExtractTableMeta<InstanceType<T[number]>>
   >;
 
-  /* public static */ table<This extends TableClass>(
+  table<This extends TableClass>(
     this: This,
     target?: TableTarget,
   ): QueryTable<InstanceType<This>>;

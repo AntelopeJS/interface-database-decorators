@@ -154,6 +154,10 @@ export class ModifiersDynamicMetadata {
   );
 
   staticMeta: ModifiersStaticMetadata;
+  /**
+   * Values assigned to a field before its modifiers could lock them, by field
+   * name. Reads return them; `unlock` and `lock` assign them again.
+   */
   floating: Record<string, any> = {}; // Plain data that has no known lock value
   fields: Record<string, Record<string, any[]>> = {};
 
@@ -234,7 +238,6 @@ export class ModifiersDynamicMetadata {
     }
     const list = this.staticMeta.fields[field];
 
-    // TODO: should maybe cache this
     const prevlist: {
       id: string;
       modifier: Modifier;
@@ -289,25 +292,15 @@ function getInternal(object: any): InternalType {
   return object._internal;
 }
 
-/* Data stages:
- *
- * - `Database`: locked plain object
- *   - Complete data with encoded _internal field
- *   - ex: `{ plain: 'value', _internal: { [..] } }`
- * - `Instance`: class instance
- *   - Complete data with prototype attached and accessors
- *   - ex: `Table { plain: 'value', special: (accessor) }`
- * - `Plaindata`: unlocked plain object
- *   - Subset of existing data from locked object
- *   - ex: `{ plain: 'value', special: 'data' }`
+/**
+ * Builds a table instance from unlocked plain data: each key is assigned, so
+ * modifiers lock the fields they can. Then runs the `fromPlainData` event.
  */
-
 export function fromPlainData<T extends Constructible>(
   rawObject: Record<string, any>,
   TableClass: T,
 ): InstanceType<T> {
   const shallowCopy: Record<string, any> = {};
-  // Attach prototype
   Object.setPrototypeOf(shallowCopy, TableClass.prototype);
   for (const [key, val] of Object.entries(rawObject)) {
     shallowCopy[key] = val;
@@ -316,6 +309,10 @@ export function fromPlainData<T extends Constructible>(
   return shallowCopy as InstanceType<T>;
 }
 
+/**
+ * Converts a table instance to unlocked plain data, without `_internal`. A
+ * field still locked comes out `undefined`. Then runs the `toPlainData` event.
+ */
 export function toPlainData<T extends { constructor: any }>(
   object: T,
 ): Record<string, any> {
@@ -329,18 +326,24 @@ export function toPlainData<T extends { constructor: any }>(
   return result;
 }
 
+/**
+ * Builds a table instance from a stored record, its modified fields still
+ * locked in `_internal`. Then runs the `fromDatabase` event.
+ */
 export function fromDatabase<T extends Constructible>(
   rawObject: any,
   TableClass: T,
 ): InstanceType<T> {
-  // Generate Meta
   const shallowCopy = { ...rawObject };
-  // Attach prototype
   Object.setPrototypeOf(shallowCopy, TableClass.prototype);
   triggerEvent(shallowCopy, "fromDatabase", rawObject);
   return shallowCopy;
 }
 
+/**
+ * Converts a table instance to the locked record to store, `_internal`
+ * included and floating values left out. Then runs the `toDatabase` event.
+ */
 export function toDatabase<T extends { constructor: any }>(
   object: T,
 ): Record<string, any> {
@@ -386,11 +389,9 @@ export function attachModifier<
   });
   (entry.modifier as any).options = options;
 
-  // Mark TableClass as special
   const metaTable = getMetadata(TableClass, ModifiersStaticMetadata);
 
   if (!isOnlyEvents(entry.modifier)) {
-    // Add Modifier to TableClass[field] with options
     if (field in metaTable.fields) {
       const list = metaTable.fields[<string>field];
       const last = list[list.length - 1];
@@ -473,13 +474,10 @@ export function unlock<
   ).filter((field) =>
     metaTable.fields[<string>field]?.find(({ id }) => id === Modifier.name),
   );
-  // Get metadata
   const meta = getMetadata(object, ModifiersDynamicMetadata);
-  // for each field set metadata[field][Modifier] to args
   for (const field of usedFields) {
     meta.fields[<string>field][Modifier.name] = args;
     if (field in meta.floating) {
-      // check floating
       object[field] = meta.floating[<string>field];
     }
   }
@@ -535,9 +533,7 @@ export function lock<
   ).filter((field) =>
     metaTable.fields[<string>field]?.find(({ id }) => id === Modifier.name),
   );
-  // Get metadata
   const meta = getMetadata(object, ModifiersDynamicMetadata);
-  // for each field set metadata[field][Modifier] to args
   for (const field of usedFields) {
     const val = object[field];
     meta.fields[<string>field][Modifier.name] = args;
@@ -551,7 +547,6 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
   value: T[K],
 ) {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  // Get metadata
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   const internal = getInternal(object);
   const val: unknown = internal.data[<string>field];
@@ -560,7 +555,6 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
       meta.fields[<string>field][id] || ((<any>modifier).autolock && []);
     if (!args) return false;
     if (isWriteOnly(modifier)) {
-      // return OneWayModifier.test(unwrapped, value)
       return withRef(
         internal,
         id,
@@ -571,7 +565,6 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
       );
     }
     if ("unlock" in modifier && val !== undefined) {
-      // unwrap field until the OneWayModifier
       return withRef(
         internal,
         id,
