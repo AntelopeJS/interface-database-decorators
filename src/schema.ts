@@ -23,8 +23,7 @@ export const RegisterTable: (
     if (!(schemaName in schemaTableRegistry)) {
       schemaTableRegistry[schemaName] = {};
     }
-    schemaTableRegistry[schemaName][tableName] =
-      target as unknown as Class<Table>;
+    schemaTableRegistry[schemaName][tableName] = target;
   },
 );
 

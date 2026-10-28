@@ -4,7 +4,7 @@
 
 ## Layout
 
-- Each module in `src/` and `src/modifiers/`, except `index.ts` and `antelope.test.ts`, is a public subpath; `src/index.ts` is the root export. A new module needs an entry in both `exports` and `typesVersions` in [package.json](./package.json).
+- Each module in `src/` and `src/modifiers/`, except `index.ts` and `antelope.test.ts`, is a public subpath; `src/index.ts` is the root export. A new module needs an entry in both `exports` and `typesVersions` in [package.json](./package.json). Modules under `src/modifiers/internal/` are private: they have no entry and open with `/** @internal @packageDocumentation */`.
 - Tests import the package by its own name (`@antelopejs/interface-database-decorators/...`); `tsconfig.json` maps it onto `src`.
 
 ## Versioning

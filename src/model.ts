@@ -46,11 +46,14 @@ type DecodeLeftLike = {
   left: Array<{ message?: string }>;
 };
 type DecodeRightLike = { _tag: "Right" };
+type FieldCodec = Extract<FieldType, { decode: unknown }>;
 type CodecLike = {
-  decode(u: unknown): DecodeLeftLike | DecodeRightLike;
+  decode(
+    u: Parameters<FieldCodec["decode"]>[0],
+  ): DecodeLeftLike | DecodeRightLike;
 };
 
-function isCodec(type: FieldType): type is FieldType & CodecLike {
+function isCodec(type: FieldType): type is CodecLike & FieldType {
   return (
     typeof type === "object" &&
     type !== null &&
@@ -136,7 +139,7 @@ export function BasicDataModel<T extends object>(
       for (const [field, type] of Object.entries(fields)) {
         if (!isCodec(type)) continue;
         if (partial && (!record || !(field in record))) continue;
-        const result = (type as CodecLike).decode(record?.[field]);
+        const result = type.decode(record?.[field]);
         if (result._tag === "Left") {
           errors.push(decodeFieldError(field, result));
         }
@@ -160,7 +163,7 @@ export function BasicDataModel<T extends object>(
      * @returns Table class instance
      */
     public get(id: string) {
-      return this.table.get(id).then(Model.fromDatabase);
+      return this.table.get(id).then((row) => Model.fromDatabase(row));
     }
 
     /**
@@ -278,7 +281,6 @@ const UNDEFINED_INSTANCE_KEY = Symbol("undefined-instance");
 
 function cacheKeyOf(instanceId: InstanceId | undefined): string | symbol {
   if (instanceId === undefined) return UNDEFINED_INSTANCE_KEY;
-  if (typeof instanceId === "symbol") return instanceId;
   return instanceId;
 }
 
@@ -292,11 +294,7 @@ type ParsedUpdate<T> = {
 
 function makeValidationError(errors: FieldError[]): Error {
   const summary = errors.map((e) => `${e.field} (${e.message})`).join(", ");
-  const err = new Error(`validation failed: ${summary}`) as Error & {
-    errors: FieldError[];
-  };
-  err.errors = errors;
-  return err;
+  return Object.assign(new Error(`validation failed: ${summary}`), { errors });
 }
 
 function parseUpdateArgs<T>(
