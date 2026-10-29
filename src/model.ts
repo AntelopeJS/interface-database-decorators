@@ -17,6 +17,7 @@ import {
   toDatabase,
   triggerEvent,
 } from "./modifiers/common";
+import { isRecord } from "./modifiers/internal/kinds";
 import {
   type Constructible,
   DatumStaticMetadata,
@@ -61,10 +62,6 @@ function isCodec(type: FieldType): type is CodecLike & FieldType {
     "decode" in type &&
     typeof type.decode === "function"
   );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 type InstanceIdProvider = (ctx: RequestContext) => InstanceId | undefined;

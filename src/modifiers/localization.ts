@@ -9,6 +9,7 @@ import {
   ModifiersStaticMetadata,
   unlock,
 } from "./common";
+import { isRecord } from "./internal/kinds";
 
 type Options = {
   /**
@@ -20,10 +21,6 @@ type Options = {
 
 /** A text left empty in one language counts as no text in that language. */
 const EMPTY_TEXT = "";
-
-function isObject(value: unknown): value is object {
-  return typeof value === "object" && value !== null;
-}
 
 function withoutEmptyTexts<V>(values: Record<string, V>): Record<string, V> {
   return Object.fromEntries(
@@ -74,9 +71,9 @@ export class LocalizationModifier extends ContainerModifier<
     key: string,
   ) {
     if (key === "*") {
-      return isObject(value)
-        ? withoutEmptyTexts(value as Record<string, unknown>)
-        : (value as Record<string, unknown>);
+      return isRecord(value)
+        ? withoutEmptyTexts(value)
+        : super.lock(locked_value, value, key);
     }
     return withoutEmptyTexts(super.lock(locked_value, value, key));
   }
