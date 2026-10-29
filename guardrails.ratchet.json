@@ -3,7 +3,7 @@
     "antelopejs/no-comments": 2,
     "anti-slop/no-chained-type-assertions": 4,
     "anti-slop/no-known-value-widening": 2,
-    "anti-slop/no-runtime-typeof": 12,
+    "anti-slop/no-runtime-typeof": 6,
     "anti-slop/no-unknown-parameters": 8,
     "anti-slop/no-unknown-returns": 4,
     "anti-slop/no-unsafe-dictionary-type": 21,
