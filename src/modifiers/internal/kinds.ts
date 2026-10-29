@@ -23,8 +23,6 @@ export const ignoredEventNames = {
   unlock: true,
 };
 
-export function isCallable(
-  value: unknown,
-): value is (...args: never[]) => unknown {
+export function isCallable(value: unknown): value is CallableFunction {
   return typeof value === "function";
 }
