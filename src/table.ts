@@ -228,6 +228,5 @@ export const Fixture: <T extends typeof Table>(
   generator: (p: T) => AwaitableArray<Partial<InstanceType<T>>>,
 ) => ClassDecorator<T> = MakeClassDecorator((target, generator) => {
   const metadata = getMetadata(target, DatumStaticMetadata);
-  // SAFETY: the generator is stored on the metadata of the class this decorator is applied to, the T its parameter is typed with, and insertFixtureData, the only reader, calls it with the registered table class owning that metadata (that class or a subclass); its output is not trusted, since toFixtureRows keeps only entries that isTableEntry accepts.
   metadata.generator = generator as unknown as DatumStaticMetadata["generator"];
 });
