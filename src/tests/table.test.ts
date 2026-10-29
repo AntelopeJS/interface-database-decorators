@@ -1,15 +1,7 @@
 import { expect } from "chai";
-import { MixinSymbol } from "@antelopejs/interface-database-decorators/modifiers/common";
-import {
-  Field,
-  Fixture,
-  Index,
-  Table,
-} from "@antelopejs/interface-database-decorators/table";
-import {
-  DatumStaticMetadata,
-  getMetadata,
-} from "@antelopejs/interface-database-decorators/common";
+import { MixinSymbol } from "../modifiers/common";
+import { Field, Fixture, Index, Table } from "../table";
+import { DatumStaticMetadata, getMetadata } from "../common";
 
 import { asFieldType, stringCodec } from "./codec_helpers";
 

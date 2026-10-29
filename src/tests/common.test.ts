@@ -1,9 +1,5 @@
 import { expect } from "chai";
-import {
-  DatumStaticMetadata,
-  type DeepPartial,
-  getMetadata,
-} from "@antelopejs/interface-database-decorators/common";
+import { DatumStaticMetadata, type DeepPartial, getMetadata } from "../common";
 
 interface TestType {
   name: string;

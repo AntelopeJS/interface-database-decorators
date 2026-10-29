@@ -1,9 +1,6 @@
 import { expect } from "chai";
-import { Field, Table } from "@antelopejs/interface-database-decorators/table";
-import {
-  Hashed,
-  HashModifier,
-} from "@antelopejs/interface-database-decorators/modifiers/hash";
+import { Field, Table } from "../../table";
+import { Hashed, HashModifier } from "../../modifiers/hash";
 
 describe("Modifiers - hash", () => {
   it("hashes string values", async () => {
