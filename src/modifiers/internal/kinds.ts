@@ -22,3 +22,7 @@ export const ignoredEventNames = {
   lock: true,
   unlock: true,
 };
+
+export function isCallable(value: unknown): value is CallableFunction {
+  return typeof value === "function";
+}

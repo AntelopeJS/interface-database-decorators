@@ -1,30 +1,13 @@
 import { expect } from "chai";
 import { Schema } from "@antelopejs/interface-database";
-import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
-import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
-import {
-  BasicDataModel,
-  GetModel,
-} from "@antelopejs/interface-database-decorators/model";
-import {
-  Hashed,
-  HashModifier,
-} from "@antelopejs/interface-database-decorators/modifiers/hash";
-import {
-  Field,
-  Fixture,
-  Index,
-  Table,
-} from "@antelopejs/interface-database-decorators/table";
-import {
-  Encrypted,
-  EncryptionModifier,
-} from "@antelopejs/interface-database-decorators/modifiers/encryption";
-import {
-  LocalizationModifier,
-  Localized,
-} from "@antelopejs/interface-database-decorators/modifiers/localization";
-import { unlockrequest } from "@antelopejs/interface-database-decorators/modifiers/common";
+import { RegisterTable } from "../schema";
+import { RegisterSchema } from "../database";
+import { BasicDataModel, GetModel } from "../model";
+import { Hashed, HashModifier } from "../modifiers/hash";
+import { Field, Fixture, Index, Table } from "../table";
+import { Encrypted, EncryptionModifier } from "../modifiers/encryption";
+import { LocalizationModifier, Localized } from "../modifiers/localization";
+import { unlockrequest } from "../modifiers/common";
 
 import { asFieldType, numberCodec } from "./codec_helpers";
 

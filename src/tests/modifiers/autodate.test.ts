@@ -1,15 +1,15 @@
 import { expect } from "chai";
-import { Field, Table } from "@antelopejs/interface-database-decorators/table";
+import { Field, Table } from "../../table";
 import {
   fromPlainData,
   toDatabase,
   triggerEvent,
-} from "@antelopejs/interface-database-decorators/modifiers/common";
+} from "../../modifiers/common";
 import {
   AutoDateModifier,
   CreationTime,
   UpdateTime,
-} from "@antelopejs/interface-database-decorators/modifiers/autodate";
+} from "../../modifiers/autodate";
 
 describe("Modifiers - autodate", () => {
   it("sets creation date on insert", async () => {

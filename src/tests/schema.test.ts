@@ -1,17 +1,7 @@
 import { expect } from "chai";
-import {
-  Field,
-  Index,
-  Table,
-} from "@antelopejs/interface-database-decorators/table";
-import {
-  DatumStaticMetadata,
-  getMetadata,
-} from "@antelopejs/interface-database-decorators/common";
-import {
-  getTablesForSchema,
-  RegisterTable,
-} from "@antelopejs/interface-database-decorators/schema";
+import { Field, Index, Table } from "../table";
+import { DatumStaticMetadata, getMetadata } from "../common";
+import { getTablesForSchema, RegisterTable } from "../schema";
 
 describe("Schema - RegisterTable decorator", () => {
   it("stores tableName and schemaName in metadata", async () => {

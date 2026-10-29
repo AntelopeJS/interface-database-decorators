@@ -58,8 +58,21 @@ function isCodec(type: FieldType): type is CodecLike & FieldType {
     typeof type === "object" &&
     type !== null &&
     !Array.isArray(type) &&
-    typeof (type as { decode?: unknown }).decode === "function"
+    "decode" in type &&
+    typeof type.decode === "function"
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+type InstanceIdProvider = (ctx: RequestContext) => InstanceId | undefined;
+
+function isInstanceIdProvider(
+  value: InstanceId | InstanceIdProvider | undefined,
+): value is InstanceIdProvider {
+  return typeof value === "function";
 }
 
 function decodeFieldError(field: string, result: DecodeLeftLike): FieldError {
@@ -132,10 +145,7 @@ export function BasicDataModel<T extends object>(
       const fields = metadata.fields;
       const errors: FieldError[] = [];
       const partial = options?.partial === true;
-      const record =
-        typeof obj === "object" && obj !== null
-          ? (obj as Record<string, unknown>)
-          : undefined;
+      const record = isRecord(obj) ? obj : undefined;
       for (const [field, type] of Object.entries(fields)) {
         if (!isCodec(type)) continue;
         if (partial && (!record || !(field in record))) continue;
@@ -176,7 +186,7 @@ export function BasicDataModel<T extends object>(
     public getBy(index: keyof T, ...keys: any[]) {
       return this.table
         .getAll(keys.length === 1 ? keys[0] : keys, <string>index)
-        .then((dataR) => dataR.map(Model.fromDatabase) as T[]);
+        .then((dataR) => dataR.map((row) => Model.fromDatabase(row)) as T[]);
     }
 
     /**
@@ -185,7 +195,9 @@ export function BasicDataModel<T extends object>(
      * @returns Array of Table class instances.
      */
     public getAll() {
-      return this.table.then((dataR) => dataR.map(Model.fromDatabase) as T[]);
+      return this.table.then(
+        (dataR) => dataR.map((row) => Model.fromDatabase(row)) as T[],
+      );
     }
 
     /**
@@ -235,12 +247,8 @@ export function BasicDataModel<T extends object>(
       obj: DeepPartial<T>,
       options?: ValidateOptions,
     ): Promise<number>;
-    public async update(
-      idOrObj: DeepPartial<T> | string,
-      objOrOptions?: DeepPartial<T> | ValidateOptions,
-      options?: ValidateOptions,
-    ) {
-      const parsed = parseUpdateArgs<T>(idOrObj, objOrOptions, options);
+    public async update(...args: UpdateArgs<T>) {
+      const parsed = parseUpdateArgs(args);
       if (parsed.options?.validate) {
         const result = Model.validate(parsed.data, { partial: true });
         if (!result.ok) throw makeValidationError(result.errors);
@@ -297,22 +305,25 @@ function makeValidationError(errors: FieldError[]): Error {
   return Object.assign(new Error(`validation failed: ${summary}`), { errors });
 }
 
-function parseUpdateArgs<T>(
-  idOrObj: DeepPartial<T> | string,
-  objOrOptions?: DeepPartial<T> | ValidateOptions,
+type IdUpdateArgs<T> = [
+  id: string,
+  data: DeepPartial<T>,
   options?: ValidateOptions,
-): ParsedUpdate<T> {
-  if (typeof idOrObj === "string") {
-    return {
-      id: idOrObj,
-      data: objOrOptions as DeepPartial<T>,
-      options,
-    };
+];
+type ObjectUpdateArgs<T> = [data: DeepPartial<T>, options?: ValidateOptions];
+type UpdateArgs<T> = IdUpdateArgs<T> | ObjectUpdateArgs<T>;
+
+function isIdUpdate<T>(args: UpdateArgs<T>): args is IdUpdateArgs<T> {
+  return typeof args[0] === "string";
+}
+
+function parseUpdateArgs<T>(args: UpdateArgs<T>): ParsedUpdate<T> {
+  if (isIdUpdate(args)) {
+    const [id, data, options] = args;
+    return { id, data, options };
   }
-  return {
-    data: idOrObj,
-    options: objOrOptions as ValidateOptions | undefined,
-  };
+  const [data, options] = args;
+  return { data, options };
 }
 
 function schemaOf(cl: DataModel): Schema<any> {
@@ -356,7 +367,7 @@ export const Model = MakeParameterAndPropertyDecorator(
       | InstanceId
       | ((ctx: RequestContext) => InstanceId | undefined),
   ) => {
-    if (typeof instanceIdOrCallback === "function") {
+    if (isInstanceIdProvider(instanceIdOrCallback)) {
       SetParameterProvider(target, key, index, (ctx: RequestContext) => {
         return GetModel(cl, instanceIdOrCallback(ctx));
       });

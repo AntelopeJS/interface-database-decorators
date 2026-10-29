@@ -21,6 +21,10 @@ type Options = {
 /** A text left empty in one language counts as no text in that language. */
 const EMPTY_TEXT = "";
 
+function isObject(value: unknown): value is object {
+  return typeof value === "object" && value !== null;
+}
+
 function withoutEmptyTexts<V>(values: Record<string, V>): Record<string, V> {
   return Object.fromEntries(
     Object.entries(values).filter(([, value]) => value !== EMPTY_TEXT),
@@ -69,7 +73,7 @@ export class LocalizationModifier extends ContainerModifier<
     key: string,
   ) {
     if (key === "*") {
-      return value && typeof value === "object"
+      return isObject(value)
         ? withoutEmptyTexts(value as Record<string, unknown>)
         : (value as Record<string, unknown>);
     }

@@ -2,18 +2,54 @@ import Module from "node:module";
 import { realpathSync } from "node:fs";
 import path from "node:path";
 
-declare module "module" {
-  namespace Module {
-    function _resolveFilename(request: string, parent: Module): string;
-    function _nodeModulePaths(directory: string): string[];
-  }
+interface ModuleInternals {
+  _resolveFilename(request: string, parent: Module): string;
+  _nodeModulePaths(directory: string): string[];
 }
 
 interface LoadableModule {
   load(filename: string): void;
 }
 
-type ModuleRequire = (request: string) => unknown;
+type ModuleRequire = (request: string) => object;
+
+function hasInternals(
+  candidate: typeof Module,
+): candidate is typeof Module & ModuleInternals {
+  return (
+    "_resolveFilename" in candidate &&
+    typeof candidate._resolveFilename === "function" &&
+    "_nodeModulePaths" in candidate &&
+    typeof candidate._nodeModulePaths === "function"
+  );
+}
+
+function isLoadable(candidate: Module): candidate is Module & LoadableModule {
+  return "load" in candidate && typeof candidate.load === "function";
+}
+
+function isModuleExports(value: unknown): value is object {
+  return (
+    (typeof value === "object" || typeof value === "function") && value !== null
+  );
+}
+
+function exportsOf(loaded: Module): object {
+  const exported = loaded.exports;
+  if (!isModuleExports(exported)) {
+    throw new Error(
+      `${loaded.filename} does not export an object or a function`,
+    );
+  }
+  return exported;
+}
+
+function resolveInternals() {
+  if (!hasInternals(Module)) {
+    throw new Error("node:module does not expose its resolution internals");
+  }
+  return Module;
+}
 
 /**
  * Evaluates built packages a second time, the way the core gives each
@@ -29,27 +65,34 @@ export function CreateOtherInstance(folders: string[]): ModuleRequire {
   const owned = folders.map((folder) => realpathSync(folder) + path.sep);
   const modules = new Map<string, Module>();
 
-  const load = (filename: string, parent: Module): unknown => {
+  const load = (filename: string, parent: Module): object => {
     const cached = modules.get(filename);
     if (cached) {
-      return cached.exports;
+      return exportsOf(cached);
     }
     const loaded = new Module(filename, parent);
     loaded.filename = filename;
-    loaded.paths = Module._nodeModulePaths(path.dirname(filename));
-    loaded.require = ((request: string) =>
-      requireFrom(loaded, request)) as Module["require"];
+    loaded.paths = resolveInternals()._nodeModulePaths(path.dirname(filename));
+    loaded.require = (request: string) => requireFrom(loaded, request);
     modules.set(filename, loaded);
-    (loaded as unknown as LoadableModule).load(filename);
-    return loaded.exports;
+    if (!isLoadable(loaded)) {
+      throw new Error("node:module instances cannot load a file directly");
+    }
+    loaded.load(filename);
+    return exportsOf(loaded);
   };
 
-  const requireFrom = (parent: Module, request: string): unknown => {
-    const filename = Module._resolveFilename(request, parent);
+  const requireFrom = (parent: Module, request: string): object => {
+    const filename = resolveInternals()._resolveFilename(request, parent);
     const isOwned = owned.some((root) => filename.startsWith(root));
-    return isOwned
-      ? load(filename, parent)
-      : Module.prototype.require.call(parent, request);
+    if (isOwned) {
+      return load(filename, parent);
+    }
+    const required = Module.prototype.require.call(parent, request);
+    if (!isModuleExports(required)) {
+      throw new Error(`${request} does not export an object or a function`);
+    }
+    return required;
   };
 
   return (request: string) => requireFrom(module, request);

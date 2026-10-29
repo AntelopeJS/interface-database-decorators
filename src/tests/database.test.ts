@@ -1,17 +1,9 @@
 import { expect } from "chai";
 import { Schema } from "@antelopejs/interface-database";
-import { RegisterTable } from "@antelopejs/interface-database-decorators/schema";
-import { RegisterSchema } from "@antelopejs/interface-database-decorators/database";
-import {
-  BasicDataModel,
-  GetModel,
-} from "@antelopejs/interface-database-decorators/model";
-import {
-  Field,
-  Fixture,
-  Index,
-  Table,
-} from "@antelopejs/interface-database-decorators/table";
+import { RegisterTable } from "../schema";
+import { RegisterSchema } from "../database";
+import { BasicDataModel, GetModel } from "../model";
+import { Field, Fixture, Index, Table } from "../table";
 
 import { asFieldType, numberCodec } from "./codec_helpers";
 

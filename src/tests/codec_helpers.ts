@@ -19,25 +19,36 @@ export type TestCodec<T> = {
   decode(u: Parameters<FieldCodec["decode"]>[0]): DecodeResult<T>;
 };
 
+class GuardCodec<T> implements TestCodec<T> {
+  declare readonly _A: T;
+  declare readonly _O: T;
+  readonly _I: unknown = undefined;
+
+  constructor(
+    readonly name: string,
+    private readonly guard: (u: unknown) => u is T,
+  ) {}
+
+  readonly is = (u: unknown): u is T => this.guard(u);
+
+  readonly encode = (a: T) => a;
+
+  readonly decode = (
+    u: Parameters<FieldCodec["decode"]>[0],
+  ): DecodeResult<T> =>
+    this.guard(u)
+      ? { _tag: "Right", right: u }
+      : {
+          _tag: "Left",
+          left: [{ value: u, context: [], message: `not ${this.name}` }],
+        };
+}
+
 export function makeCodec<T>(
   name: string,
   guard: (u: unknown) => u is T,
 ): TestCodec<T> {
-  return {
-    _A: undefined as unknown as T,
-    _O: undefined as unknown as T,
-    _I: undefined,
-    name,
-    is: guard,
-    encode: (a) => a,
-    decode: (u) =>
-      guard(u)
-        ? { _tag: "Right", right: u }
-        : {
-            _tag: "Left",
-            left: [{ value: u, context: [], message: `not ${name}` }],
-          },
-  };
+  return new GuardCodec(name, guard);
 }
 
 export const stringCodec: TestCodec<string> = makeCodec(
