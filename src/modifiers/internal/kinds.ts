@@ -26,3 +26,7 @@ export const ignoredEventNames = {
 export function isCallable(value: unknown): value is CallableFunction {
   return typeof value === "function";
 }
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
