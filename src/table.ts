@@ -199,9 +199,10 @@ export interface IndexOptions {
 export const Index = MakePropertyDecorator(
   (target, propertyKey, options?: IndexOptions) => {
     const metadata = getMetadata(target.constructor, DatumStaticMetadata);
+    const key = <string>propertyKey;
     metadata.addIndex(
-      <string>propertyKey,
-      options?.group || <string>propertyKey,
+      key,
+      options?.group || key,
       options?.crossInstance,
       options?.unique,
     );

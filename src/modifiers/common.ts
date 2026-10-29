@@ -296,7 +296,8 @@ export function toPlainData<T extends { constructor: any }>(
   const result = { ...object };
   if ("_internal" in result) delete result._internal;
   for (const field of Object.keys(metaTable.fields)) {
-    result[<keyof T>field] = object[<keyof T>field];
+    const key = <keyof T>field;
+    result[key] = object[key];
   }
   triggerEvent(object, "toPlainData", result);
   return result;
@@ -421,14 +422,25 @@ export function attachModifier<
   }
 }
 
+function fieldsModifiedBy<T>(
+  metaTable: ModifiersStaticMetadata,
+  modifierClass: Constructible<Modifier>,
+  fields?: Array<keyof T>,
+): Array<keyof T> {
+  return (fields ?? (Object.keys(metaTable.fields) as Array<keyof T>)).filter(
+    (field) =>
+      fieldsByKey(metaTable)[field]?.find(
+        ({ id }) => id === modifierClass.name,
+      ),
+  );
+}
+
 export function getModifiedFields<
   T extends { constructor: any },
   M extends Constructible<Modifier>,
 >(object: T, Modifier: M): (keyof T)[] {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  return Object.keys(metaTable.fields).filter((field) =>
-    metaTable.fields[field]?.find(({ id }) => id === Modifier.name),
-  ) as (keyof T)[];
+  return fieldsModifiedBy<T>(metaTable, Modifier);
 }
 
 export function unlock<
@@ -441,11 +453,7 @@ export function unlock<
   ...args: ExtractModifierArgs<InstanceType<M>>
 ) {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  const usedFields = (
-    fields ?? (Object.keys(metaTable.fields) as Array<keyof T>)
-  ).filter((field) =>
-    fieldsByKey(metaTable)[field]?.find(({ id }) => id === Modifier.name),
-  );
+  const usedFields = fieldsModifiedBy<T>(metaTable, Modifier, fields);
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   for (const field of usedFields) {
     unlockArgsOf(meta, field)[Modifier.name] = args;
@@ -469,19 +477,17 @@ export function unlockrequest<T extends {}, K extends keyof T>(
     modifiers.map(({ modifier, args: modArgs }) => [modifier.name, modArgs]),
   );
 
-  const meta = (<any>object).key("_internal").key("meta");
+  const stored = <any>object;
+  const meta = stored.key("_internal").key("meta");
   const metaTable = getMetadata(table, ModifiersStaticMetadata);
   return (
-    fieldsByKey(metaTable)[field]?.reduce(
-      (data, { id, modifier }) => {
-        if (isWriteOnly(modifier) || !isTwoWay(modifier)) {
-          return data;
-        }
-        data = modifier.unlockrequest(data, meta.key(id), ...args[id]);
+    fieldsByKey(metaTable)[field]?.reduce((data, { id, modifier }) => {
+      if (isWriteOnly(modifier) || !isTwoWay(modifier)) {
         return data;
-      },
-      (<any>object).key("_internal").key("data").key(field),
-    ) || (<any>object).key(field)
+      }
+      data = modifier.unlockrequest(data, meta.key(id), ...args[id]);
+      return data;
+    }, stored.key("_internal").key("data").key(field)) || stored.key(field)
   );
 }
 
@@ -495,11 +501,7 @@ export function lock<
   ...args: ExtractModifierArgs<InstanceType<M>> | []
 ) {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  const usedFields = (
-    fields ?? (Object.keys(metaTable.fields) as Array<keyof T>)
-  ).filter((field) =>
-    fieldsByKey(metaTable)[field]?.find(({ id }) => id === Modifier.name),
-  );
+  const usedFields = fieldsModifiedBy<T>(metaTable, Modifier, fields);
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   for (const field of usedFields) {
     const val = object[field];
