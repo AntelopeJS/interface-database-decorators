@@ -79,7 +79,7 @@ export function getMetadata<TMetadata, TTarget extends object>(
     return existingMetadata;
   }
 
-  const prototype = Object.getPrototypeOf(target) as TTarget | null;
+  const prototype: object | null = Object.getPrototypeOf(target);
   const inheritedMetadata =
     inherit && prototype
       ? (Reflect.getOwnMetadata(metadataClass.key, prototype) as

@@ -13,6 +13,7 @@ import {
   dataByKey,
   eventsByKey,
   fieldsByKey,
+  floatingByKey,
   floatingOf,
   unlockArgsOf,
   withRef,
@@ -161,8 +162,8 @@ export class ModifiersDynamicMetadata {
     }
   }
 
-  canGet(field: string) {
-    const list = this.staticMeta.fields[field];
+  canGet(field: PropertyKey) {
+    const list = fieldsByKey(this.staticMeta)[field];
     const lastModifier = list[list.length - 1].modifier;
     if ("autolock" in lastModifier && lastModifier.autolock) {
       return true;
@@ -174,25 +175,25 @@ export class ModifiersDynamicMetadata {
         ({ id, modifier }) =>
           !("autounlock" in modifier && modifier.autounlock) &&
           "unlock" in modifier &&
-          !(id in this.fields[field]),
+          !(id in unlockArgsOf(this, field)),
       )
     );
   }
 
-  get(field: string, internal: InternalType) {
+  get(field: PropertyKey, internal: InternalType) {
     if (field in this.floating) {
-      return this.floating[field];
+      return floatingByKey(this)[field];
     }
     if (!this.canGet(field)) {
       return;
     }
-    const list = this.staticMeta.fields[field];
-    let value = internal.data[field];
+    const list = fieldsByKey(this.staticMeta)[field];
+    let value = dataByKey(internal)[field];
     for (const { id, modifier, metaRef } of list) {
       if (isTwoWay(modifier) && value !== undefined) {
-        if (this.fields[field][id]) {
+        if (unlockArgsOf(this, field)[id]) {
           value = withRef(internal, id, modifier, metaRef, (modifier) =>
-            modifier.unlock(value, ...this.fields[field][id]),
+            modifier.unlock(value, ...unlockArgsOf(this, field)[id]),
           );
         } else if ("autounlock" in modifier && modifier.autounlock) {
           value = withRef(internal, id, modifier, metaRef, (modifier) =>
@@ -204,22 +205,22 @@ export class ModifiersDynamicMetadata {
     return value;
   }
 
-  canSet(field: string) {
-    const list = this.staticMeta.fields[field];
+  canSet(field: PropertyKey) {
+    const list = fieldsByKey(this.staticMeta)[field];
     return !list.some(
       ({ id, modifier }) =>
         !("autolock" in modifier && modifier.autolock) &&
         "lock" in modifier &&
-        !(id in this.fields[field]),
+        !(id in unlockArgsOf(this, field)),
     );
   }
 
-  set(field: string, internal: InternalType, value: unknown) {
+  set(field: PropertyKey, internal: InternalType, value: unknown) {
     if (!this.canSet(field)) {
-      this.floating[field] = value;
+      floatingByKey(this)[field] = value;
       return;
     }
-    const list = this.staticMeta.fields[field];
+    const list = fieldsByKey(this.staticMeta)[field];
 
     const prevlist: {
       id: string;
@@ -227,13 +228,13 @@ export class ModifiersDynamicMetadata {
       metaRef: { _ref: any };
       prev: unknown;
     }[] = [];
-    let prev = internal.data[field];
+    let prev = dataByKey(internal)[field];
     for (let i = 0; i < list.length - 1; ++i) {
       const { id, modifier, metaRef } = list[i];
       prevlist[i] = { id, modifier, metaRef, prev };
       if (isTwoWay(modifier)) {
-        if (this.fields[field][id]) {
-          prev = modifier.unlock(prev, ...this.fields[field][id]);
+        if (unlockArgsOf(this, field)[id]) {
+          prev = modifier.unlock(prev, ...unlockArgsOf(this, field)[id]);
         } else {
           prev = undefined;
         }
@@ -248,12 +249,12 @@ export class ModifiersDynamicMetadata {
       const { id, modifier, metaRef, prev } = prevlist[i];
       if (isLocking(modifier)) {
         value = withRef(internal, id, modifier, metaRef, (modifier) =>
-          modifier.lock(prev, value, ...(this.fields[field][id] || [])),
+          modifier.lock(prev, value, ...(unlockArgsOf(this, field)[id] || [])),
         );
       }
     }
-    internal.data[field] = value;
-    delete this.floating[field];
+    dataByKey(internal)[field] = value;
+    delete floatingByKey(this)[field];
   }
 }
 
@@ -369,11 +370,11 @@ export function attachModifier<
       if (isWriteOnly(last.modifier)) {
         if (isWriteOnly(entry.modifier)) {
           throw new Error(
-            `Attempted adding Modifier ${entry.id} on ${TableClass.name}.${<string>field} but it already has a One-Way Modifier`,
+            `Attempted adding Modifier ${entry.id} on ${TableClass.name}.${String(field)} but it already has a One-Way Modifier`,
           );
         } else {
           throw new Error(
-            `Adding Modifier ${entry.id} on ${TableClass.name}.${<string>field} after a One-Way Modifier, please review your ordering.`,
+            `Adding Modifier ${entry.id} on ${TableClass.name}.${String(field)} after a One-Way Modifier, please review your ordering.`,
           );
         }
       } else {
@@ -384,13 +385,13 @@ export function attachModifier<
       Object.defineProperty(TableClass.prototype, field, {
         get: function () {
           return getMetadata(this, ModifiersDynamicMetadata).get(
-            <string>field,
+            field,
             getInternal(this),
           );
         },
         set: function (value) {
           getMetadata(this, ModifiersDynamicMetadata).set(
-            <string>field,
+            field,
             getInternal(this),
             value,
           );

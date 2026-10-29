@@ -195,6 +195,7 @@ export function BasicDataModel<T extends object>(
      * @returns Array of Table class instances.
      */
     public getAll() {
+      // SAFETY: Model.fromDatabase returns undefined only for a falsy row, and the rows of a table read are stored records, never null or undefined; the cast removes that undefined from the element type.
       return this.table.then(
         (dataR) => dataR.map((row) => Model.fromDatabase(row)) as T[],
       );
@@ -263,6 +264,7 @@ export function BasicDataModel<T extends object>(
       }
       const instance = Model.fromPlainData(parsed.data);
       triggerEvent(instance, "update");
+      // SAFETY: parsed.data is the DeepPartial<T> object the caller passed as the first argument (the id form was handled above), so reading the property named by the table's primary key is defined and gives undefined when absent; the next line asserts it is present.
       const id = (parsed.data as any)[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
       return this.table.get(id).update(Model.toDatabase(instance)).run();
@@ -351,7 +353,10 @@ export function GetModel<M extends InstanceType<DataModel>>(
   assert(cache);
   const key = cacheKeyOf(instanceId);
   const cached = cache.get(key);
-  if (cached) return cached as M;
+  if (cached) {
+    // SAFETY: modelCache is private to this module, keyed by the class, and only this function fills it, with the `new cl(...)` result below, which is an M for that same cl.
+    return cached as M;
+  }
   const model = new cl(schemaOf(cl).instance(instanceId));
   cache.set(key, model);
   return model;

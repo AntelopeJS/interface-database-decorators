@@ -49,6 +49,12 @@ export function floatingOf<V>(
   return byKey[field];
 }
 
+export function floatingByKey<V>(meta: { floating: Record<string, V> }): {
+  [field: PropertyKey]: V;
+} {
+  return meta.floating;
+}
+
 export function dataByKey<V>(internal: { data: Record<string, V> }): {
   [field: PropertyKey]: V;
 } {
