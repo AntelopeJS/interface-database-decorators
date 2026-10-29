@@ -353,8 +353,10 @@ export function GetModel<M extends InstanceType<DataModel>>(
   assert(cache);
   const key = cacheKeyOf(instanceId);
   const cached = cache.get(key);
-  // SAFETY: modelCache is private to this module, keyed by the class, and only this function fills it, with the `new cl(...)` result below, which is an M for that same cl.
-  if (cached) return cached as M;
+  if (cached) {
+    // SAFETY: modelCache is private to this module, keyed by the class, and only this function fills it, with the `new cl(...)` result below, which is an M for that same cl.
+    return cached as M;
+  }
   const model = new cl(schemaOf(cl).instance(instanceId));
   cache.set(key, model);
   return model;
