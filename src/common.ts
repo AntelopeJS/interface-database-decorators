@@ -67,25 +67,28 @@ export class DatumStaticMetadata {
   }
 }
 
+function getOwnMetadata<TMetadata>(
+  target: Parameters<typeof Reflect.getOwnMetadata>[1],
+  metadataClass: MetadataClass<TMetadata>,
+): TMetadata | undefined {
+  return Reflect.getOwnMetadata(metadataClass.key, target) as
+    | TMetadata
+    | undefined;
+}
+
 export function getMetadata<TMetadata, TTarget extends object>(
   target: TTarget,
   metadataClass: MetadataClass<TMetadata>,
   inherit: boolean = true,
 ): TMetadata {
-  const existingMetadata = Reflect.getOwnMetadata(metadataClass.key, target) as
-    | TMetadata
-    | undefined;
+  const existingMetadata = getOwnMetadata(target, metadataClass);
   if (existingMetadata) {
     return existingMetadata;
   }
 
   const prototype: object | null = Object.getPrototypeOf(target);
   const inheritedMetadata =
-    inherit && prototype
-      ? (Reflect.getOwnMetadata(metadataClass.key, prototype) as
-          | TMetadata
-          | undefined)
-      : undefined;
+    inherit && prototype ? getOwnMetadata(prototype, metadataClass) : undefined;
   const metadata = inheritedMetadata ?? new metadataClass(target);
   Reflect.defineMetadata(metadataClass.key, metadata, target);
   return metadata;
