@@ -16,16 +16,25 @@ const databaseFolder = path.join(
 );
 const otherInstance = CreateOtherInstance([buildFolder, databaseFolder]);
 
+function isFunction(value: unknown): value is CallableFunction {
+  return typeof value === "function";
+}
+
 function isDecoratorsModule(
   candidate: Partial<DecoratorsModule>,
 ): candidate is DecoratorsModule {
-  return Object.keys(Decorators).every((name) => name in candidate);
+  const present = new Map(Object.entries(candidate));
+  return Object.entries(Decorators).every(
+    ([name, member]) =>
+      present.has(name) &&
+      (!isFunction(member) || isFunction(present.get(name))),
+  );
 }
 
 function isStagedSchemaModule(
   candidate: Partial<StagedSchemaModule>,
 ): candidate is StagedSchemaModule {
-  return "Schema" in candidate;
+  return "Schema" in candidate && typeof candidate.Schema === "function";
 }
 
 function loadDecorators(): DecoratorsModule {

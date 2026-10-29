@@ -56,6 +56,7 @@ type CodecLike = {
 function isCodec(type: FieldType): type is CodecLike & FieldType {
   return (
     typeof type === "object" &&
+    type !== null &&
     !Array.isArray(type) &&
     "decode" in type &&
     typeof type.decode === "function"

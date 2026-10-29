@@ -16,11 +16,32 @@ type ModuleRequire = (request: string) => object;
 function hasInternals(
   candidate: typeof Module,
 ): candidate is typeof Module & ModuleInternals {
-  return "_resolveFilename" in candidate && "_nodeModulePaths" in candidate;
+  return (
+    "_resolveFilename" in candidate &&
+    typeof candidate._resolveFilename === "function" &&
+    "_nodeModulePaths" in candidate &&
+    typeof candidate._nodeModulePaths === "function"
+  );
 }
 
 function isLoadable(candidate: Module): candidate is Module & LoadableModule {
-  return "load" in candidate;
+  return "load" in candidate && typeof candidate.load === "function";
+}
+
+function isModuleExports(value: unknown): value is object {
+  return (
+    (typeof value === "object" || typeof value === "function") && value !== null
+  );
+}
+
+function exportsOf(loaded: Module): object {
+  const exported = loaded.exports;
+  if (!isModuleExports(exported)) {
+    throw new Error(
+      `${loaded.filename} does not export an object or a function`,
+    );
+  }
+  return exported;
 }
 
 function resolveInternals() {
@@ -47,7 +68,7 @@ export function CreateOtherInstance(folders: string[]): ModuleRequire {
   const load = (filename: string, parent: Module): object => {
     const cached = modules.get(filename);
     if (cached) {
-      return cached.exports;
+      return exportsOf(cached);
     }
     const loaded = new Module(filename, parent);
     loaded.filename = filename;
@@ -58,15 +79,20 @@ export function CreateOtherInstance(folders: string[]): ModuleRequire {
       throw new Error("node:module instances cannot load a file directly");
     }
     loaded.load(filename);
-    return loaded.exports;
+    return exportsOf(loaded);
   };
 
   const requireFrom = (parent: Module, request: string): object => {
     const filename = resolveInternals()._resolveFilename(request, parent);
     const isOwned = owned.some((root) => filename.startsWith(root));
-    return isOwned
-      ? load(filename, parent)
-      : Module.prototype.require.call(parent, request);
+    if (isOwned) {
+      return load(filename, parent);
+    }
+    const required = Module.prototype.require.call(parent, request);
+    if (!isModuleExports(required)) {
+      throw new Error(`${request} does not export an object or a function`);
+    }
+    return required;
   };
 
   return (request: string) => requireFrom(module, request);
