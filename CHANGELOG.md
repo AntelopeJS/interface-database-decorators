@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.1.11
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.10...v0.1.11)
+
+### 🚀 Enhancements
+
+- **database-decorators:** Accept any property key in the modifier metadata ([044563b](https://github.com/AntelopeJS/interface-database-decorators/commit/044563b))
+
+### 💅 Refactors
+
+- Clean the repo with the guardrail pack ([#39](https://github.com/AntelopeJS/interface-database-decorators/pull/39))
+- Clear avoidable findings with pack 0.2.11 ([#41](https://github.com/AntelopeJS/interface-database-decorators/pull/41))
+
+### 📖 Documentation
+
+- **changelog:** Upgrade notes of interface-database-decorators 0.1.10 ([#35](https://github.com/AntelopeJS/interface-database-decorators/pull/35))
+
+### 📦 Build
+
+- Adopt the AntelopeJS guardrail pack ([#36](https://github.com/AntelopeJS/interface-database-decorators/pull/36))
+
+### 🏡 Chore
+
+- Configure Renovate with the shared preset ([#37](https://github.com/AntelopeJS/interface-database-decorators/pull/37))
+
+### ✅ Tests
+
+- **skills:** Add eval cases for database-decorators-interface ([#38](https://github.com/AntelopeJS/interface-database-decorators/pull/38))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.1.10
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.9...v0.1.10)

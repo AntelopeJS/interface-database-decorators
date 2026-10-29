@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/interface-database-decorators",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "AntelopeJS decorators for database tables and typed data models, with encrypted, hashed and localized fields",
   "keywords": [
     "antelopejs",
