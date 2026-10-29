@@ -97,7 +97,10 @@ export function BasicDataModel<T extends object>(
   const name: string = resolvedName;
   const schemaName = metadata.schemaName;
   const primaryKey = metadata.primary;
-  return class Model {
+  const toInstances = (dataR: T[]) =>
+    // SAFETY: Model.fromDatabase returns undefined only for a falsy row, and the rows a table read or an index lookup returns are stored records, never null or undefined; the cast removes that undefined from the element type.
+    dataR.map((row) => Model.fromDatabase(row)) as T[];
+  const Model = class Model {
     public static readonly schemaName = schemaName as string;
     /**
      * Table class this model was built from.
@@ -186,7 +189,7 @@ export function BasicDataModel<T extends object>(
     public getBy(index: keyof T, ...keys: any[]) {
       return this.table
         .getAll(keys.length === 1 ? keys[0] : keys, <string>index)
-        .then((dataR) => dataR.map((row) => Model.fromDatabase(row)) as T[]);
+        .then((dataR) => toInstances(dataR));
     }
 
     /**
@@ -195,10 +198,7 @@ export function BasicDataModel<T extends object>(
      * @returns Array of Table class instances.
      */
     public getAll() {
-      // SAFETY: Model.fromDatabase returns undefined only for a falsy row, and the rows of a table read are stored records, never null or undefined; the cast removes that undefined from the element type.
-      return this.table.then(
-        (dataR) => dataR.map((row) => Model.fromDatabase(row)) as T[],
-      );
+      return this.table.then((dataR) => toInstances(dataR));
     }
 
     /**
@@ -280,6 +280,7 @@ export function BasicDataModel<T extends object>(
       return this.table.get(id).delete().run();
     }
   };
+  return Model;
 }
 
 const modelCache = new Map<
