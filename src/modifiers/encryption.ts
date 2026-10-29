@@ -119,6 +119,7 @@ export class EncryptionModifier extends TwoWayModifier<
   public override unlockrequest(
     data: DatabaseDev.ValueProxy<LockedType>,
   ): DatabaseDev.ValueProxy<unknown> {
+    // SAFETY: the proxy is returned unchanged and unlockrequest performs no runtime check on LockedType; the cast only erases the static element type to unknown, which every stored value satisfies.
     return data as DatabaseDev.ValueProxy<unknown>;
   }
 

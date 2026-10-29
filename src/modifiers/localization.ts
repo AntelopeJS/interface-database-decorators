@@ -59,6 +59,7 @@ export class LocalizationModifier extends ContainerModifier<
     const modified = getMetadata(TableClass, ModifiersStaticMetadata).fields[
       field
     ]?.find(({ id }) => id === LocalizationModifier.name);
+    // SAFETY: attachModifier stores id = Modifier.name together with `new Modifier()`, so the entry found by id === LocalizationModifier.name holds an instance of the class of that name, as in every id lookup of the modifier machinery (unlock, lock, getModifiedFields).
     return (modified?.modifier as LocalizationModifier | undefined)?.options
       .fallbackLocale;
   }

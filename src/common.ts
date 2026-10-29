@@ -72,6 +72,7 @@ export function getMetadata<TMetadata, TTarget extends object>(
   metadataClass: MetadataClass<TMetadata>,
   inherit: boolean = true,
 ): TMetadata {
+  // SAFETY: this function is the package's only writer of metadataClass.key (the Reflect.defineMetadata call below), and it stores either a new metadataClass instance or the entry inherited from the prototype under the same key; the value is a TMetadata unless foreign code stores something else under that Symbol.for key.
   const existingMetadata = Reflect.getOwnMetadata(metadataClass.key, target) as
     | TMetadata
     | undefined;
@@ -79,7 +80,9 @@ export function getMetadata<TMetadata, TTarget extends object>(
     return existingMetadata;
   }
 
+  // SAFETY: target extends object, so Object.getPrototypeOf returns an object or null, and null is handled below; the value is only used as the lookup target of Reflect.getOwnMetadata, which reads no TTarget member.
   const prototype = Object.getPrototypeOf(target) as TTarget | null;
+  // SAFETY: the prototype's own entry under metadataClass.key was stored by this function (see above), so it is a TMetadata unless foreign code stored another value under that key.
   const inheritedMetadata =
     inherit && prototype
       ? (Reflect.getOwnMetadata(metadataClass.key, prototype) as
