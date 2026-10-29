@@ -3,6 +3,7 @@ import type * as DatabaseDev from "@antelopejs/interface-database";
 import { type Constructible, getMetadata } from "../common";
 import {
   ignoredEventNames,
+  isCallable,
   isLocking,
   isOnlyEvents,
   isTwoWay,
@@ -114,18 +115,18 @@ interface InternalType {
   data: Record<string, any>;
 }
 
-interface ModifiedField {
-  id: string;
-  modifier: Modifier;
-  metaRef: { _ref: any };
-}
-
 type ModifierEvent = <T>(
   this: Modifier,
   object: T,
   field: PropertyKey,
   ...args: unknown[]
 ) => void;
+
+interface ModifiedField {
+  id: string;
+  modifier: Modifier;
+  metaRef: { _ref: any };
+}
 
 export class ModifiersStaticMetadata {
   public static key = Symbol.for(
@@ -150,7 +151,7 @@ export class ModifiersDynamicMetadata {
    * Values assigned to a field before its modifiers could lock them, by field
    * name. Reads return them; `unlock` and `lock` assign them again.
    */
-  floating: Record<string, any> = {}; // Plain data that has no known lock value
+  floating: Record<string, any> = {};
   fields: Record<string, Record<string, any[]>> = {};
 
   constructor(target: any) {
@@ -294,7 +295,7 @@ export function toPlainData<T extends { constructor: any }>(
   const result = { ...object };
   if ("_internal" in result) delete result._internal;
   for (const field of Object.keys(metaTable.fields)) {
-    result[<keyof T>field] = object[<keyof T>field]; // Populate unlocked fields
+    result[<keyof T>field] = object[<keyof T>field];
   }
   triggerEvent(object, "toPlainData", result);
   return result;
@@ -409,7 +410,7 @@ export function attachModifier<
   for (const event of Object.getOwnPropertyNames(Modifier.prototype)) {
     if (
       !(event in ignoredEventNames) &&
-      typeof Modifier.prototype[event] === "function"
+      isCallable(Modifier.prototype[event])
     ) {
       if (!metaTable.events.has(event)) {
         metaTable.events.set(event, []);
@@ -463,10 +464,9 @@ export function unlockrequest<T extends {}, K extends keyof T>(
   field: K,
   modifiers: ModifierWithProxyArgs[],
 ): DatabaseDev.ValueProxy<T[K]> {
-  const args: Record<string, any[]> = {};
-  for (const { modifier, args: modArgs } of modifiers) {
-    args[modifier.name] = modArgs;
-  }
+  const args = Object.fromEntries(
+    modifiers.map(({ modifier, args: modArgs }) => [modifier.name, modArgs]),
+  );
 
   const meta = (<any>object).key("_internal").key("meta");
   const metaTable = getMetadata(table, ModifiersStaticMetadata);

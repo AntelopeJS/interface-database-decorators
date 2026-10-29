@@ -1,13 +1,13 @@
 import path from "node:path";
 import { expect } from "chai";
 import * as Database from "@antelopejs/interface-database";
+import * as DatabaseSchema from "@antelopejs/interface-database/schema";
 
 import * as Decorators from "../index";
 import { CreateOtherInstance } from "./helpers/other-instance";
 
 type DecoratorsModule = typeof Decorators;
-type StagedSchemaModule =
-  typeof import("@antelopejs/interface-database/schema");
+type StagedSchemaModule = Pick<typeof DatabaseSchema, "Schema">;
 
 const buildFolder = path.resolve(__dirname, "..");
 const databaseFolder = path.join(
@@ -15,12 +15,39 @@ const databaseFolder = path.join(
   "dist",
 );
 const otherInstance = CreateOtherInstance([buildFolder, databaseFolder]);
-const Other = otherInstance(
-  path.join(buildFolder, "index.js"),
-) as DecoratorsModule;
-const OtherStagedSchema = otherInstance(
-  path.join(databaseFolder, "staged-query", "schema.js"),
-) as StagedSchemaModule;
+
+function isDecoratorsModule(
+  candidate: Partial<DecoratorsModule>,
+): candidate is DecoratorsModule {
+  return Object.keys(Decorators).every((name) => name in candidate);
+}
+
+function isStagedSchemaModule(
+  candidate: Partial<StagedSchemaModule>,
+): candidate is StagedSchemaModule {
+  return "Schema" in candidate;
+}
+
+function loadDecorators(): DecoratorsModule {
+  const loaded = otherInstance(path.join(buildFolder, "index.js"));
+  if (!isDecoratorsModule(loaded)) {
+    throw new Error("The other instance does not expose the decorators");
+  }
+  return loaded;
+}
+
+function loadStagedSchema(): StagedSchemaModule {
+  const loaded = otherInstance(
+    path.join(databaseFolder, "staged-query", "schema.js"),
+  );
+  if (!isStagedSchemaModule(loaded)) {
+    throw new Error("The other instance does not expose the schema exports");
+  }
+  return loaded;
+}
+
+const Other = loadDecorators();
+const OtherStagedSchema = loadStagedSchema();
 
 const boundSchemaId = "cross-instance-bound";
 
