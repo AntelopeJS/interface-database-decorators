@@ -358,7 +358,12 @@ export function attachModifier<
   const metaTable = getMetadata(TableClass, ModifiersStaticMetadata);
 
   if (!isOnlyEvents(entry.modifier)) {
-    if (field in metaTable.fields) {
+    if (field === "constructor") {
+      throw new Error(
+        `Cannot add Modifier ${entry.id} on ${TableClass.name}.constructor: the field would replace the class constructor that locates the metadata of every instance.`,
+      );
+    }
+    if (Object.hasOwn(metaTable.fields, field)) {
       const list = fieldsByKey(metaTable)[field];
       const last = list[list.length - 1];
       if (isWriteOnly(last.modifier)) {
@@ -404,7 +409,7 @@ export function attachModifier<
 
   for (const event of Object.getOwnPropertyNames(Modifier.prototype)) {
     if (
-      !(event in ignoredEventNames) &&
+      !Object.hasOwn(ignoredEventNames, event) &&
       isCallable(Modifier.prototype[event])
     ) {
       if (!metaTable.events.has(event)) {

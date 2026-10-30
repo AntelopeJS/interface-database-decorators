@@ -16,7 +16,6 @@ const PROTOTYPE_MEMBER_NAMES = [
   "isPrototypeOf",
   "propertyIsEnumerable",
   "toLocaleString",
-  "constructor",
 ];
 
 describe("Modifiers - names shared with Object.prototype members", () => {
@@ -46,6 +45,15 @@ describe("Modifiers - names shared with Object.prototype members", () => {
       ).to.deep.equal([name]);
     });
   }
+
+  it("refuses a modified field named constructor", async () => {
+    class Account extends Table.with(HashModifier) {}
+
+    expect(() => Hashed()(Account.prototype, "constructor")).to.throw(
+      "Account.constructor",
+    );
+    expect(Account.prototype.constructor).to.equal(Account);
+  });
 
   it("keeps the fields of two tables apart", async () => {
     class Left extends Table.with(HashModifier) {}
