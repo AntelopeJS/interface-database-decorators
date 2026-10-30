@@ -118,9 +118,9 @@ interface InternalType {
   data: Record<string, any>;
 }
 
-type ModifierEvent = <T>(
+type ModifierEvent = (
   this: Modifier,
-  object: T,
+  object: { constructor: any },
   field: PropertyKey,
   ...args: unknown[]
 ) => void;
