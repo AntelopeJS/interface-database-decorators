@@ -103,8 +103,7 @@ export class ContainerModifier<
       : { [key]: value };
   }
   public override unlock(locked_value: Record<string, unknown>, key: string) {
-    if (key === "*") return locked_value;
-    return Object.hasOwn(locked_value, key) ? locked_value[key] : undefined;
+    return key === "*" ? locked_value : locked_value[key];
   }
   public override unlockrequest(
     data: DatabaseDev.ValueProxy<Record<string, unknown>>,
