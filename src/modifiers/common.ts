@@ -18,6 +18,7 @@ import {
   floatingOf,
   getInternal,
   type InternalHolder,
+  listsCopied,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -136,6 +137,19 @@ export class ModifiersStaticMetadata {
   public static key = Symbol.for(
     "@antelopejs/interface-database-decorators/ModifiersStaticMetadata@1",
   );
+
+  /**
+   * The metadata of a subclass of a table: a copy of its parent's lists, so
+   * modifiers attached on the subclass never reach the parent or its siblings.
+   */
+  public static inherit(parent: ModifiersStaticMetadata) {
+    const copy = new ModifiersStaticMetadata();
+    copy.fields = Object.fromEntries(
+      listsCopied(Object.entries(parent.fields)),
+    );
+    copy.events = new Map(listsCopied(parent.events));
+    return copy;
+  }
 
   public fields: Record<string, Array<ModifiedField>> = {};
 

@@ -94,3 +94,10 @@ export function withRef<T extends Modifier, U>(
   }
   return ret;
 }
+
+/** The entries of a record or map with every list copied, not shared. */
+export function listsCopied<K, V>(
+  entries: Iterable<readonly [K, readonly V[]]>,
+): Array<[K, V[]]> {
+  return Array.from(entries, ([key, list]) => [key, [...list]]);
+}
