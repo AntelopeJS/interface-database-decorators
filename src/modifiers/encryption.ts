@@ -11,6 +11,7 @@ import {
 } from "node:crypto";
 
 import { attachModifier, MixinSymbol, TwoWayModifier } from "./common";
+import { isCallable } from "./internal/kinds";
 
 type Options = {
   /** Encryption algorithm (for supported algorithms refer to {@link createCipheriv}) */
@@ -46,13 +47,13 @@ function date_decoder(_key: string, value: any) {
 function hasAuthTag(
   cipher: Cipher,
 ): cipher is Cipher & Pick<CipherGCM, "getAuthTag"> {
-  return "getAuthTag" in cipher;
+  return "getAuthTag" in cipher && isCallable(cipher.getAuthTag);
 }
 
 function acceptsAuthTag(
   decipher: Decipher,
 ): decipher is Decipher & Pick<DecipherGCM, "setAuthTag"> {
-  return "setAuthTag" in decipher;
+  return "setAuthTag" in decipher && isCallable(decipher.setAuthTag);
 }
 
 /**
