@@ -10,6 +10,22 @@ type ModifiedFieldList = ModifiersStaticMetadata["fields"][string];
 type ModifiedField = ModifiedFieldList[number];
 type InternalRecord = Parameters<ModifiersDynamicMetadata["get"]>[1];
 
+export interface InternalHolder {
+  constructor: any;
+  _internal?: InternalRecord;
+}
+
+/** The modifier state of a table instance, created on first use. */
+export function getInternal(object: InternalHolder): InternalRecord {
+  if (!object._internal) {
+    object._internal = {
+      meta: {},
+      data: {},
+    };
+  }
+  return object._internal;
+}
+
 export function fieldsByKey(meta: ModifiersStaticMetadata): {
   [field: PropertyKey]: ModifiedFieldList;
 } {

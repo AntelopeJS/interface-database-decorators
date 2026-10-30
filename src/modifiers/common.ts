@@ -16,6 +16,8 @@ import {
   fieldsByKey,
   floatingByKey,
   floatingOf,
+  getInternal,
+  type InternalHolder,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -260,16 +262,6 @@ export class ModifiersDynamicMetadata {
   }
 }
 
-function getInternal(object: any): InternalType {
-  if (!object._internal) {
-    object._internal = {
-      meta: {},
-      data: {},
-    };
-  }
-  return object._internal;
-}
-
 /**
  * Builds a table instance from unlocked plain data: each key is assigned, so
  * modifiers lock the fields they can. Then runs the `fromPlainData` event.
@@ -386,13 +378,13 @@ export function attachModifier<
     } else {
       fieldsByKey(metaTable)[field] = [entry];
       Object.defineProperty(TableClass.prototype, field, {
-        get: function () {
+        get: function (this: InternalHolder) {
           return getMetadata(this, ModifiersDynamicMetadata).get(
             field,
             getInternal(this),
           );
         },
-        set: function (value) {
+        set: function (this: InternalHolder, value) {
           getMetadata(this, ModifiersDynamicMetadata).set(
             field,
             getInternal(this),
