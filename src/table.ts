@@ -159,7 +159,14 @@ export class Table {
         }
       }
     }
-    return <any>c;
+    type Combined = TableClass<
+      InstanceType<This> &
+        UnionToIntersection<InstanceType<MixinType<InstanceType<T[number]>>>>,
+      ConstructorParameters<This>,
+      | ExtractTableMeta<InstanceType<This>>
+      | ExtractTableMeta<InstanceType<T[number]>>
+    >;
+    return c as Combined;
   }
 }
 
