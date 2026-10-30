@@ -100,7 +100,8 @@ export class ContainerModifier<
       : { [key]: value };
   }
   public override unlock(locked_value: Record<string, unknown>, key: string) {
-    return key === "*" ? locked_value : locked_value[key];
+    if (key === "*") return locked_value;
+    return Object.hasOwn(locked_value, key) ? locked_value[key] : undefined;
   }
   public override unlockrequest(
     data: DatabaseDev.ValueProxy<Record<string, unknown>>,
@@ -181,7 +182,7 @@ export class ModifiersDynamicMetadata {
   }
 
   get(field: PropertyKey, internal: InternalType) {
-    if (field in this.floating) {
+    if (Object.hasOwn(this.floating, field)) {
       return floatingByKey(this)[field];
     }
     if (!this.canGet(field)) {

@@ -54,7 +54,7 @@ export class DatumStaticMetadata {
     isCrossInstance: boolean = false,
     isUnique: boolean = false,
   ) {
-    if (!(group in this.indexes)) {
+    if (!Object.hasOwn(this.indexes, group)) {
       this.indexes[group] = [];
     }
     this.indexes[group].push(key);
