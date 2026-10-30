@@ -12,7 +12,7 @@
     "typescript/no-unnecessary-type-parameters": 7,
     "typescript/no-unsafe-argument": 15,
     "typescript/no-unsafe-assignment": 10,
-    "typescript/no-unsafe-return": 14
+    "typescript/no-unsafe-return": 13
   },
   "oversizeFiles": {}
 }
