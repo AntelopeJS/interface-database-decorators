@@ -33,15 +33,28 @@ function date_encoder(this: any, key: string) {
     : this[key];
 }
 
+/**
+ * The Date a stored marker `{ type: "Date", value }` stands for, when `value`
+ * is a text `toUTCString` produces, as `date_encoder` writes it. Any other
+ * object was stored by the caller.
+ */
+function dateOfMarker(candidate: any): Date | undefined {
+  if (
+    candidate === null ||
+    typeof candidate !== "object" ||
+    Object.keys(candidate).length !== 2 ||
+    !Object.keys(candidate).includes("type") ||
+    !Object.keys(candidate).includes("value") ||
+    candidate.type !== "Date"
+  ) {
+    return undefined;
+  }
+  const date = new Date(candidate.value);
+  return date.toUTCString() === candidate.value ? date : undefined;
+}
+
 function date_decoder(_key: string, value: any) {
-  return value !== null &&
-    typeof value === "object" &&
-    Object.keys(value).length === 2 &&
-    Object.keys(value).includes("type") &&
-    Object.keys(value).includes("value") &&
-    value.type === "Date"
-    ? new Date(value.value)
-    : value;
+  return dateOfMarker(value) ?? value;
 }
 
 function hasAuthTag(
