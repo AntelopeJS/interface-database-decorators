@@ -8,6 +8,7 @@ import {
   isOnlyEvents,
   isTwoWay,
   isWriteOnly,
+  prototypeOf,
 } from "./internal/kinds";
 import {
   dataByKey,
@@ -278,7 +279,7 @@ export function fromPlainData<T extends Constructible>(
   TableClass: T,
 ): InstanceType<T> {
   const shallowCopy: typeof rawObject = {};
-  Object.setPrototypeOf(shallowCopy, TableClass.prototype);
+  Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
   for (const [key, val] of Object.entries(rawObject)) {
     shallowCopy[key] = val;
   }
@@ -313,7 +314,7 @@ export function fromDatabase<T extends Constructible>(
   TableClass: T,
 ): InstanceType<T> {
   const shallowCopy = { ...rawObject };
-  Object.setPrototypeOf(shallowCopy, TableClass.prototype);
+  Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
   triggerEvent(shallowCopy, "fromDatabase", rawObject);
   return shallowCopy;
 }
