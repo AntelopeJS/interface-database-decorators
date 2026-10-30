@@ -48,6 +48,9 @@ export function unlockArgsOf(
   const byKey: {
     [field: PropertyKey]: ModifiersDynamicMetadata["fields"][string];
   } = meta.fields;
+  if (!Object.hasOwn(byKey, field)) {
+    throw new TypeError(`${String(field)} holds no modifier arguments`);
+  }
   return byKey[field];
 }
 
@@ -60,9 +63,9 @@ export function fieldTypesByKey(meta: DatumStaticMetadata): {
 export function floatingOf<V>(
   meta: { floating: Record<string, V> },
   field: PropertyKey,
-): V {
+): V | undefined {
   const byKey: { [field: PropertyKey]: V } = meta.floating;
-  return byKey[field];
+  return Object.hasOwn(byKey, field) ? byKey[field] : undefined;
 }
 
 export function floatingByKey<V>(meta: { floating: Record<string, V> }): {
