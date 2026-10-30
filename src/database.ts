@@ -98,8 +98,10 @@ async function insertFixtureData(
   if (rows.length === 0) {
     return;
   }
-  const payload: any = rows.length === 1 ? rows[0] : rows;
-  await schema.instance().table(tableName).insert(payload);
+  await schema
+    .instance()
+    .table(tableName)
+    .insert(rows.length === 1 ? rows[0] : rows);
 }
 
 function toFixtureRows(

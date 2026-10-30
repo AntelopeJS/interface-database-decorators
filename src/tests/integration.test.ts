@@ -53,7 +53,7 @@ describe("Integration - real database operations", () => {
 
     const userId = insertResult[0];
     const retrievedUserFromModel = await userModel.get(userId);
-    const retrievedUserFromDatabase = await schemaInstance
+    const retrievedUserFromDatabase: unknown = await schemaInstance
       .table("users")
       .get(userId)
       .run();
@@ -69,7 +69,7 @@ describe("Integration - real database operations", () => {
     expect(retrievedUserFromModel?.secretData).to.deep.equal({
       token: "secret-token-123",
     });
-    expect(retrievedUserFromDatabase?.secretData).to.not.deep.equal({
+    expect(retrievedUserFromDatabase).to.not.have.deep.property("secretData", {
       token: "secret-token-123",
     });
 
@@ -81,7 +81,10 @@ describe("Integration - real database operations", () => {
       expect(isPasswordValid).to.equal(true);
     }
 
-    const dbUser = await schemaInstance.table("users").get(userId).run();
+    const dbUser: unknown = await schemaInstance
+      .table("users")
+      .get(userId)
+      .run();
     expect(dbUser).to.have.property("email").that.equals("test@example.com");
     expect(dbUser).to.have.property("name").that.equals("John Doe");
   });
@@ -237,13 +240,13 @@ describe("Integration - real database operations", () => {
     expect(retrievedData?.creditCard).to.equal("4111-1111-1111-1111");
     expect(retrievedData?.ssn).to.equal("123-45-6789");
 
-    const dbData = await schemaInstance
+    const dbData: unknown = await schemaInstance
       .table("sensitive_data")
       .get(dataId)
       .run();
     expect(dbData).to.have.property("userId").that.equals("user123");
-    expect(dbData?.creditCard).to.not.equal("4111-1111-1111-1111");
-    expect(dbData?.ssn).to.not.equal("123-45-6789");
+    expect(dbData).to.not.have.property("creditCard", "4111-1111-1111-1111");
+    expect(dbData).to.not.have.property("ssn", "123-45-6789");
   });
 });
 

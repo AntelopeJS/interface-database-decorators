@@ -182,7 +182,8 @@ describe("Database - initialization", () => {
       delete val._id;
       delete val._instance;
     }
-    const sortById = (a: any, b: any) => a.id.localeCompare(b.id);
+    const sortById = (a: { id: string }, b: { id: string }) =>
+      a.id.localeCompare(b.id);
     expect(result.sort(sortById)).to.deep.equal(testData.sort(sortById));
   });
   it("handles multiple tables", async () => {

@@ -1,4 +1,5 @@
 /** @internal @packageDocumentation */
+import type { Constructible } from "../../common";
 import type { Modifier, OneWayModifier, TwoWayModifier } from "../common";
 
 export function isWriteOnly(m: Modifier): m is OneWayModifier<unknown, any[]> {
@@ -25,6 +26,22 @@ export const ignoredEventNames = {
 
 export function isCallable(value: unknown): value is CallableFunction {
   return typeof value === "function";
+}
+
+/** Whether a value is an object or a function: what a prototype chain holds. */
+export function isObjectLike(value: unknown): value is object {
+  return (
+    (typeof value === "object" || typeof value === "function") && value !== null
+  );
+}
+
+/** The object the instances of a class inherit from. */
+export function prototypeOf(target: Constructible): object {
+  const prototype: unknown = target.prototype;
+  if (!isObjectLike(prototype)) {
+    throw new TypeError("A class prototype must be an object.");
+  }
+  return prototype;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

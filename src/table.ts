@@ -132,10 +132,12 @@ export class Table {
     | ExtractTableMeta<InstanceType<T[number]>>
   > {
     const c = extendTable(this);
-    for (const mixin of others
-      .map((otherClass) => otherClass.prototype && new otherClass())
-      .map((other) => other?.[MixinSymbol])
-      .filter((mixin) => mixin?.prototype)) {
+    for (const mixin of others.flatMap((otherClass) => {
+      const mixin = otherClass.prototype
+        ? new otherClass()[MixinSymbol]
+        : undefined;
+      return mixin?.prototype ? [mixin] : [];
+    })) {
       for (const key of Object.getOwnPropertyNames(mixin.prototype)) {
         if (key !== "constructor" && !(key in c.prototype)) {
           Object.defineProperty(c.prototype, key, {
@@ -157,7 +159,14 @@ export class Table {
         }
       }
     }
-    return <any>c;
+    type Combined = TableClass<
+      InstanceType<This> &
+        UnionToIntersection<InstanceType<MixinType<InstanceType<T[number]>>>>,
+      ConstructorParameters<This>,
+      | ExtractTableMeta<InstanceType<This>>
+      | ExtractTableMeta<InstanceType<T[number]>>
+    >;
+    return c as Combined;
   }
 }
 

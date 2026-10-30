@@ -1,6 +1,8 @@
 import type { Schema } from "@antelopejs/interface-database";
 import type { FieldType } from "@antelopejs/interface-database/schema";
 
+import { isObjectLike } from "./modifiers/internal/kinds";
+
 export type Constructible<T = object, A extends unknown[] = unknown[]> = new (
   ...args: A
 ) => T;
@@ -54,7 +56,7 @@ export class DatumStaticMetadata {
     isCrossInstance: boolean = false,
     isUnique: boolean = false,
   ) {
-    if (!(group in this.indexes)) {
+    if (!Object.hasOwn(this.indexes, group)) {
       this.indexes[group] = [];
     }
     this.indexes[group].push(key);
@@ -79,9 +81,9 @@ export function getMetadata<TMetadata, TTarget extends object>(
     return existingMetadata;
   }
 
-  const prototype: object | null = Object.getPrototypeOf(target);
+  const prototype: unknown = Object.getPrototypeOf(target);
   const inheritedMetadata =
-    inherit && prototype
+    inherit && isObjectLike(prototype)
       ? (Reflect.getOwnMetadata(metadataClass.key, prototype) as
           | TMetadata
           | undefined)

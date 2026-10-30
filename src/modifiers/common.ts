@@ -8,6 +8,7 @@ import {
   isOnlyEvents,
   isTwoWay,
   isWriteOnly,
+  prototypeOf,
 } from "./internal/kinds";
 import {
   dataByKey,
@@ -15,6 +16,8 @@ import {
   fieldsByKey,
   floatingByKey,
   floatingOf,
+  getInternal,
+  type InternalHolder,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -116,9 +119,9 @@ interface InternalType {
   data: Record<string, any>;
 }
 
-type ModifierEvent = <T>(
+type ModifierEvent = (
   this: Modifier,
-  object: T,
+  object: { constructor: any },
   field: PropertyKey,
   ...args: unknown[]
 ) => void;
@@ -181,7 +184,7 @@ export class ModifiersDynamicMetadata {
   }
 
   get(field: PropertyKey, internal: InternalType) {
-    if (field in this.floating) {
+    if (Object.hasOwn(this.floating, field)) {
       return floatingByKey(this)[field];
     }
     if (!this.canGet(field)) {
@@ -258,16 +261,6 @@ export class ModifiersDynamicMetadata {
   }
 }
 
-function getInternal(object: any): InternalType {
-  if (!object._internal) {
-    object._internal = {
-      meta: {},
-      data: {},
-    };
-  }
-  return object._internal;
-}
-
 /**
  * Builds a table instance from unlocked plain data: each key is assigned, so
  * modifiers lock the fields they can. Then runs the `fromPlainData` event.
@@ -277,7 +270,7 @@ export function fromPlainData<T extends Constructible>(
   TableClass: T,
 ): InstanceType<T> {
   const shallowCopy: typeof rawObject = {};
-  Object.setPrototypeOf(shallowCopy, TableClass.prototype);
+  Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
   for (const [key, val] of Object.entries(rawObject)) {
     shallowCopy[key] = val;
   }
@@ -312,7 +305,7 @@ export function fromDatabase<T extends Constructible>(
   TableClass: T,
 ): InstanceType<T> {
   const shallowCopy = { ...rawObject };
-  Object.setPrototypeOf(shallowCopy, TableClass.prototype);
+  Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
   triggerEvent(shallowCopy, "fromDatabase", rawObject);
   return shallowCopy;
 }
@@ -384,13 +377,13 @@ export function attachModifier<
     } else {
       fieldsByKey(metaTable)[field] = [entry];
       Object.defineProperty(TableClass.prototype, field, {
-        get: function () {
+        get: function (this: InternalHolder) {
           return getMetadata(this, ModifiersDynamicMetadata).get(
             field,
             getInternal(this),
           );
         },
-        set: function (value) {
+        set: function (this: InternalHolder, value) {
           getMetadata(this, ModifiersDynamicMetadata).set(
             field,
             getInternal(this),
