@@ -19,6 +19,7 @@ import {
   getInternal,
   type InternalHolder,
   unlockArgsOf,
+  unmodifiableFieldReason,
   withRef,
 } from "./internal/records";
 
@@ -361,9 +362,10 @@ export function attachModifier<
   const metaTable = getMetadata(TableClass, ModifiersStaticMetadata);
 
   if (!isOnlyEvents(entry.modifier)) {
-    if (field === "constructor") {
+    const refusal = unmodifiableFieldReason(field);
+    if (refusal) {
       throw new Error(
-        `Cannot add Modifier ${entry.id} on ${TableClass.name}.constructor: the field would replace the class constructor that locates the metadata of every instance.`,
+        `Cannot add Modifier ${entry.id} on ${TableClass.name}.${String(field)}: ${refusal}.`,
       );
     }
     if (Object.hasOwn(metaTable.fields, field)) {

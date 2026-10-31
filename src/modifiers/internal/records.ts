@@ -94,3 +94,19 @@ export function withRef<T extends Modifier, U>(
   }
   return ret;
 }
+
+/**
+ * Why a modifier cannot be attached to the field named `field`, if it cannot:
+ * the two names the table's own structures live under.
+ */
+export function unmodifiableFieldReason(
+  field: PropertyKey,
+): string | undefined {
+  if (field === "constructor") {
+    return "the field would replace the class constructor that locates the metadata of every instance";
+  }
+  if (field === "__proto__") {
+    return "the field would replace the prototype of the record of modified fields and never be recorded";
+  }
+  return undefined;
+}
