@@ -88,7 +88,7 @@ export async function start() {
 
 ## Compatibility
 
-Requires AntelopeJS core `1.x` and the following peer dependencies:
+The package declares these `@antelopejs/*` peer dependencies:
 
 <!-- antelopejs-docs-compat:start -->
 
