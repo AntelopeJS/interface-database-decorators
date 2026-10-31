@@ -104,7 +104,10 @@ export class ContainerModifier<
       : { [key]: value };
   }
   public override unlock(locked_value: Record<string, unknown>, key: string) {
-    return key === "*" ? locked_value : locked_value[key];
+    if (key === "*") {
+      return locked_value;
+    }
+    return Object.hasOwn(locked_value, key) ? locked_value[key] : undefined;
   }
   public override unlockrequest(
     data: DatabaseDev.ValueProxy<Record<string, unknown>>,
@@ -142,12 +145,10 @@ export class ModifiersStaticMetadata {
    * The metadata of a subclass of a table: a copy of its parent's lists, so
    * modifiers attached on the subclass never reach the parent or its siblings.
    */
-  public static inherit(parent: ModifiersStaticMetadata) {
+  public static inherit({ fields, events }: ModifiersStaticMetadata) {
     const copy = new ModifiersStaticMetadata();
-    copy.fields = Object.fromEntries(
-      listsCopied(Object.entries(parent.fields)),
-    );
-    copy.events = new Map(listsCopied(parent.events));
+    copy.fields = Object.fromEntries(listsCopied(Object.entries(fields)));
+    copy.events = new Map(listsCopied(events));
     return copy;
   }
 
