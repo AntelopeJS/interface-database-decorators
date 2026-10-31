@@ -327,9 +327,7 @@ export function fromDatabase<T extends Constructible>(
  * Converts a table instance to the locked record to store, `_internal`
  * included and floating values left out. Then runs the `toDatabase` event.
  */
-export function toDatabase<T extends { constructor: any }>(
-  object: T,
-): Record<string, any> {
+export function toDatabase(object: { constructor: any }): Record<string, any> {
   const result = { ...object };
   triggerEvent(object, "toDatabase", result);
   return result;
@@ -442,10 +440,10 @@ function fieldsModifiedBy<T>(
   );
 }
 
-export function getModifiedFields<
-  T extends { constructor: any },
-  M extends Constructible<Modifier>,
->(object: T, Modifier: M): (keyof T)[] {
+export function getModifiedFields<T extends { constructor: any }>(
+  object: T,
+  Modifier: Constructible<Modifier>,
+): (keyof T)[] {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
   return fieldsModifiedBy<T>(metaTable, Modifier);
 }

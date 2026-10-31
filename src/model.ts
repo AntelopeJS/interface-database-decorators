@@ -1,6 +1,5 @@
 import assert from "node:assert";
 import type * as DatabaseDev from "@antelopejs/interface-database";
-import type { SelectionKey } from "@antelopejs/interface-database/common";
 import type { FieldType } from "@antelopejs/interface-database/schema";
 import { type InstanceId, Schema } from "@antelopejs/interface-database";
 import {
@@ -72,9 +71,12 @@ function isCodec(type: FieldType): type is CodecLike & FieldType {
 
 /**
  * One key {@link BasicDataModel}'s `getBy` matches against an index: a value,
- * or a value proxy.
+ * or a value proxy, as `Table.getAll` takes it.
  */
-export type IndexKey = DatabaseDev.ValueProxyOrValue<SelectionKey>;
+export type IndexKey = Exclude<
+  Parameters<DatabaseDev.Table<object>["getAll"]>[0],
+  unknown[]
+>;
 
 type InstanceIdProvider = (ctx: RequestContext) => InstanceId | undefined;
 
