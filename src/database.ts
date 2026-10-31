@@ -7,7 +7,12 @@ import type { Table } from "./table";
 import { getTablesForSchema } from "./schema";
 import type { DatumGeneratorOutput } from "./common";
 import { DatumStaticMetadata, getMetadata } from "./common";
-import { fromPlainData, toDatabase, triggerEvent } from "./modifiers/common";
+import {
+  fromPlainData,
+  type StoredRow,
+  toDatabase,
+  triggerEvent,
+} from "./modifiers/common";
 
 type TableDefinitions = Record<string, Class<Table>>;
 
@@ -106,7 +111,7 @@ async function insertFixtureData(
 function toFixtureRows(
   fixtureData: DatumGeneratorOutput,
   tableClass: Class<Table>,
-): Table[] {
+): StoredRow<Table>[] {
   const entries = fixtureData
     ? Array.isArray(fixtureData)
       ? fixtureData

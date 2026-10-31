@@ -127,10 +127,11 @@ export class ContainerModifier<
 }
 
 /**
- * A table row as the database stores it: typed `T`, as `Table<T>` reads it, with
- * its modified fields locked in `_internal` instead of at the top level.
+ * A table row as the database stores it: the fields of `T` that are set, with
+ * no prototype, and its modified fields locked in `_internal` instead of at the
+ * top level.
  */
-export type StoredRow<T> = T & InternalHolder;
+export type StoredRow<T> = Partial<T> & InternalHolder;
 
 /**
  * A modifier method run for an event of the table instance (`insert`,
@@ -331,10 +332,10 @@ export function toPlainData<T extends { constructor: any }>(
  * Builds a table instance from a stored record, its modified fields still
  * locked in `_internal`. Then runs the `fromDatabase` event.
  */
-export function fromDatabase<T extends object>(
-  rawObject: T,
-  TableClass: Constructible<T>,
-): T {
+export function fromDatabase<T extends Constructible>(
+  rawObject: any,
+  TableClass: T,
+): InstanceType<T> {
   const shallowCopy = { ...rawObject };
   Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
   triggerEvent(shallowCopy, "fromDatabase", rawObject);
@@ -345,7 +346,9 @@ export function fromDatabase<T extends object>(
  * Converts a table instance to the locked record to store, `_internal`
  * included and floating values left out. Then runs the `toDatabase` event.
  */
-export function toDatabase<T extends InternalHolder>(object: T): StoredRow<T> {
+export function toDatabase<T extends InternalHolder>(
+  object: T,
+): T & InternalHolder {
   const result = { ...object };
   triggerEvent(object, "toDatabase", result);
   return result;
@@ -558,8 +561,8 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
   return val === value;
 }
 
-export function triggerEvent(
-  object: { constructor: any },
+export function triggerEvent<T extends { constructor: any }>(
+  object: T,
   event: string,
   ...args: unknown[]
 ) {

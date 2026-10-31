@@ -14,6 +14,7 @@ import {
 import {
   fromDatabase,
   fromPlainData,
+  type StoredRow,
   toDatabase,
   triggerEvent,
 } from "./modifiers/common";
@@ -38,7 +39,7 @@ export type DataModel<T = any> = {
     readonly database: DatabaseDev.SchemaInstance<any>;
     readonly table: DatabaseDev.Table<T>;
   };
-  fromDatabase(obj: T | null | undefined): T | undefined;
+  fromDatabase(obj: any): T | undefined;
   fromPlainData(obj: PlainData<T> | T): T;
 };
 
@@ -134,7 +135,7 @@ export function BasicDataModel<T extends object>(
      * @param obj Object resulting from a database get
      * @returns Table class instance
      */
-    public static fromDatabase(obj: T | null | undefined) {
+    public static fromDatabase(obj: any) {
       return obj ? fromDatabase(obj, dataType) : undefined;
     }
 
@@ -144,7 +145,7 @@ export function BasicDataModel<T extends object>(
      * @param obj Table class instance
      * @returns Database-ready data
      */
-    public static toDatabase(obj: PlainData<T> | T) {
+    public static toDatabase(obj: PlainData<T> | T): StoredRow<T> {
       const instance = obj instanceof dataType ? obj : Model.fromPlainData(obj);
       return toDatabase(instance);
     }
@@ -236,7 +237,7 @@ export function BasicDataModel<T extends object>(
       const converter = (entry: DeepPartial<T>) => {
         const instance = Model.fromPlainData(entry);
         triggerEvent(instance, "insert");
-        return Model.toDatabase(instance);
+        return toDatabase(instance);
       };
       return this.table
         .insert(Array.isArray(obj) ? obj.map(converter) : converter(obj))
@@ -269,16 +270,13 @@ export function BasicDataModel<T extends object>(
       if (parsed.id !== undefined) {
         const instance = Model.fromPlainData(parsed.data);
         triggerEvent(instance, "update");
-        return this.table
-          .get(parsed.id)
-          .update(Model.toDatabase(instance))
-          .run();
+        return this.table.get(parsed.id).update(toDatabase(instance)).run();
       }
       const instance = Model.fromPlainData(parsed.data);
       triggerEvent(instance, "update");
       const id = parsed.data[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
-      return this.table.get(id).update(Model.toDatabase(instance)).run();
+      return this.table.get(id).update(toDatabase(instance)).run();
     }
 
     /**
