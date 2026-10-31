@@ -17,11 +17,11 @@ type Options = {
  * does not require the Table class to incorporate a mixin.
  */
 export class AutoDateModifier extends Modifier<object, Options> {
-  public insert(object: Record<string, unknown>, field: string) {
+  public insert<F extends string>(object: Partial<Record<F, Date>>, field: F) {
     object[field] = new Date();
   }
 
-  public update(object: Record<string, unknown>, field: string) {
+  public update<F extends string>(object: Partial<Record<F, Date>>, field: F) {
     if (this.options.type === "updated") {
       object[field] = new Date();
     } else {
