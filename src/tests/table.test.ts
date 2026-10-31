@@ -1,3 +1,4 @@
+import { AssertionError } from "node:assert";
 import { expect } from "chai";
 import { MixinSymbol } from "../modifiers/common";
 import { Field, Fixture, Index, Table } from "../table";
@@ -49,6 +50,18 @@ describe("Table - decorators", () => {
     expect(metadata.primary).to.equal("_id");
     expect(metadata.indexes.user_search).to.deep.equal(["name", "email"]);
     expect(metadata.indexes.age_range).to.deep.equal(["age"]);
+  });
+  it("refuses an index on a symbol-keyed field", () => {
+    const secret = Symbol("secret");
+    const declare = () => {
+      class TestTable extends Table {
+        @Index()
+        [secret]!: string;
+      }
+      return TestTable;
+    };
+
+    expect(declare).to.throw(AssertionError);
   });
   it("creates table with fixture data", async () => {
     const testData = [

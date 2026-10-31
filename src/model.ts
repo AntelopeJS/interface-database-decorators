@@ -27,7 +27,11 @@ import {
 } from "./common";
 
 export type DataModel<T = any> = {
-  readonly schemaName: string;
+  /**
+   * Schema the table class registers into with `@RegisterTable`; `undefined`
+   * for a table class that does not.
+   */
+  readonly schemaName: string | undefined;
   readonly tableClass?: Constructible;
   new (database: DatabaseDev.SchemaInstance<any>): {
     readonly database: DatabaseDev.SchemaInstance<any>;
@@ -65,6 +69,15 @@ function isCodec(type: FieldType): type is CodecLike & FieldType {
   );
 }
 
+/**
+ * One key {@link BasicDataModel}'s `getBy` matches against an index: a value,
+ * or a value proxy, as `Table.getAll` takes it.
+ */
+export type IndexKey = Exclude<
+  Parameters<DatabaseDev.Table<object>["getAll"]>[0],
+  unknown[]
+>;
+
 type InstanceIdProvider = (ctx: RequestContext) => InstanceId | undefined;
 
 function isInstanceIdProvider(
@@ -99,7 +112,7 @@ export function BasicDataModel<T extends object>(
     // SAFETY: Model.fromDatabase returns undefined only for a falsy row, and the rows a table read or an index lookup returns are stored records, never null or undefined; the cast removes that undefined from the element type.
     dataR.map((row) => Model.fromDatabase(row)) as T[];
   const Model = class Model {
-    public static readonly schemaName = schemaName as string;
+    public static readonly schemaName: string | undefined = schemaName;
     /**
      * Table class this model was built from.
      */
@@ -184,9 +197,9 @@ export function BasicDataModel<T extends object>(
      * @param keys Index value(s)
      * @returns Array of Table class instances.
      */
-    public getBy(index: keyof T, ...keys: any[]) {
+    public getBy(index: Extract<keyof T, string>, ...keys: IndexKey[]) {
       return this.table
-        .getAll(keys.length === 1 ? keys[0] : keys, <string>index)
+        .getAll(keys.length === 1 ? keys[0] : keys, index)
         .then((dataR) => toInstances(dataR));
     }
 
@@ -329,7 +342,8 @@ function parseUpdateArgs<T>(args: UpdateArgs<T>): ParsedUpdate<T> {
 
 function schemaOf(cl: DataModel): Schema<any> {
   if (!cl.tableClass) {
-    const schema = Schema.get(cl.schemaName);
+    const schema =
+      cl.schemaName === undefined ? undefined : Schema.get(cl.schemaName);
     assert(schema, `Schema not found for '${cl.schemaName}'`);
     return schema;
   }

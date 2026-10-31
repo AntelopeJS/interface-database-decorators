@@ -1,6 +1,11 @@
 /** @internal @packageDocumentation */
 import type { Constructible } from "../../common";
-import type { Modifier, OneWayModifier, TwoWayModifier } from "../common";
+import type {
+  Modifier,
+  ModifierEvent,
+  OneWayModifier,
+  TwoWayModifier,
+} from "../common";
 
 export function isWriteOnly(m: Modifier): m is OneWayModifier<unknown, any[]> {
   return "lock" in m && !("unlock" in m);
@@ -28,6 +33,14 @@ export function isCallable(value: unknown): value is CallableFunction {
   return typeof value === "function";
 }
 
+/**
+ * Whether a modifier prototype member is a method the engine can run for an
+ * event: any function takes the instance, the field and the event arguments.
+ */
+export function isEventHandler(value: unknown): value is ModifierEvent {
+  return typeof value === "function";
+}
+
 export function isString(value: unknown): value is string {
   return typeof value === "string";
 }
@@ -46,6 +59,14 @@ export function prototypeOf(target: Constructible): object {
     throw new TypeError("A class prototype must be an object.");
   }
   return prototype;
+}
+
+/** Whether `candidate` is the class `base` or a class extending it. */
+export function isSameOrSubclass<Base extends Constructible>(
+  candidate: Constructible,
+  base: Base,
+): candidate is Base {
+  return candidate === base || base.isPrototypeOf(candidate);
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

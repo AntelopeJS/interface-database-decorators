@@ -8,11 +8,11 @@ import type { FieldType } from "@antelopejs/interface-database/schema";
 import {
   type Class,
   type ClassDecorator,
-  MakeClassDecorator,
   MakePropertyDecorator,
 } from "@antelopejs/interface-core/decorators";
 
 import { MixinSymbol, type MixinType } from "./modifiers/common";
+import { isSameOrSubclass, isString } from "./modifiers/internal/kinds";
 import { fieldTypesByKey } from "./modifiers/internal/records";
 import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
 import { boundSchema } from "./internal/bound-schema";
@@ -210,7 +210,11 @@ export interface IndexOptions {
 export const Index = MakePropertyDecorator(
   (target, propertyKey, options?: IndexOptions) => {
     const metadata = getMetadata(target.constructor, DatumStaticMetadata);
-    const key = <string>propertyKey;
+    assert(
+      isString(propertyKey),
+      `@Index on ${String(propertyKey)}: a database index names a field, never a symbol`,
+    );
+    const key = propertyKey;
     metadata.addIndex(
       key,
       options?.group || key,
@@ -234,11 +238,19 @@ type AwaitableArray<T> = Promise<T | T[]> | T | T[];
 /**
  * Database Table class decorator to create default data on table creation.
  *
- * @param generator Data generator
+ * @param generator Data generator, called with the table class registered
+ * into the schema: the decorated class or a subclass of it
  */
-export const Fixture: <T extends typeof Table>(
+export function Fixture<T extends typeof Table>(
   generator: (p: T) => AwaitableArray<Partial<InstanceType<T>>>,
-) => ClassDecorator<T> = MakeClassDecorator((target, generator) => {
-  const metadata = getMetadata(target, DatumStaticMetadata);
-  metadata.generator = generator as unknown as DatumStaticMetadata["generator"];
-});
+): ClassDecorator<T> {
+  return (target: T) => {
+    getMetadata(target, DatumStaticMetadata).generator = (tableClass) => {
+      assert(
+        isSameOrSubclass(tableClass, target),
+        `${tableClass.name} does not extend ${target.name}, whose fixture it inherited`,
+      );
+      return generator(tableClass);
+    };
+  };
+}

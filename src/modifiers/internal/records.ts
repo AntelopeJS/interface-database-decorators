@@ -2,6 +2,7 @@
 import type { DatumStaticMetadata } from "../../common";
 import type {
   Modifier,
+  ModifierEvent,
   ModifiersDynamicMetadata,
   ModifiersStaticMetadata,
 } from "../common";
@@ -58,7 +59,13 @@ export function eventsByKey(
   meta: ModifiersStaticMetadata,
 ): Map<
   string,
-  Array<[field: PropertyKey, modified: ModifiedFieldList[number]]>
+  Array<
+    [
+      field: PropertyKey,
+      modified: ModifiedFieldList[number],
+      handler: ModifierEvent,
+    ]
+  >
 > {
   return meta.events;
 }

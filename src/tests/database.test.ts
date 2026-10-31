@@ -222,8 +222,14 @@ describe("Database - initialization", () => {
     }
 
     const model = GetModel(BasicDataModel(Reloaded), "late-instance");
-    expect(model.database.build()[0].options.id).to.equal("test-late-schema");
-    expect(Reloaded.table().build()[0].options.id).to.equal("test-late-schema");
+    expect(model.database.build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "test-late-schema" },
+    });
+    expect(Reloaded.table().build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "test-late-schema" },
+    });
   });
   it("populates TableDefinition.fields from @Field declarations", async () => {
     @RegisterTable("orders", "test-fields-schema")

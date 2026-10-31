@@ -17,10 +17,17 @@ export type DeepPartial<T> = {
         : T[K];
 };
 
-export type DatumGeneratorOutput =
-  | Record<string, unknown>
-  | Array<Record<string, unknown>>
+/**
+ * The rows a fixture generator gives for its table: one, several or none.
+ */
+export type DatumGeneratorOutput<Row extends object = object> =
+  | Row
+  | Row[]
   | undefined;
+/**
+ * A fixture generator of a table class, called with the class registered into
+ * the schema: the decorated class or a subclass of it.
+ */
 export type DatumGenerator = (
   tableClass: Constructible,
 ) => DatumGeneratorOutput | Promise<DatumGeneratorOutput>;

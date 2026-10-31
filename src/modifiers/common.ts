@@ -3,7 +3,7 @@ import type * as DatabaseDev from "@antelopejs/interface-database";
 import { type Constructible, getMetadata } from "../common";
 import {
   ignoredEventNames,
-  isCallable,
+  isEventHandler,
   isLocking,
   isOnlyEvents,
   isTwoWay,
@@ -124,7 +124,11 @@ interface InternalType {
   data: Record<string, any>;
 }
 
-type ModifierEvent = (
+/**
+ * A modifier method run for an event of the table instance (`insert`,
+ * `toDatabase`, ...), with the modifier as `this`.
+ */
+export type ModifierEvent = (
   this: Modifier,
   object: { constructor: any },
   field: PropertyKey,
@@ -154,7 +158,7 @@ export class ModifiersStaticMetadata {
 
   public events = new Map<
     string,
-    Array<[field: string, modified: ModifiedField]>
+    Array<[field: string, modified: ModifiedField, handler: ModifierEvent]>
   >();
 }
 
@@ -169,7 +173,11 @@ export class ModifiersDynamicMetadata {
    * name. Reads return them; `unlock` and `lock` assign them again.
    */
   floating: Record<string, any> = {};
-  fields: Record<string, Record<string, any[]>> = {};
+  /**
+   * The arguments each modifier of a field was unlocked or locked with, by
+   * field name, then by modifier name.
+   */
+  fields: Record<string, Record<string, unknown[]>> = {};
 
   constructor(target: any) {
     this.staticMeta = getMetadata(target.constructor, ModifiersStaticMetadata);
@@ -327,9 +335,7 @@ export function fromDatabase<T extends Constructible>(
  * Converts a table instance to the locked record to store, `_internal`
  * included and floating values left out. Then runs the `toDatabase` event.
  */
-export function toDatabase<T extends { constructor: any }>(
-  object: T,
-): Record<string, any> {
+export function toDatabase(object: { constructor: any }): Record<string, any> {
   const result = { ...object };
   triggerEvent(object, "toDatabase", result);
   return result;
@@ -417,14 +423,12 @@ export function attachModifier<
   }
 
   for (const event of Object.getOwnPropertyNames(Modifier.prototype)) {
-    if (
-      !Object.hasOwn(ignoredEventNames, event) &&
-      isCallable(Modifier.prototype[event])
-    ) {
+    const handler: unknown = Modifier.prototype[event];
+    if (!Object.hasOwn(ignoredEventNames, event) && isEventHandler(handler)) {
       if (!metaTable.events.has(event)) {
         metaTable.events.set(event, []);
       }
-      eventsByKey(metaTable).get(event)?.push([field, entry]);
+      eventsByKey(metaTable).get(event)?.push([field, entry, handler]);
     }
   }
 }
@@ -442,10 +446,10 @@ function fieldsModifiedBy<T>(
   );
 }
 
-export function getModifiedFields<
-  T extends { constructor: any },
-  M extends Constructible<Modifier>,
->(object: T, Modifier: M): (keyof T)[] {
+export function getModifiedFields<T extends { constructor: any }>(
+  object: T,
+  Modifier: Constructible<Modifier>,
+): (keyof T)[] {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
   return fieldsModifiedBy<T>(metaTable, Modifier);
 }
@@ -561,9 +565,9 @@ export function triggerEvent<T extends { constructor: any }>(
   const eventEntries = metaTable.events.get(event);
   if (!eventEntries) return;
 
-  for (const [field, { id, modifier, metaRef }] of eventEntries) {
-    withRef(internal, id, modifier, metaRef, (modifier: Modifier) =>
-      (<ModifierEvent>modifier[<keyof Modifier>event])(object, field, ...args),
-    );
+  for (const [field, { id, modifier, metaRef }, handler] of eventEntries) {
+    withRef(internal, id, modifier, metaRef, (modifier) => {
+      handler.call(modifier, object, field, ...args);
+    });
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/interface-database-decorators",
-  "version": "0.1.11",
+  "version": "0.2.0",
   "description": "AntelopeJS decorators for database tables and typed data models, with encrypted, hashed and localized fields",
   "keywords": [
     "antelopejs",
@@ -147,7 +147,7 @@
     "@antelopejs/core": "^1.16.0",
     "@antelopejs/interface-api": "^0.0.15",
     "@antelopejs/interface-core": "^0.2.4",
-    "@antelopejs/interface-database": "^0.1.11",
+    "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-6bef278.tgz",
     "@antelopejs/tooling-configs": "^0.2.17",
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10.0.10",
@@ -172,7 +172,12 @@
     "@antelopejs/interface-core": ">=0.2.4 <1.0.0",
     "@antelopejs/interface-database": ">=0.1.11 <1.0.0"
   },
-  "packageManager": "pnpm@10.6.5",
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "overrides": {
+      "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-6bef278.tgz"
+    }
+  },
   "antelopeJs": {
     "standalone": true,
     "test": "src/antelope.test.ts",
