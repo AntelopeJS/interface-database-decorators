@@ -25,12 +25,13 @@ type Meta = Record<string, never>;
 type LockedType = [ciphertext: string, iv: string, authTag?: string];
 
 function date_encoder(this: any, key: string) {
-  return this[key] instanceof Date
+  const held: unknown = this[key];
+  return held instanceof Date
     ? {
-        value: this[key].toUTCString(),
+        value: held.toUTCString(),
         type: "Date",
       }
-    : this[key];
+    : held;
 }
 
 type StoredValue =
