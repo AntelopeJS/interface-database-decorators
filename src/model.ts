@@ -24,6 +24,7 @@ import {
   DatumStaticMetadata,
   type DeepPartial,
   getMetadata,
+  type PlainData,
 } from "./common";
 
 export type DataModel<T = any> = {
@@ -37,8 +38,8 @@ export type DataModel<T = any> = {
     readonly database: DatabaseDev.SchemaInstance<any>;
     readonly table: DatabaseDev.Table<T>;
   };
-  fromDatabase(obj: any): T | undefined;
-  fromPlainData(obj: any): T;
+  fromDatabase(obj: T | null | undefined): T | undefined;
+  fromPlainData(obj: PlainData<T> | T): T;
 };
 
 export type FieldError = { field: string; message: string };
@@ -123,7 +124,7 @@ export function BasicDataModel<T extends object>(
      * @param obj Plain data object containing the table fields
      * @returns Table class instance
      */
-    public static fromPlainData(obj: any) {
+    public static fromPlainData(obj: PlainData<T> | T): T {
       return obj instanceof dataType ? obj : fromPlainData(obj, dataType);
     }
 
@@ -133,7 +134,7 @@ export function BasicDataModel<T extends object>(
      * @param obj Object resulting from a database get
      * @returns Table class instance
      */
-    public static fromDatabase(obj: any) {
+    public static fromDatabase(obj: T | null | undefined) {
       return obj ? fromDatabase(obj, dataType) : undefined;
     }
 
@@ -143,7 +144,7 @@ export function BasicDataModel<T extends object>(
      * @param obj Table class instance
      * @returns Database-ready data
      */
-    public static toDatabase(obj: any) {
+    public static toDatabase(obj: PlainData<T> | T) {
       const instance = obj instanceof dataType ? obj : Model.fromPlainData(obj);
       return toDatabase(instance);
     }
@@ -232,7 +233,7 @@ export function BasicDataModel<T extends object>(
         }
         if (allErrors.length > 0) throw makeValidationError(allErrors);
       }
-      const converter = (entry: any) => {
+      const converter = (entry: DeepPartial<T>) => {
         const instance = Model.fromPlainData(entry);
         triggerEvent(instance, "insert");
         return Model.toDatabase(instance);
@@ -256,7 +257,7 @@ export function BasicDataModel<T extends object>(
       options?: ValidateOptions,
     ): Promise<number>;
     public update(
-      obj: DeepPartial<T>,
+      obj: DeepPartial<T> & KeyedRow,
       options?: ValidateOptions,
     ): Promise<number>;
     public async update(...args: UpdateArgs<T>) {
@@ -275,8 +276,7 @@ export function BasicDataModel<T extends object>(
       }
       const instance = Model.fromPlainData(parsed.data);
       triggerEvent(instance, "update");
-      // SAFETY: parsed.data is the DeepPartial<T> object the caller passed as the first argument (the id form was handled above), so reading the property named by the table's primary key is defined and gives undefined when absent; the next line asserts it is present.
-      const id = (parsed.data as any)[primaryKey];
+      const id = parsed.data[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
       return this.table.get(id).update(Model.toDatabase(instance)).run();
     }
@@ -308,11 +308,16 @@ function cacheKeyOf(instanceId: InstanceId | undefined): string | symbol {
 
 export type ValidateOptions = { validate?: boolean };
 
-type ParsedUpdate<T> = {
-  id?: string;
-  data: DeepPartial<T>;
-  options?: ValidateOptions;
-};
+/** The part of a row an update without an id finds the row by. */
+type KeyedRow = Record<DatumStaticMetadata["primary"], string>;
+
+type ParsedUpdate<T> =
+  | { id: string; data: DeepPartial<T>; options?: ValidateOptions }
+  | {
+      id?: undefined;
+      data: DeepPartial<T> & KeyedRow;
+      options?: ValidateOptions;
+    };
 
 function makeValidationError(errors: FieldError[]): Error {
   const summary = errors.map((e) => `${e.field} (${e.message})`).join(", ");
@@ -324,7 +329,10 @@ type IdUpdateArgs<T> = [
   data: DeepPartial<T>,
   options?: ValidateOptions,
 ];
-type ObjectUpdateArgs<T> = [data: DeepPartial<T>, options?: ValidateOptions];
+type ObjectUpdateArgs<T> = [
+  data: DeepPartial<T> & KeyedRow,
+  options?: ValidateOptions,
+];
 type UpdateArgs<T> = IdUpdateArgs<T> | ObjectUpdateArgs<T>;
 
 function isIdUpdate<T>(args: UpdateArgs<T>): args is IdUpdateArgs<T> {

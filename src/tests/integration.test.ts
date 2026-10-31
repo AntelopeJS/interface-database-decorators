@@ -207,6 +207,11 @@ describe("Integration - real database operations", () => {
       )
       .run();
     expect(frenchTitles).to.deep.equal(["Only English"]);
+    const ids = await LocalizedContent.table(schemaInstance)
+      .filter((row) => row.key("_id").eq("content-untranslated"))
+      .map((row) => unlockrequest(LocalizedContent, row, "_id", []))
+      .run();
+    expect(ids).to.deep.equal(["content-untranslated"]);
   });
   it("manages encrypted sensitive data", async () => {
     @RegisterTable("sensitive_data", "integration-encrypt-schema")

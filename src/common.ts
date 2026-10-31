@@ -18,6 +18,24 @@ export type DeepPartial<T> = {
 };
 
 /**
+ * A table row as `toPlainData` gives it: the fields of `T` that are set, by
+ * name, without the row's prototype.
+ */
+export type PlainRow<T> = { [K in Extract<keyof T, string>]?: T[K] };
+
+/**
+ * A table row as `fromPlainData` reads it: every field is optional and may be
+ * partial, and a field under a container modifier, such as a localized one, may
+ * hold its value per key.
+ */
+export type PlainData<T> = {
+  [K in Extract<keyof T, string>]?:
+    | T[K]
+    | DeepPartial<T>[K]
+    | Record<string, DeepPartial<T>[K]>;
+};
+
+/**
  * The rows a fixture generator gives for its table: one, several or none.
  */
 export type DatumGeneratorOutput<Row extends object = object> =
@@ -99,7 +117,7 @@ export class DatumStaticMetadata {
   public readonly crossInstanceIndexes = new Set<string>();
   public readonly uniqueIndexes = new Set<string>();
   public readonly fields: Record<string, FieldType> = {};
-  public primary: string = "_id";
+  public primary = "_id" as const;
   public generator?: DatumGenerator;
   /**
    * Schema the table was registered into by `RegisterSchema`.

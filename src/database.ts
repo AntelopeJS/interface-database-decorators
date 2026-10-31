@@ -10,7 +10,6 @@ import { DatumStaticMetadata, getMetadata } from "./common";
 import { fromPlainData, toDatabase, triggerEvent } from "./modifiers/common";
 
 type TableDefinitions = Record<string, Class<Table>>;
-type TableEntry = ReturnType<typeof toDatabase>;
 
 /**
  * Registers a schema with the database adapter and runs any fixtures.
@@ -107,7 +106,7 @@ async function insertFixtureData(
 function toFixtureRows(
   fixtureData: DatumGeneratorOutput,
   tableClass: Class<Table>,
-): TableEntry[] {
+): Table[] {
   const entries = fixtureData
     ? Array.isArray(fixtureData)
       ? fixtureData
@@ -120,6 +119,6 @@ function toFixtureRows(
   });
 }
 
-function isTableEntry(value: unknown): value is TableEntry {
+function isTableEntry(value: unknown): value is object {
   return typeof value === "object" && value !== null;
 }
