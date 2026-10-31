@@ -55,6 +55,27 @@ describe("Modifiers - names shared with Object.prototype members", () => {
     expect(Account.prototype.constructor).to.equal(Account);
   });
 
+  for (const [label, decorate] of Object.entries({ Hashed, Localized })) {
+    it(`refuses a field named __proto__ with ${label}`, async () => {
+      const Base = Table.with(HashModifier, LocalizationModifier);
+      class Account extends Base {
+        declare email: string;
+      }
+      Hashed()(Account.prototype, "email");
+
+      expect(() => decorate()(Account.prototype, "__proto__")).to.throw(
+        "Account.__proto__",
+      );
+      expect(() => decorate()(Account.prototype, "__proto__")).to.throw(
+        "Account.__proto__",
+      );
+      expect(Object.getPrototypeOf(Account.prototype)).to.equal(Base.prototype);
+      expect(getModifiedFields(new Account(), HashModifier)).to.deep.equal([
+        "email",
+      ]);
+    });
+  }
+
   it("keeps the fields of two tables apart", async () => {
     class Left extends Table.with(HashModifier) {}
     class Right extends Table.with(HashModifier) {}
