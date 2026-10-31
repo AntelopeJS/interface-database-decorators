@@ -18,6 +18,7 @@ import {
   triggerEvent,
 } from "./modifiers/common";
 import { isRecord } from "./modifiers/internal/kinds";
+import { boundSchema } from "./internal/bound-schema";
 import {
   type Constructible,
   DatumStaticMetadata,
@@ -332,7 +333,7 @@ function schemaOf(cl: DataModel): Schema<any> {
     assert(schema, `Schema not found for '${cl.schemaName}'`);
     return schema;
   }
-  const schema = getMetadata(cl.tableClass, DatumStaticMetadata).schema;
+  const schema = boundSchema(getMetadata(cl.tableClass, DatumStaticMetadata));
   assert(
     schema,
     `${cl.tableClass.name} is not bound to a schema: call RegisterSchema("${cl.schemaName}") in the module that declares it`,

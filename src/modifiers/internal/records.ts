@@ -116,3 +116,20 @@ export function withRef<T extends Modifier, U>(
   }
   return ret;
 }
+
+/** The entries of a record or map with every list copied, not shared. */
+function listsCopied<K, V>(
+  entries: Iterable<readonly [K, readonly V[]]>,
+): Array<[K, V[]]> {
+  return Array.from(entries, ([key, list]) => [key, [...list]]);
+}
+
+/** Fills `copy` with the modified fields and events of `parent`, every list copied. */
+export function copyModifierLists(
+  copy: ModifiersStaticMetadata,
+  parent: ModifiersStaticMetadata,
+): ModifiersStaticMetadata {
+  copy.fields = Object.fromEntries(listsCopied(Object.entries(parent.fields)));
+  copy.events = new Map(listsCopied(parent.events));
+  return copy;
+}
