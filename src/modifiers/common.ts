@@ -478,7 +478,7 @@ export function unlock<
   for (const field of usedFields) {
     unlockArgsOf(meta, field)[Modifier.name] = args;
     if (field in meta.floating) {
-      Reflect.set(object, field, floatingOf(meta, field));
+      Object.assign(object, { [field]: floatingOf(meta, field) });
     }
   }
 }
