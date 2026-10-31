@@ -1,6 +1,11 @@
 /** @internal @packageDocumentation */
 import type { Constructible } from "../../common";
-import type { Modifier, OneWayModifier, TwoWayModifier } from "../common";
+import type {
+  Modifier,
+  ModifierEvent,
+  OneWayModifier,
+  TwoWayModifier,
+} from "../common";
 
 export function isWriteOnly(m: Modifier): m is OneWayModifier<unknown, any[]> {
   return "lock" in m && !("unlock" in m);
@@ -25,6 +30,14 @@ export const ignoredEventNames = {
 };
 
 export function isCallable(value: unknown): value is CallableFunction {
+  return typeof value === "function";
+}
+
+/**
+ * Whether a modifier prototype member is a method the engine can run for an
+ * event: any function takes the instance, the field and the event arguments.
+ */
+export function isEventHandler(value: unknown): value is ModifierEvent {
   return typeof value === "function";
 }
 

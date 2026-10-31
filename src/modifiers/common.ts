@@ -3,7 +3,7 @@ import type * as DatabaseDev from "@antelopejs/interface-database";
 import { type Constructible, getMetadata } from "../common";
 import {
   ignoredEventNames,
-  isCallable,
+  isEventHandler,
   isLocking,
   isOnlyEvents,
   isTwoWay,
@@ -124,7 +124,11 @@ interface InternalType {
   data: Record<string, any>;
 }
 
-type ModifierEvent = (
+/**
+ * A modifier method run for an event of the table instance (`insert`,
+ * `toDatabase`, ...), with the modifier as `this`.
+ */
+export type ModifierEvent = (
   this: Modifier,
   object: { constructor: any },
   field: PropertyKey,
@@ -154,7 +158,7 @@ export class ModifiersStaticMetadata {
 
   public events = new Map<
     string,
-    Array<[field: string, modified: ModifiedField]>
+    Array<[field: string, modified: ModifiedField, handler: ModifierEvent]>
   >();
 }
 
@@ -419,14 +423,12 @@ export function attachModifier<
   }
 
   for (const event of Object.getOwnPropertyNames(Modifier.prototype)) {
-    if (
-      !Object.hasOwn(ignoredEventNames, event) &&
-      isCallable(Modifier.prototype[event])
-    ) {
+    const handler: unknown = Modifier.prototype[event];
+    if (!Object.hasOwn(ignoredEventNames, event) && isEventHandler(handler)) {
       if (!metaTable.events.has(event)) {
         metaTable.events.set(event, []);
       }
-      eventsByKey(metaTable).get(event)?.push([field, entry]);
+      eventsByKey(metaTable).get(event)?.push([field, entry, handler]);
     }
   }
 }
@@ -563,9 +565,9 @@ export function triggerEvent<T extends { constructor: any }>(
   const eventEntries = metaTable.events.get(event);
   if (!eventEntries) return;
 
-  for (const [field, { id, modifier, metaRef }] of eventEntries) {
-    withRef(internal, id, modifier, metaRef, (modifier: Modifier) =>
-      (<ModifierEvent>modifier[<keyof Modifier>event])(object, field, ...args),
-    );
+  for (const [field, { id, modifier, metaRef }, handler] of eventEntries) {
+    withRef(internal, id, modifier, metaRef, (modifier) => {
+      handler.call(modifier, object, field, ...args);
+    });
   }
 }
