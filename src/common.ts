@@ -52,6 +52,8 @@ export class DatumStaticMetadata {
   /**
    * The metadata of a subclass of a table: a copy of its parent's, so that
    * decorators on the subclass never write into the parent or its siblings.
+   * The bound schema is not copied: `RegisterSchema` binds the parent after a
+   * subclass may have been read, so the subclass looks the schema up by name.
    */
   public static inherit(parent: DatumStaticMetadata): DatumStaticMetadata {
     const copy = new DatumStaticMetadata();
@@ -71,7 +73,6 @@ export class DatumStaticMetadata {
     }
     copy.primary = parent.primary;
     copy.generator = parent.generator;
-    copy.schema = parent.schema;
     return copy;
   }
 

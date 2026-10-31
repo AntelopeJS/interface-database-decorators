@@ -15,6 +15,7 @@ import {
 import { MixinSymbol, type MixinType } from "./modifiers/common";
 import { fieldTypesByKey } from "./modifiers/internal/records";
 import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
+import { boundSchema } from "./internal/bound-schema";
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I,
@@ -105,11 +106,12 @@ export class Table {
     if (isSchemaInstance(target)) {
       return target.table(tableName);
     }
+    const schema = boundSchema(metadata);
     assert(
-      metadata.schema,
+      schema,
       `${this.name} is not bound to a schema: call RegisterSchema("${metadata.schemaName}") in the module that declares it`,
     );
-    return metadata.schema.instance(target).table(tableName);
+    return schema.instance(target).table(tableName);
   }
 
   /**

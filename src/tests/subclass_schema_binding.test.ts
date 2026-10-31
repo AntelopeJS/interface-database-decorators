@@ -1,4 +1,7 @@
 import { expect } from "chai";
+import { Schema } from "@antelopejs/interface-database";
+import { DatumStaticMetadata, getMetadata } from "../common";
+import { boundSchema } from "../internal/bound-schema";
 import { RegisterTable } from "../schema";
 import { RegisterSchema } from "../database";
 import { BasicDataModel, GetModel } from "../model";
@@ -61,5 +64,23 @@ describe("Schema binding - subclasses of a table", () => {
     expect(Child.table().build()[0].options.id).to.equal(
       "binding-child-schema",
     );
+  });
+
+  it("follows the schema its parent is bound to when RegisterSchema runs again", async () => {
+    @RegisterTable("binding_rebound", "binding-rebound-schema")
+    class Users extends Table {
+      @Field("string")
+      declare name: string;
+    }
+    await RegisterSchema("binding-rebound-schema");
+    class Admin extends Users {}
+    const adminMetadata = getMetadata(Admin, DatumStaticMetadata);
+    const first = boundSchema(adminMetadata);
+
+    await RegisterSchema("binding-rebound-schema");
+
+    const second = Schema.get("binding-rebound-schema");
+    expect(second).to.not.equal(first);
+    expect(boundSchema(adminMetadata)).to.equal(second);
   });
 });
