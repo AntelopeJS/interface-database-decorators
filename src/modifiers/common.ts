@@ -11,6 +11,7 @@ import {
   prototypeOf,
 } from "./internal/kinds";
 import {
+  copyModifierLists,
   dataByKey,
   eventsByKey,
   fieldsByKey,
@@ -139,6 +140,14 @@ export class ModifiersStaticMetadata {
   public static key = Symbol.for(
     "@antelopejs/interface-database-decorators/ModifiersStaticMetadata@1",
   );
+
+  /**
+   * The metadata of a subclass of a table: a copy of its parent's lists, so
+   * modifiers attached on the subclass never reach the parent or its siblings.
+   */
+  public static inherit(parent: ModifiersStaticMetadata) {
+    return copyModifierLists(new ModifiersStaticMetadata(), parent);
+  }
 
   public fields: Record<string, Array<ModifiedField>> = {};
 
