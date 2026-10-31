@@ -11,6 +11,7 @@ import {
   prototypeOf,
 } from "./internal/kinds";
 import {
+  assertModifiableField,
   dataByKey,
   eventsByKey,
   fieldsByKey,
@@ -19,7 +20,6 @@ import {
   getInternal,
   type InternalHolder,
   unlockArgsOf,
-  unmodifiableFieldReason,
   withRef,
 } from "./internal/records";
 
@@ -362,12 +362,7 @@ export function attachModifier<
   const metaTable = getMetadata(TableClass, ModifiersStaticMetadata);
 
   if (!isOnlyEvents(entry.modifier)) {
-    const refusal = unmodifiableFieldReason(field);
-    if (refusal) {
-      throw new Error(
-        `Cannot add Modifier ${entry.id} on ${TableClass.name}.${String(field)}: ${refusal}.`,
-      );
-    }
+    assertModifiableField(TableClass.name, entry.id, field);
     if (Object.hasOwn(metaTable.fields, field)) {
       const list = fieldsByKey(metaTable)[field];
       const last = list[list.length - 1];
