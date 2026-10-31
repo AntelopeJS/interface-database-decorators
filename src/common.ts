@@ -27,6 +27,12 @@ export type DatumGenerator = (
 
 export interface MetadataClass<TMetadata> extends Constructible<TMetadata> {
   key: symbol;
+  /**
+   * Brings metadata stored under the shared key by an older copy of the
+   * package to this copy's shape. Returns `stored` itself when it is already
+   * current.
+   */
+  upgrade?: (stored: TMetadata) => TMetadata;
 }
 
 /**
@@ -36,6 +42,16 @@ export class DatumStaticMetadata {
   public static key = Symbol.for(
     "@antelopejs/interface-database-decorators/DatumStaticMetadata@1",
   );
+
+  /**
+   * Copies 0.1.8 and 0.1.9 of the package store the metadata without
+   * `uniqueIndexes`, under the same key and class shape as this copy.
+   */
+  public static upgrade(stored: DatumStaticMetadata): DatumStaticMetadata {
+    return Object.hasOwn(stored, "uniqueIndexes")
+      ? stored
+      : Object.assign(new DatumStaticMetadata(), stored);
+  }
 
   public tableName?: string;
   public schemaName?: string;
@@ -78,15 +94,19 @@ export function getMetadata<TMetadata, TTarget extends object>(
     | TMetadata
     | undefined;
   if (existingMetadata) {
-    return existingMetadata;
+    const upgraded = metadataClass.upgrade?.(existingMetadata);
+    if (upgraded && upgraded !== existingMetadata) {
+      Reflect.defineMetadata(metadataClass.key, upgraded, target);
+    }
+    return upgraded ?? existingMetadata;
   }
 
   const prototype: unknown = Object.getPrototypeOf(target);
   const inheritedMetadata =
-    inherit && isObjectLike(prototype)
-      ? (Reflect.getOwnMetadata(metadataClass.key, prototype) as
-          | TMetadata
-          | undefined)
+    inherit &&
+    isObjectLike(prototype) &&
+    Reflect.hasOwnMetadata(metadataClass.key, prototype)
+      ? getMetadata(prototype, metadataClass, false)
       : undefined;
   const metadata = inheritedMetadata ?? new metadataClass(target);
   Reflect.defineMetadata(metadataClass.key, metadata, target);
