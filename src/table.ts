@@ -12,7 +12,7 @@ import {
 } from "@antelopejs/interface-core/decorators";
 
 import { MixinSymbol, type MixinType } from "./modifiers/common";
-import { isSameOrSubclass } from "./modifiers/internal/kinds";
+import { isSameOrSubclass, isString } from "./modifiers/internal/kinds";
 import { fieldTypesByKey } from "./modifiers/internal/records";
 import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
 import { boundSchema } from "./internal/bound-schema";
@@ -210,7 +210,11 @@ export interface IndexOptions {
 export const Index = MakePropertyDecorator(
   (target, propertyKey, options?: IndexOptions) => {
     const metadata = getMetadata(target.constructor, DatumStaticMetadata);
-    const key = <string>propertyKey;
+    assert(
+      isString(propertyKey),
+      `@Index on ${String(propertyKey)}: a database index names a field, never a symbol`,
+    );
+    const key = propertyKey;
     metadata.addIndex(
       key,
       options?.group || key,

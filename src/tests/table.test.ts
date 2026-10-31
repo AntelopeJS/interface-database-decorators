@@ -50,6 +50,20 @@ describe("Table - decorators", () => {
     expect(metadata.indexes.user_search).to.deep.equal(["name", "email"]);
     expect(metadata.indexes.age_range).to.deep.equal(["age"]);
   });
+  it("refuses an index on a symbol-keyed field", () => {
+    const secret = Symbol("secret");
+    const declare = () => {
+      class TestTable extends Table {
+        @Index()
+        [secret]!: string;
+      }
+      return TestTable;
+    };
+
+    expect(declare).to.throw(
+      "@Index on Symbol(secret): a database index names a field, never a symbol",
+    );
+  });
   it("creates table with fixture data", async () => {
     const testData = [
       { id: "1", name: "Test User 1" },
