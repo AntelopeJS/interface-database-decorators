@@ -103,6 +103,20 @@ describe("Metadata - subclasses of a table with fixtures, modifiers and relation
     expect(generators[1]).to.not.equal(generators[2]);
   });
 
+  it("calls an inherited fixture with the subclass registered", async () => {
+    @Fixture((tableClass) => ({ name: tableClass.name }))
+    class Base extends Table {
+      @Field("string")
+      declare name: string;
+    }
+    class Users extends Base {}
+
+    const generator = getMetadata(Users, DatumStaticMetadata).generator;
+
+    expect(await generator?.(Users)).to.deep.equal({ name: "Users" });
+    expect(await generator?.(Base)).to.deep.equal({ name: "Base" });
+  });
+
   it("keeps the modified fields of each subclass apart", async () => {
     class Base extends Table.with(HashModifier) {
       @Hashed()

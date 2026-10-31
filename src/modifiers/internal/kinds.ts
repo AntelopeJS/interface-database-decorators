@@ -48,6 +48,14 @@ export function prototypeOf(target: Constructible): object {
   return prototype;
 }
 
+/** Whether `candidate` is the class `base` or a class extending it. */
+export function isSameOrSubclass<Base extends Constructible>(
+  candidate: Constructible,
+  base: Base,
+): candidate is Base {
+  return candidate === base || base.isPrototypeOf(candidate);
+}
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
