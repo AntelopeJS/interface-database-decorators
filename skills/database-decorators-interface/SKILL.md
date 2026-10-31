@@ -132,7 +132,8 @@ class Chef extends Table.with(
 - `Model.validate` (and `{ validate: true }` on insert/update) only checks fields whose `@Field` type is an
   io-ts-style codec with `.decode`; plain string field tokens are skipped. Update validates with
   `{ partial: true }` semantics.
-- `update(obj)` without an explicit id asserts that the object carries the primary key (`_id` by default).
+- `update(obj)` without an explicit id takes an object typed with the primary key `_id`, and asserts at run time that it carries it.
+- A row has three forms. `fromPlainData` reads a `PlainData<T>` (every field optional, a localized field possibly one text per locale), `toPlainData` gives a `PlainRow<T>`, and `toDatabase` gives a `StoredRow<T>`, its modified fields locked in `_internal`. `fromDatabase` takes the row the database answered, unchecked.
 - Indexes are scoped to the schema instance. Add `@Index({ crossInstance: true })` only for indexes also queried
   across all instances (`CROSS_INSTANCE`); it never changes results, only speed. On a group, one member setting it
   applies it to the whole group.

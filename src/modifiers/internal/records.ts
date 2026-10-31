@@ -9,7 +9,19 @@ import type {
 
 type ModifiedFieldList = ModifiersStaticMetadata["fields"][string];
 type ModifiedField = ModifiedFieldList[number];
-type InternalRecord = Parameters<ModifiersDynamicMetadata["get"]>[1];
+
+/** What a modifier keeps for a field of a stored row, beside the locked value. */
+export type ModifierState = { [key: PropertyKey]: unknown };
+
+/**
+ * Where a row holds its modified fields: the locked values by field name, and
+ * each modifier's state by modifier name. What the values hold is known to the
+ * modifiers that wrote them, not to the row.
+ */
+export interface InternalRecord {
+  meta: Record<string, ModifierState>;
+  data: { [field: PropertyKey]: unknown };
+}
 
 export interface InternalHolder {
   constructor: any;
