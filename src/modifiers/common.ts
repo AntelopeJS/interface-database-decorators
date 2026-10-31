@@ -11,6 +11,7 @@ import {
   prototypeOf,
 } from "./internal/kinds";
 import {
+  copyModifierLists,
   dataByKey,
   eventsByKey,
   fieldsByKey,
@@ -18,7 +19,6 @@ import {
   floatingOf,
   getInternal,
   type InternalHolder,
-  listsCopied,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -145,11 +145,8 @@ export class ModifiersStaticMetadata {
    * The metadata of a subclass of a table: a copy of its parent's lists, so
    * modifiers attached on the subclass never reach the parent or its siblings.
    */
-  public static inherit({ fields, events }: ModifiersStaticMetadata) {
-    const copy = new ModifiersStaticMetadata();
-    copy.fields = Object.fromEntries(listsCopied(Object.entries(fields)));
-    copy.events = new Map(listsCopied(events));
-    return copy;
+  public static inherit(parent: ModifiersStaticMetadata) {
+    return copyModifierLists(new ModifiersStaticMetadata(), parent);
   }
 
   public fields: Record<string, Array<ModifiedField>> = {};

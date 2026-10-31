@@ -101,3 +101,13 @@ export function listsCopied<K, V>(
 ): Array<[K, V[]]> {
   return Array.from(entries, ([key, list]) => [key, [...list]]);
 }
+
+/** Fills `copy` with the modified fields and events of `parent`, every list copied. */
+export function copyModifierLists(
+  copy: ModifiersStaticMetadata,
+  parent: ModifiersStaticMetadata,
+): ModifiersStaticMetadata {
+  copy.fields = Object.fromEntries(listsCopied(Object.entries(parent.fields)));
+  copy.events = new Map(listsCopied(parent.events));
+  return copy;
+}
