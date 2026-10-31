@@ -20,12 +20,14 @@ describe("Schema binding - subclasses of a table", () => {
     await RegisterSchema("binding-before-schema");
 
     const model = GetModel(AdminModel, "binding-instance");
-    expect(model.database.build()[0].options.id).to.equal(
-      "binding-before-schema",
-    );
-    expect(Admin.table().build()[0].options.id).to.equal(
-      "binding-before-schema",
-    );
+    expect(model.database.build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "binding-before-schema" },
+    });
+    expect(Admin.table().build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "binding-before-schema" },
+    });
   });
 
   it("binds a subclass declared after RegisterSchema ran", async () => {
@@ -38,12 +40,14 @@ describe("Schema binding - subclasses of a table", () => {
     class Admin extends Users {}
 
     const model = GetModel(BasicDataModel(Admin), "binding-instance");
-    expect(model.database.build()[0].options.id).to.equal(
-      "binding-after-schema",
-    );
-    expect(Admin.table().build()[0].options.id).to.equal(
-      "binding-after-schema",
-    );
+    expect(model.database.build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "binding-after-schema" },
+    });
+    expect(Admin.table().build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "binding-after-schema" },
+    });
   });
 
   it("binds a subclass that registers its own table to its own schema", async () => {
@@ -58,12 +62,14 @@ describe("Schema binding - subclasses of a table", () => {
     await RegisterSchema("binding-parent-schema");
     await RegisterSchema("binding-child-schema");
 
-    expect(Parent.table().build()[0].options.id).to.equal(
-      "binding-parent-schema",
-    );
-    expect(Child.table().build()[0].options.id).to.equal(
-      "binding-child-schema",
-    );
+    expect(Parent.table().build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "binding-parent-schema" },
+    });
+    expect(Child.table().build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "binding-child-schema" },
+    });
   });
 
   it("follows the schema its parent is bound to when RegisterSchema runs again", async () => {
