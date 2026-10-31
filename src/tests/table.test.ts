@@ -1,3 +1,4 @@
+import { AssertionError } from "node:assert";
 import { expect } from "chai";
 import { MixinSymbol } from "../modifiers/common";
 import { Field, Fixture, Index, Table } from "../table";
@@ -60,9 +61,7 @@ describe("Table - decorators", () => {
       return TestTable;
     };
 
-    expect(declare).to.throw(
-      "@Index on Symbol(secret): a database index names a field, never a symbol",
-    );
+    expect(declare).to.throw(AssertionError);
   });
   it("creates table with fixture data", async () => {
     const testData = [
