@@ -28,6 +28,10 @@ export function isCallable(value: unknown): value is CallableFunction {
   return typeof value === "function";
 }
 
+export function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
 /** Whether a value is an object or a function: what a prototype chain holds. */
 export function isObjectLike(value: unknown): value is object {
   return (

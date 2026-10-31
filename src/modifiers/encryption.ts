@@ -11,7 +11,7 @@ import {
 } from "node:crypto";
 
 import { attachModifier, MixinSymbol, TwoWayModifier } from "./common";
-import { isCallable } from "./internal/kinds";
+import { isCallable, isRecord, isString } from "./internal/kinds";
 
 type Options = {
   /** Encryption algorithm (for supported algorithms refer to {@link createCipheriv}) */
@@ -33,19 +33,26 @@ function date_encoder(this: any, key: string) {
     : this[key];
 }
 
+type StoredValue =
+  | null
+  | boolean
+  | number
+  | string
+  | Date
+  | StoredValue[]
+  | { [key: string]: StoredValue };
+
 /**
  * The Date a stored marker `{ type: "Date", value }` stands for, when `value`
  * is a text `toUTCString` produces, as `date_encoder` writes it. Any other
  * object was stored by the caller.
  */
-function dateOfMarker(candidate: any): Date | undefined {
+function dateOfMarker(candidate: StoredValue): Date | undefined {
   if (
-    candidate === null ||
-    typeof candidate !== "object" ||
+    !isRecord(candidate) ||
     Object.keys(candidate).length !== 2 ||
-    !Object.keys(candidate).includes("type") ||
-    !Object.keys(candidate).includes("value") ||
-    candidate.type !== "Date"
+    candidate.type !== "Date" ||
+    !isString(candidate.value)
   ) {
     return undefined;
   }
@@ -53,7 +60,7 @@ function dateOfMarker(candidate: any): Date | undefined {
   return date.toUTCString() === candidate.value ? date : undefined;
 }
 
-function date_decoder(_key: string, value: any) {
+function date_decoder(_key: string, value: StoredValue) {
   return dateOfMarker(value) ?? value;
 }
 
