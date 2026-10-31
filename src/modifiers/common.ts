@@ -169,7 +169,11 @@ export class ModifiersDynamicMetadata {
    * name. Reads return them; `unlock` and `lock` assign them again.
    */
   floating: Record<string, any> = {};
-  fields: Record<string, Record<string, any[]>> = {};
+  /**
+   * The arguments each modifier of a field was unlocked or locked with, by
+   * field name, then by modifier name.
+   */
+  fields: Record<string, Record<string, unknown[]>> = {};
 
   constructor(target: any) {
     this.staticMeta = getMetadata(target.constructor, ModifiersStaticMetadata);
