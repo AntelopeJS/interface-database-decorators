@@ -11,6 +11,7 @@ import {
   prototypeOf,
 } from "./internal/kinds";
 import {
+  assertModifiableField,
   copyModifierLists,
   dataByKey,
   eventsByKey,
@@ -370,7 +371,8 @@ export function attachModifier<
   const metaTable = getMetadata(TableClass, ModifiersStaticMetadata);
 
   if (!isOnlyEvents(entry.modifier)) {
-    if (field in metaTable.fields) {
+    assertModifiableField(TableClass.name, entry.id, field);
+    if (Object.hasOwn(metaTable.fields, field)) {
       const list = fieldsByKey(metaTable)[field];
       const last = list[list.length - 1];
       if (isWriteOnly(last.modifier)) {
@@ -416,7 +418,7 @@ export function attachModifier<
 
   for (const event of Object.getOwnPropertyNames(Modifier.prototype)) {
     if (
-      !(event in ignoredEventNames) &&
+      !Object.hasOwn(ignoredEventNames, event) &&
       isCallable(Modifier.prototype[event])
     ) {
       if (!metaTable.events.has(event)) {

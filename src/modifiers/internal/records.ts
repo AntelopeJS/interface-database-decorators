@@ -26,6 +26,28 @@ export function getInternal(object: InternalHolder): InternalRecord {
   return object._internal;
 }
 
+/**
+ * Throws when a modifier cannot be attached to the field named `field`: the
+ * two names the table's own structures live under.
+ */
+export function assertModifiableField(
+  tableName: string,
+  modifierId: string,
+  field: PropertyKey,
+): void {
+  const reason =
+    field === "constructor"
+      ? "the field would replace the class constructor that locates the metadata of every instance"
+      : field === "__proto__"
+        ? "the field would replace the prototype of the record of modified fields and never be recorded"
+        : undefined;
+  if (reason) {
+    throw new Error(
+      `Cannot add Modifier ${modifierId} on ${tableName}.${String(field)}: ${reason}.`,
+    );
+  }
+}
+
 export function fieldsByKey(meta: ModifiersStaticMetadata): {
   [field: PropertyKey]: ModifiedFieldList;
 } {
