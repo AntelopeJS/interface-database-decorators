@@ -92,11 +92,11 @@ Requires AntelopeJS core `1.x` and the following peer dependencies:
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                          | Supported         | Tested with |
-| -------------------------------- | ----------------- | ----------- |
-| `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` | `0.0.15`    |
-| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `0.2.4`     |
-| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `0.1.11`    |
+| Package                          | Supported         | Tested with                                                    |
+| -------------------------------- | ----------------- | -------------------------------------------------------------- |
+| `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` | `0.0.15`                                                       |
+| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `0.2.4`                                                        |
+| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `file:.campaign/tgz/antelopejs-interface-database-4939b45.tgz` |
 
 <!-- antelopejs-docs-compat:end -->
 
