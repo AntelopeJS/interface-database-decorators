@@ -5,15 +5,15 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@antelopejs/interface-database': file:.campaign/tgz/antelopejs-interface-database-f5775ba.tgz
+  '@antelopejs/interface-database': file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz
 
 importers:
 
   .:
     dependencies:
       '@antelopejs/interface-database':
-        specifier: file:.campaign/tgz/antelopejs-interface-database-f5775ba.tgz
-        version: file:.campaign/tgz/antelopejs-interface-database-f5775ba.tgz(@antelopejs/interface-core@0.2.4)
+        specifier: file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz
+        version: file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz(@antelopejs/interface-core@0.2.4)
       randomstring:
         specifier: ^1.3.1
         version: 1.3.1
@@ -100,8 +100,8 @@ packages:
   '@antelopejs/interface-core@0.2.4':
     resolution: {integrity: sha512-2qF6/KwahCQvvNuC/piUvPWD4wq2Npmco941HMg2/bMBoJKbhMH16WcXXRvPYznNSkU0U+6vqK6KE+2N5NojSA==}
 
-  '@antelopejs/interface-database@file:.campaign/tgz/antelopejs-interface-database-f5775ba.tgz':
-    resolution: {integrity: sha512-ZAq31tXki3kKTybT7x+Km12wsoEjRxS5og9CLCgHLmoXYjOkc2iGKjXoiIeki9p5ROkkopJcnBSfTzEFtpK8Xg==, tarball: file:.campaign/tgz/antelopejs-interface-database-f5775ba.tgz}
+  '@antelopejs/interface-database@file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz':
+    resolution: {integrity: sha512-rn+0+nTMBje0Wo4Ysg5/HGm/gqreLSyMkuXrsKF+2kAxrNx+5WEzmJHqy3CwJ1SOZr65lb3Yhb/M3CrmXCVYqQ==, tarball: file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz}
     version: 0.3.0
     peerDependencies:
       '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
@@ -2812,7 +2812,7 @@ snapshots:
     dependencies:
       reflect-metadata: 0.2.2
 
-  '@antelopejs/interface-database@file:.campaign/tgz/antelopejs-interface-database-f5775ba.tgz(@antelopejs/interface-core@0.2.4)':
+  '@antelopejs/interface-database@file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz(@antelopejs/interface-core@0.2.4)':
     dependencies:
       '@antelopejs/interface-core': 0.2.4
 
