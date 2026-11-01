@@ -27,6 +27,7 @@ import {
   type InternalHolder,
   type InternalRecord,
   type ModifierState,
+  newModifiedField,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -368,23 +369,17 @@ export function attachModifier<
   field: keyof InstanceType<T>,
   options: ExtractModifierOptions<InstanceType<M>>,
 ) {
-  const entry: ModifiedField = {
-    id: Modifier.name,
-    modifier: new Modifier(),
-    metaRef: { _ref: {} },
-  };
-  Object.assign(entry.modifier, {
-    meta: new Proxy(entry.metaRef, {
-      get: (self, p) => {
-        if (!self._ref) return undefined;
-        return self._ref[p];
-      },
-      set: (self, p, v) => {
-        if (!self._ref) self._ref = {};
-        return Reflect.set(self._ref, p, v, self._ref);
-      },
-    }),
-  });
+  attachModifierTo(TableClass, Modifier, field, options);
+}
+
+/** @internal {@link attachModifier} for a decorator: the class is its target's `constructor`. */
+export function attachModifierTo<M extends Constructible<Modifier>>(
+  TableClass: Function,
+  Modifier: M,
+  field: PropertyKey,
+  options: ExtractModifierOptions<InstanceType<M>>,
+) {
+  const entry = newModifiedField(Modifier);
   Object.assign(entry.modifier, { options });
 
   const metaTable = getMetadata(TableClass, ModifiersStaticMetadata);
@@ -489,7 +484,7 @@ type ModifierWithProxyArgs = {
 };
 
 export function unlockrequest<T extends {}, K extends keyof T>(
-  table: Constructible<T>,
+  table: Constructible,
   object: DatabaseDev.ValueProxy<T>,
   field: K,
   modifiers: ModifierWithProxyArgs[],
