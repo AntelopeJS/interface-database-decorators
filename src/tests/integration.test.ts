@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { Schema } from "@antelopejs/interface-database";
+import { Schema, type ValueProxy } from "@antelopejs/interface-database";
+import type { Constructible } from "../common";
 import { RegisterTable } from "../schema";
 import { RegisterSchema } from "../database";
 import { BasicDataModel, GetModel } from "../model";
@@ -10,6 +11,14 @@ import { LocalizationModifier, Localized } from "../modifiers/localization";
 import { unlockrequest } from "../modifiers/common";
 
 import { asFieldType, numberCodec } from "./codec_helpers";
+
+function unlockAny<T extends {}, K extends keyof T>(
+  table: Constructible<T>,
+  row: ValueProxy<T>,
+  field: K,
+) {
+  return unlockrequest(table, row, field, []);
+}
 
 function getDatabase(schemaId: string) {
   const instance = Schema.get(schemaId)?.instance();
@@ -209,7 +218,7 @@ describe("Integration - real database operations", () => {
     expect(frenchTitles).to.deep.equal(["Only English"]);
     const ids = await LocalizedContent.table(schemaInstance)
       .filter((row) => row.key("_id").eq("content-untranslated"))
-      .map((row) => unlockrequest(LocalizedContent, row, "_id", []))
+      .map((row) => unlockAny(LocalizedContent, row, "_id"))
       .run();
     expect(ids).to.deep.equal(["content-untranslated"]);
   });

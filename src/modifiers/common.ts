@@ -501,6 +501,7 @@ export function unlockrequest<T extends {}, K extends keyof T>(
   const stored = object.cast<{ _internal: InternalRecord }>();
   const meta = stored.key("_internal").key("meta");
   const metaTable = getMetadata(table, ModifiersStaticMetadata);
+  const name = String(field);
   const unlocked = fieldsByKey(metaTable)[field]?.reduce<
     DatabaseDev.ValueProxy<unknown>
   >(
@@ -508,9 +509,9 @@ export function unlockrequest<T extends {}, K extends keyof T>(
       isWriteOnly(modifier) || !isTwoWay(modifier)
         ? data
         : modifier.unlockrequest(data, meta.key(id), ...args[id]),
-    stored.key("_internal").key("data").key(field),
+    stored.key("_internal").key("data").key(name),
   );
-  return (unlocked ?? object.cast<InternalRecord["data"]>().key(field)).cast<
+  return (unlocked ?? object.cast<InternalRecord["data"]>().key(name)).cast<
     T[K]
   >();
 }
