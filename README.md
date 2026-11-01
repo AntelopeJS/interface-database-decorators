@@ -96,7 +96,7 @@ The package declares these `@antelopejs/*` peer dependencies:
 | -------------------------------- | ----------------- | -------------------------------------------------------------- |
 | `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` | `0.0.15`                                                       |
 | `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `0.2.4`                                                        |
-| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `file:.campaign/tgz/antelopejs-interface-database-667cfe9.tgz` |
+| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `file:.campaign/tgz/antelopejs-interface-database-642bb6b.tgz` |
 
 <!-- antelopejs-docs-compat:end -->
 
