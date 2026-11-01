@@ -3,7 +3,7 @@ import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 
 import { type Constructible, getMetadata } from "../common";
 import {
-  attachModifierTo,
+  attachModifier,
   ContainerModifier,
   MixinSymbol,
   ModifiersStaticMetadata,
@@ -128,7 +128,7 @@ export class LocalizationModifier extends ContainerModifier<
  */
 export const Localized = MakePropertyDecorator(
   (target, propertyKey, options?: Options) => {
-    attachModifierTo(
+    attachModifier(
       target.constructor,
       LocalizationModifier,
       propertyKey,

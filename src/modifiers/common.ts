@@ -360,20 +360,7 @@ type ExtractModifierOptions<T> =
 type ExtractModifierArgs<T> =
   T extends OneWayModifier<any, infer Args> ? Args : [];
 
-export function attachModifier<
-  T extends Constructible,
-  M extends Constructible<Modifier>,
->(
-  TableClass: T,
-  Modifier: M,
-  field: keyof InstanceType<T>,
-  options: ExtractModifierOptions<InstanceType<M>>,
-) {
-  attachModifierTo(TableClass, Modifier, field, options);
-}
-
-/** @internal {@link attachModifier} for a decorator: the class is its target's `constructor`. */
-export function attachModifierTo<M extends Constructible<Modifier>>(
+export function attachModifier<M extends Constructible<Modifier>>(
   TableClass: Function,
   Modifier: M,
   field: PropertyKey,

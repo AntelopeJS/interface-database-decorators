@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 
 import {
-  attachModifierTo,
+  attachModifier,
   MixinSymbol,
   OneWayModifier,
   testValue,
@@ -70,7 +70,7 @@ export class HashModifier extends OneWayModifier<
  */
 export const Hashed = MakePropertyDecorator(
   (target, propertyKey, options?: Options) => {
-    attachModifierTo(
+    attachModifier(
       target.constructor,
       HashModifier,
       propertyKey,

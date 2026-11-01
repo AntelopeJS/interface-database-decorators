@@ -1,6 +1,6 @@
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 
-import { attachModifierTo, Modifier } from "./common";
+import { attachModifier, Modifier } from "./common";
 
 type AutoDateType = "created" | "updated";
 
@@ -37,7 +37,7 @@ export class AutoDateModifier extends Modifier<object, Options> {
  * payloads so the original creation date is preserved.
  */
 export const CreationTime = MakePropertyDecorator((target, propertyKey) => {
-  attachModifierTo(target.constructor, AutoDateModifier, propertyKey, {
+  attachModifier(target.constructor, AutoDateModifier, propertyKey, {
     type: "created",
   });
 });
@@ -49,7 +49,7 @@ export const CreationTime = MakePropertyDecorator((target, propertyKey) => {
  * update.
  */
 export const UpdateTime = MakePropertyDecorator((target, propertyKey) => {
-  attachModifierTo(target.constructor, AutoDateModifier, propertyKey, {
+  attachModifier(target.constructor, AutoDateModifier, propertyKey, {
     type: "updated",
   });
 });

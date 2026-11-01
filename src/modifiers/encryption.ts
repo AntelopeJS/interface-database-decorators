@@ -10,7 +10,7 @@ import {
   randomBytes,
 } from "node:crypto";
 
-import { attachModifierTo, MixinSymbol, TwoWayModifier } from "./common";
+import { attachModifier, MixinSymbol, TwoWayModifier } from "./common";
 import { isCallable, isRecord, isString } from "./internal/kinds";
 
 type Options = {
@@ -157,7 +157,7 @@ export class EncryptionModifier extends TwoWayModifier<
  */
 export const Encrypted = MakePropertyDecorator(
   (target, propertyKey, options: Options) => {
-    attachModifierTo(
+    attachModifier(
       target.constructor,
       EncryptionModifier,
       propertyKey,
