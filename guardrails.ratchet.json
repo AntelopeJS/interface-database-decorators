@@ -1,15 +1,13 @@
 {
   "pack": "0.2.17",
   "rules": {
-    "anti-slop/no-known-value-widening": 2,
     "anti-slop/no-unknown-parameters": 8,
     "anti-slop/no-unknown-returns": 1,
-    "anti-slop/no-unsafe-dictionary-type": 14,
-    "anti-slop/require-safety-comment-for-type-assertion": 7,
-    "typescript/no-unnecessary-type-parameters": 5,
-    "typescript/no-unsafe-argument": 5,
-    "typescript/no-unsafe-assignment": 10,
-    "typescript/no-unsafe-return": 11
+    "anti-slop/no-unsafe-dictionary-type": 11,
+    "anti-slop/require-safety-comment-for-type-assertion": 5,
+    "typescript/no-unnecessary-type-parameters": 4,
+    "typescript/no-unsafe-assignment": 2,
+    "typescript/no-unsafe-return": 3
   },
   "oversizeFiles": {}
 }

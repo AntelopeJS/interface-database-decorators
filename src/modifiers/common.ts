@@ -488,7 +488,7 @@ type ModifierWithProxyArgs = {
   args: unknown[];
 };
 
-export function unlockrequest<T extends {}, K extends keyof T>(
+export function unlockrequest<T extends {}, K extends keyof T & string>(
   table: Constructible<T>,
   object: DatabaseDev.ValueProxy<T>,
   field: K,
