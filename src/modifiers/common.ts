@@ -15,6 +15,7 @@ import {
   fieldsByKey,
   floatingByKey,
   floatingOf,
+  getInternal,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -256,16 +257,6 @@ export class ModifiersDynamicMetadata {
     dataByKey(internal)[field] = value;
     delete floatingByKey(this)[field];
   }
-}
-
-function getInternal(object: any): InternalType {
-  if (!object._internal) {
-    object._internal = {
-      meta: {},
-      data: {},
-    };
-  }
-  return object._internal;
 }
 
 /**

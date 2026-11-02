@@ -8,7 +8,7 @@ import type {
 
 type ModifiedFieldList = ModifiersStaticMetadata["fields"][string];
 type ModifiedField = ModifiedFieldList[number];
-type InternalRecord = Parameters<ModifiersDynamicMetadata["get"]>[1];
+export type InternalRecord = Parameters<ModifiersDynamicMetadata["get"]>[1];
 
 export function fieldsByKey(meta: ModifiersStaticMetadata): {
   [field: PropertyKey]: ModifiedFieldList;
@@ -59,6 +59,20 @@ export function dataByKey<V>(internal: { data: Record<string, V> }): {
   [field: PropertyKey]: V;
 } {
   return internal.data;
+}
+
+export function getInternal(object: any): InternalRecord {
+  if (!object._internal) {
+    object._internal = {
+      meta: {},
+      data: {},
+    };
+  }
+  return object._internal;
+}
+
+export function isEmptyInternal({ meta, data }: InternalRecord) {
+  return Object.keys(meta).length === 0 && Object.keys(data).length === 0;
 }
 
 export function withRef<T extends Modifier, U>(

@@ -19,6 +19,10 @@ import {
 } from "./modifiers/common";
 import { isRecord } from "./modifiers/internal/kinds";
 import {
+  type InternalRecord,
+  isEmptyInternal,
+} from "./modifiers/internal/records";
+import {
   type Constructible,
   DatumStaticMetadata,
   type DeepPartial,
@@ -256,7 +260,7 @@ export function BasicDataModel<T extends object>(
         triggerEvent(instance, "update");
         return this.table
           .get(parsed.id)
-          .update(Model.toDatabase(instance))
+          .update(withoutEmptyInternal(Model.toDatabase(instance)))
           .run();
       }
       const instance = Model.fromPlainData(parsed.data);
@@ -264,7 +268,10 @@ export function BasicDataModel<T extends object>(
       // SAFETY: parsed.data is the DeepPartial<T> object the caller passed as the first argument (the id form was handled above), so reading the property named by the table's primary key is defined and gives undefined when absent; the next line asserts it is present.
       const id = (parsed.data as any)[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
-      return this.table.get(id).update(Model.toDatabase(instance)).run();
+      return this.table
+        .get(id)
+        .update(withoutEmptyInternal(Model.toDatabase(instance)))
+        .run();
     }
 
     /**
@@ -299,6 +306,20 @@ type ParsedUpdate<T> = {
   data: DeepPartial<T>;
   options?: ValidateOptions;
 };
+
+/**
+ * Leaves out an `_internal` with nothing in it. The update writes that key as
+ * one value, and a modifier event creates it empty: writing it would erase what
+ * the row stores there.
+ */
+function withoutEmptyInternal<R extends { _internal?: InternalRecord }>(
+  record: R,
+) {
+  if (record._internal && isEmptyInternal(record._internal)) {
+    delete record._internal;
+  }
+  return record;
+}
 
 function makeValidationError(errors: FieldError[]): Error {
   const summary = errors.map((e) => `${e.field} (${e.message})`).join(", ");
