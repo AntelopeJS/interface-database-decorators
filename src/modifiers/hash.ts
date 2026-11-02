@@ -29,6 +29,7 @@ export class HashModifier extends OneWayModifier<
 > {
   public readonly autolock = true;
 
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
   public override lock(_locked_value: string | undefined, value: unknown) {
     if (value === undefined) {
       return value;

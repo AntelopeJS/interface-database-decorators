@@ -66,7 +66,9 @@ export class LocalizationModifier extends ContainerModifier<
    * it in queries too (`unlockrequest`).
    */
   public override lock(
+    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
     locked_value: Record<string, unknown> | undefined,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides ContainerModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
     key: string,
   ) {
@@ -78,6 +80,7 @@ export class LocalizationModifier extends ContainerModifier<
     return withoutEmptyTexts(super.lock(locked_value, value, key));
   }
 
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
   public override unlock(locked_value: Record<string, unknown>, key: string) {
     const unlocked = super.unlock(locked_value, key);
     if (unlocked !== undefined && unlocked !== EMPTY_TEXT) {
@@ -89,6 +92,7 @@ export class LocalizationModifier extends ContainerModifier<
   }
 
   public override unlockrequest(
+    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
     data: DatabaseDev.ValueProxy<Record<string, unknown>>,
     _meta: DatabaseDev.ValueProxy<Record<string, never>>,
     key: DatabaseDev.ValueProxyOrValue<string>,

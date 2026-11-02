@@ -104,6 +104,7 @@ export class Table {
       `${this.name} has no table name: decorate it with @RegisterTable`,
     );
     if (isSchemaInstance(target)) {
+      // oxlint-disable-next-line typescript/no-unsafe-return -- target is a SchemaInstance<any>, so its table is a Table<any>; a schema instance covers every table of its schema, so no type parameter of it states that this class's table holds this class's rows
       return target.table(tableName);
     }
     const schema = boundSchema(metadata);
@@ -111,6 +112,7 @@ export class Table {
       schema,
       `${this.name} is not bound to a schema: call RegisterSchema("${metadata.schemaName}") in the module that declares it`,
     );
+    // oxlint-disable-next-line typescript/no-unsafe-return -- the schema instance is a SchemaInstance<any>, so its table is a Table<any>; a schema instance covers every table of its schema, so no type parameter of it states that this class's table holds this class's rows
     return schema.instance(target).table(tableName);
   }
 
@@ -168,6 +170,7 @@ export class Table {
       | ExtractTableMeta<InstanceType<This>>
       | ExtractTableMeta<InstanceType<T[number]>>
     >;
+    // SAFETY: c subclasses this and gets every mixin member the base lacks, so it has the instance type Combined computes from the mixin classes; the Object.defineProperty calls give TypeScript no way to derive it.
     return c as Combined;
   }
 }

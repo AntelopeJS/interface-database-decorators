@@ -11,6 +11,7 @@ type ModifiedFieldList = ModifiersStaticMetadata["fields"][string];
 type ModifiedField = ModifiedFieldList[number];
 
 /** What a modifier keeps for a field of a stored row, beside the locked value. */
+// oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- what a modifier keeps for a field is known only to that modifier, so the shared record cannot name it
 export type ModifierState = { [key: PropertyKey]: unknown };
 
 /**
@@ -20,6 +21,7 @@ export type ModifierState = { [key: PropertyKey]: unknown };
  */
 export interface InternalRecord {
   meta: Record<string, ModifierState>;
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the locked value of a field is known only to the modifier that locked it, so the shared record cannot name it
   data: { [field: PropertyKey]: unknown };
 }
 
