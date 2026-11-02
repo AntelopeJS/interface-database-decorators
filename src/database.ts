@@ -94,12 +94,35 @@ async function insertFixtureData(
     return;
   }
   const fixtureData = await generator(tableClass);
-  const rows = toFixtureRows(fixtureData, tableClass);
+  const rows = toFixtureRows(fixtureData, tableClass).map((row, position) =>
+    withStableId(row, tableName, position),
+  );
   if (rows.length === 0) {
     return;
   }
   const payload: any = rows.length === 1 ? rows[0] : rows;
-  await schema.instance().table(tableName).insert(payload);
+  const table = schema.instance().table(tableName);
+  try {
+    await table.insert(payload);
+  } catch (error) {
+    if ((await table.count()) === 0) throw error;
+  }
+}
+
+/**
+ * Keys a fixture row that declares no id by its table and position, so two
+ * processes starting on an empty table write one row between them. The second
+ * insert fails on that key, and the table it then finds filled is what it came
+ * to write.
+ */
+function withStableId(
+  row: TableEntry,
+  tableName: string,
+  position: number,
+): TableEntry {
+  return row._id === undefined
+    ? { ...row, _id: `${tableName}:fixture:${position}` }
+    : row;
 }
 
 function toFixtureRows(
