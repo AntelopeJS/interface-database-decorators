@@ -111,9 +111,7 @@ async function insertFixtureData(
 
 /**
  * Keys a fixture row that declares no id by its table and position, so two
- * processes starting on an empty table write one row between them. The second
- * insert fails on that key, and the table it then finds filled is what it came
- * to write.
+ * processes starting on an empty table write one row between them.
  */
 function withStableId(
   row: TableEntry,
