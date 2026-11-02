@@ -257,3 +257,40 @@ function getIndexDefinitions(schemaId: string, tableName: string) {
   if (!schema) throw new Error("Schema not found");
   return schema.definition[tableName].indexes;
 }
+
+describe("Database - fixture race", () => {
+  it("writes one row when two processes register an id-less fixture at once", async () => {
+    @Fixture(() => [{ name: "Only row" }])
+    @RegisterTable("fixture_race_no_id", "test-fixture-race-no-id")
+    class _TestTable extends Table {
+      declare name: string;
+    }
+
+    await Promise.all([
+      RegisterSchema("test-fixture-race-no-id"),
+      RegisterSchema("test-fixture-race-no-id"),
+    ]);
+
+    const schema = Schema.get("test-fixture-race-no-id");
+    if (!schema) throw new Error("Schema not found");
+    expect(await schema.instance().table("fixture_race_no_id")).to.have.length(
+      1,
+    );
+  });
+  it("does not fail the process that loses a fixture insert", async () => {
+    @Fixture(() => [{ _id: "only-row", name: "Only row" }])
+    @RegisterTable("fixture_race_id", "test-fixture-race-id")
+    class _TestTable extends Table {
+      declare name: string;
+    }
+
+    await Promise.all([
+      RegisterSchema("test-fixture-race-id"),
+      RegisterSchema("test-fixture-race-id"),
+    ]);
+
+    const schema = Schema.get("test-fixture-race-id");
+    if (!schema) throw new Error("Schema not found");
+    expect(await schema.instance().table("fixture_race_id")).to.have.length(1);
+  });
+});
