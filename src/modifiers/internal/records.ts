@@ -1,5 +1,5 @@
 /** @internal @packageDocumentation */
-import type { DatumStaticMetadata } from "../../common";
+import type { Constructible, DatumStaticMetadata } from "../../common";
 import type {
   Modifier,
   ModifierEvent,
@@ -119,6 +119,30 @@ export function dataByKey<V>(internal: { data: Record<string, V> }): {
   [field: PropertyKey]: V;
 } {
   return internal.data;
+}
+
+/** A field entry for a new `Modifier`, whose `meta` reads and writes the record its `metaRef` points at. */
+export function newModifiedField(
+  Modifier: Constructible<Modifier>,
+): ModifiedField {
+  const entry: ModifiedField = {
+    id: Modifier.name,
+    modifier: new Modifier(),
+    metaRef: { _ref: {} },
+  };
+  Object.assign(entry.modifier, {
+    meta: new Proxy(entry.metaRef, {
+      get: (self, p) => {
+        if (!self._ref) return undefined;
+        return self._ref[p];
+      },
+      set: (self, p, v) => {
+        if (!self._ref) self._ref = {};
+        return Reflect.set(self._ref, p, v, self._ref);
+      },
+    }),
+  });
+  return entry;
 }
 
 export function withRef<T extends Modifier, U>(

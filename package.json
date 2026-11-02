@@ -146,7 +146,7 @@
   "devDependencies": {
     "@antelopejs/core": "^1.16.0",
     "@antelopejs/interface-api": "^0.0.15",
-    "@antelopejs/interface-core": "^0.2.4",
+    "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-6a8b526.tgz",
     "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz",
     "@antelopejs/tooling-configs": "^0.2.17",
     "@types/chai": "^4.3.20",
@@ -175,7 +175,8 @@
   "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
-      "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz"
+      "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz",
+      "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-6a8b526.tgz"
     }
   },
   "antelopeJs": {
