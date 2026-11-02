@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.1.12
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.11...v0.1.12)
+
+### 🩹 Fixes
+
+- **fixtures:** Let two processes register a fixture on an empty table ([#74](https://github.com/AntelopeJS/interface-database-decorators/pull/74))
+
+### 💅 Refactors
+
+- Clear the residual ratchet findings ([#46](https://github.com/AntelopeJS/interface-database-decorators/pull/46))
+
+### 📖 Documentation
+
+- **readme:** Use one Discord invite ([#68](https://github.com/AntelopeJS/interface-database-decorators/pull/68))
+- **github:** Send questions and ideas to Discord ([#76](https://github.com/AntelopeJS/interface-database-decorators/pull/76))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs/tooling-configs to 0.2.17 ([#49](https://github.com/AntelopeJS/interface-database-decorators/pull/49))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.1.11
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.10...v0.1.11)
