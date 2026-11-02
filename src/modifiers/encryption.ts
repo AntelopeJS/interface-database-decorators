@@ -92,6 +92,7 @@ export class EncryptionModifier extends TwoWayModifier<
 
   public override lock(
     _locked_value: LockedType | undefined,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
   ): LockedType {
     const iv = randomBytes(this.options.ivSize || 16);

@@ -155,6 +155,7 @@ export function BasicDataModel<T extends object>(
      * Pass `{ partial: true }` to skip fields not present on `obj` (patch semantics).
      */
     public static validate(
+      // oxlint-disable-next-line anti-slop/no-unknown-parameters -- validate is the parser: it narrows obj with isRecord and decodes every field with its codec before reading it
       obj: unknown,
       options?: ValidateInputOptions,
     ): ValidationResult {
@@ -179,6 +180,7 @@ export function BasicDataModel<T extends object>(
     public readonly table: DatabaseDev.Table<T>;
 
     constructor(public readonly database: DatabaseDev.SchemaInstance<any>) {
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- database is a SchemaInstance<any>, so its table is a Table<any>; a schema instance covers every table of its schema, so no type parameter of it states that this class's table holds this class's rows
       this.table = database.table(name);
     }
 

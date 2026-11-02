@@ -143,11 +143,13 @@ export class DatumStaticMetadata {
   }
 }
 
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- exported; replacing TTarget with `object` clears this row and adds 6 (1 no-object-parameters, 5 no-unsafe-argument for the any-typed constructor callers pass)
 export function getMetadata<TMetadata, TTarget extends object>(
   target: TTarget,
   metadataClass: MetadataClass<TMetadata>,
   inherit: boolean = true,
 ): TMetadata {
+  // SAFETY: getMetadata alone defines metadata under metadataClass.key, always a TMetadata (new metadataClass, its inherit or its upgrade), so the read is a TMetadata or undefined; reflect-metadata types it any.
   const existingMetadata = Reflect.getOwnMetadata(metadataClass.key, target) as
     | TMetadata
     | undefined;

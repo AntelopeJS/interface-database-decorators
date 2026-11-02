@@ -37,7 +37,9 @@ export const MixinSymbol = Symbol();
 export type MixinType<T> = T extends { [MixinSymbol]: infer A } ? A : never;
 
 export class Modifier<
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Meta is read only by subclasses, through this.meta; removing it changes the published Modifier<Meta, Options>
   Meta extends object = object,
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Options is read only by subclasses, through this.options; removing it changes the published Modifier<Meta, Options>
   Options extends object = object,
 > {
   protected meta!: Meta;
@@ -52,6 +54,7 @@ export class OneWayModifier<
 > extends Modifier<Meta, Options> {
   public lock(
     _locked_value: LockedType | undefined,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- the published override point of every modifier; a modified field's value has its table class's type, which the shared modifier chain cannot name
     _value: unknown,
     ..._args: Args
   ): LockedType {
@@ -59,6 +62,7 @@ export class OneWayModifier<
   }
   public test(
     locked_value: LockedType,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
     ...args: Args
   ): boolean {
@@ -76,6 +80,7 @@ export class TwoWayModifier<
   Meta extends object = object,
   Options extends object = object,
 > extends OneWayModifier<LockedType, Args, Meta, Options> {
+  // oxlint-disable-next-line anti-slop/no-unknown-returns -- the unlocked value has its table class's type, which the shared modifier chain cannot name
   public unlock(_locked_value: LockedType, ..._args: Args): unknown {
     throw new Error("Unimplemented");
   }
@@ -92,17 +97,22 @@ export class ContainerModifier<
   Meta extends object = object,
   Options extends object = object,
 > extends TwoWayModifier<
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
   Record<string, unknown>,
   [key: string],
   Meta,
   Options
 > {
   public override lock(
+    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
     locked_value: Record<string, unknown> | undefined,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
     key: string,
   ) {
     if (key === "*") {
+      // SAFETY: the "*" key addresses the whole container, which the table class declares as the record of values per key; a non-record value is stored as given.
+      // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
       return value as Record<string, unknown>;
     }
     return locked_value
@@ -112,6 +122,7 @@ export class ContainerModifier<
         }
       : { [key]: value };
   }
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
   public override unlock(locked_value: Record<string, unknown>, key: string) {
     if (key === "*") {
       return locked_value;
@@ -119,6 +130,7 @@ export class ContainerModifier<
     return Object.hasOwn(locked_value, key) ? locked_value[key] : undefined;
   }
   public override unlockrequest(
+    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
     data: DatabaseDev.ValueProxy<Record<string, unknown>>,
     _meta: DatabaseDev.ValueProxy<Meta>,
     key: DatabaseDev.ValueProxyOrValue<string>,
@@ -182,6 +194,7 @@ export class ModifiersDynamicMetadata {
    * Values assigned to a field before its modifiers could lock them, by field
    * name. Reads return them; `unlock` and `lock` assign them again.
    */
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the values assigned before modifiers could lock them, by field name, have their table class's types
   floating: Record<string, unknown> = {};
   /**
    * The arguments each modifier of a field was unlocked or locked with, by
@@ -249,6 +262,7 @@ export class ModifiersDynamicMetadata {
     );
   }
 
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
   set(field: PropertyKey, internal: InternalRecord, value: unknown) {
     if (!this.canSet(field)) {
       floatingByKey(this)[field] = value;
@@ -295,6 +309,7 @@ export class ModifiersDynamicMetadata {
 /** The names of the modified fields of a table instance. */
 function fieldNamesOf<T extends { constructor: any }>(object: T) {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
+  // SAFETY: the names attachModifier recorded are keys of the table class of object, so keys of T; Object.keys types them string.
   return Object.keys(metaTable.fields) as Array<keyof T>;
 }
 
@@ -310,6 +325,7 @@ export function fromPlainData<T extends object>(
   Object.setPrototypeOf(instance, prototypeOf(TableClass));
   Object.assign(instance, Object.fromEntries(Object.entries(rawObject)));
   triggerEvent(instance, "fromPlainData", rawObject);
+  // SAFETY: instance gets the prototype of TableClass and the fields of rawObject, so it is a T, as fromPlainData returns; setPrototypeOf types no result.
   return instance as T;
 }
 
@@ -337,9 +353,11 @@ export function fromDatabase<T extends Constructible>(
   rawObject: any,
   TableClass: T,
 ): InstanceType<T> {
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- rawObject is a stored row, typed any by the published fromDatabase signature; typing it T breaks consumers
   const shallowCopy = { ...rawObject };
   Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
   triggerEvent(shallowCopy, "fromDatabase", rawObject);
+  // oxlint-disable-next-line typescript/no-unsafe-return -- shallowCopy is a copy of the any-typed rawObject
   return shallowCopy;
 }
 
@@ -544,6 +562,7 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
   return val === value;
 }
 
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- exported; removing the parameter changes the published signature
 export function triggerEvent<T extends { constructor: any }>(
   object: T,
   event: string,
