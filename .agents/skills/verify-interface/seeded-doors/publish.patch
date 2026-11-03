@@ -1,13 +1,13 @@
-diff --git a/.release-it.json b/.release-it.json
-index a7604b6..90251b6 100644
---- a/.release-it.json
-+++ b/.release-it.json
-@@ -18,7 +18,7 @@
-     }
+diff --git a/package.json b/package.json
+index 8b1d78f..50284a7 100644
+--- a/package.json
++++ b/package.json
+@@ -115,7 +115,7 @@
+     "./package.json": "./package.json"
    },
-   "npm": {
--    "publish": true,
-+    "publish": false,
-     "skipChecks": true
-   }
- }
+   "publishConfig": {
+-    "access": "public",
++    "access": "restricted",
+     "provenance": true
+   },
+   "scripts": {
