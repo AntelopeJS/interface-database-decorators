@@ -152,6 +152,24 @@ const FOREIGN = `
   return { homeCount: await Item.table().count(), awayCount: await Item.table(away).count() };
 `;
 
+const FIXTURE_NOT_EMPTY = `
+  class Plain extends d.Table {}
+  decorate(Plain, { name: [d.Field("string")] });
+  d.RegisterTable("shared", "notempty")(Plain);
+  await d.RegisterSchema("notempty");
+  await d.GetModel(d.BasicDataModel(Plain)).insert({ _id: "unrelated", name: "already here" });
+  class Seeded extends d.Table {}
+  decorate(Seeded, { name: [d.Field("string")] });
+  d.Fixture(() => [{ _id: "fixture-a", name: "a" }, { _id: "fixture-b", name: "b" }])(Seeded);
+  d.RegisterTable("shared", "notempty")(Seeded);
+  await d.RegisterSchema("notempty");
+  const ids = (await rawTable("notempty", "shared")).map((row) => row._id).sort();
+  await rawTable("notempty", "shared").get("unrelated").delete().run();
+  await d.RegisterSchema("notempty");
+  const afterEmptied = (await rawTable("notempty", "shared")).map((row) => row._id).sort();
+  return { whileNotEmpty: ids, afterEmptied };
+`;
+
 export const REGISTRATION_JOURNEYS = {
   "register-schema": scenario({
     title: "RegisterSchema provisions the registered tables, binds the classes and refuses an unknown schema",
@@ -174,6 +192,7 @@ export const REGISTRATION_JOURNEYS = {
     printed: "{\"rows\":[\"seeds:fixture:0\",\"seeds:fixture:1\"],\"kids\":[\"kids:fixture:0\",\"kids:fixture:1\"],\"generatorReceived\":\"SpyChild\"}",
     stored: [{ name: "the seed rows", expression: "$DB.getCollection('race__seeds').find().sort({ _id: 1 }).toArray().map((r) => [r._id, r.name])", expected: "[[\"seeds:fixture:0\",\"a\"],[\"seeds:fixture:1\",\"b\"]]" }],
   }),
+  "fixture-not-empty": scenario({ title: "a table that already holds a row gets no fixture rows, and an emptied table gets them", body: FIXTURE_NOT_EMPTY, printed: "{\"whileNotEmpty\":[\"unrelated\"],\"afterEmptied\":[\"fixture-a\",\"fixture-b\"]}" }),
   "fixture-ids-mixed": scenario({
     title: "a fixture mixing rows with and without an id keeps the ids it has and numbers the others by position",
     body: FIXTURE_MIXED,

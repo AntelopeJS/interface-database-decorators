@@ -96,12 +96,15 @@ const VALIDATION = `
   const unvalidatedPatch = await people.update(accepted[0], { age: "old" });
   const presentUndefined = Model.validate({ age: undefined }, { partial: true });
   const absentAge = Model.validate({ name: "x" }, { partial: true });
+  const missingRequired = await errorOf(people.insert({ name: "Alice" }, { validate: true }));
+  const missingInArray = await errorOf(people.insert([{ name: "Ok", age: 1 }, { name: "No age" }], { validate: true }));
+  const missingStored = (await people.getAll()).map((row) => row.name).sort();
   const hole = { _tag: "codec", name: "hole", is: () => false, encode: (a) => a, decode: () => ({ _tag: "Left", left: [{}, { message: "after a hole" }, { message: "last" }] }) };
   const silent = { _tag: "codec", name: "silent", is: () => false, encode: (a) => a, decode: () => ({ _tag: "Left", left: [{}, { message: "" }] }) };
   class Odd extends d.Table {}
   decorate(Odd, { a: [d.Field(hole)], b: [d.Field(silent)] });
   const oddMessages = d.BasicDataModel(Odd, "odd").validate({});
-  return { valid, invalid, notAnObject, partialOk, partialEmpty, partialBad, tokenSkipped, optIn: optIn.length, refused, batchRefused, patched, patchRefused, objectPatchRefused, unvalidatedPatch, oddMessages, presentUndefined, absentAge };
+  return { valid, invalid, notAnObject, partialOk, partialEmpty, partialBad, tokenSkipped, optIn: optIn.length, refused, batchRefused, patched, patchRefused, objectPatchRefused, unvalidatedPatch, oddMessages, missingRequired, missingInArray, missingStored, presentUndefined, absentAge };
 `;
 
 const GET_MODEL = `
@@ -228,6 +231,42 @@ const PARTIAL = `
   };
 `;
 
+const PLAIN_DATA = `
+  class Account extends d.Table.with(d.EncryptionModifier, d.HashModifier, d.LocalizationModifier) {}
+  decorate(Account, {
+    name: [d.Field("string")],
+    secret: [d.Encrypted({ secretKey: "${KEY}" }), d.Field("any")],
+    password: [d.Hashed(), d.Field("string")],
+    title: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
+  });
+  d.RegisterTable("accounts", "plain")(Account);
+  await d.RegisterSchema("plain");
+  const model = d.GetModel(d.BasicDataModel(Account));
+  const account = new Account();
+  account._id = "a1";
+  account.name = "Ann";
+  account.secret = { token: "t" };
+  account.password = "pw";
+  account.localize("en").title = "Hello";
+  const [id] = await model.insert(account);
+  const loaded = await model.get(id);
+  const plain = d.toPlainData(loaded);
+  const unlocked = d.toPlainData(loaded.localize("en"));
+  const events = [];
+  return {
+    keys: Object.keys(plain).filter((key) => key !== "_instance").sort(),
+    noInternal: !("_internal" in plain),
+    name: plain.name,
+    secret: plain.secret,
+    passwordIsHash: typeof plain.password === "string" && plain.password !== "pw" && plain.password.length > 20,
+    lockedTitle: plain.title ?? "undefined",
+    unlockedTitle: unlocked.title,
+    json: JSON.parse(JSON.stringify(loaded)).secret,
+    stillLocked: Object.keys(loaded._internal.data).sort(),
+    notAnInstance: !(plain instanceof Account),
+  };
+`;
+
 export const MODEL_JOURNEYS = {
   crud: scenario({
     title: "a model inserts, reads, updates and deletes rows and answers ids and counts",
@@ -244,7 +283,7 @@ export const MODEL_JOURNEYS = {
   validation: scenario({
     title: "validate checks the io-ts codecs, and insert and update refuse invalid input only when asked",
     body: VALIDATION,
-    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1,\"oddMessages\":{\"ok\":false,\"errors\":[{\"field\":\"a\",\"message\":\"after a hole\"},{\"field\":\"b\",\"message\":\"invalid b\"}]},\"presentUndefined\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"absentAge\":{\"ok\":true}}",
+    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1,\"oddMessages\":{\"ok\":false,\"errors\":[{\"field\":\"a\",\"message\":\"after a hole\"},{\"field\":\"b\",\"message\":\"invalid b\"}]},\"missingRequired\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingInArray\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingStored\":[42,\"Bob\"],\"presentUndefined\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"absentAge\":{\"ok\":true}}",
     stored: [{ name: "the people", expression: "$DB.getCollection('val__people').find().sort({ name: 1 }).toArray().map((r) => [r.name, r.age])", expected: "[[42,\"anything\"],[\"Bob\",\"old\"]]" }],
   }),
   "get-model": scenario({
@@ -253,6 +292,7 @@ export const MODEL_JOURNEYS = {
     printed: "{\"cache\":[true,true,true,true,true,true,true],\"defaultSees\":[\"default\"],\"tenantSees\":[\"tenant one\"],\"otherSees\":[\"tenant two\"],\"everywhereSees\":[\"default\",\"tenant one\",\"tenant two\"],\"customSchema\":[true,true],\"lost\":\"Schema not found for 'absent-schema'\",\"statics\":[\"gm\",true]}",
     stored: [{ name: "the rows by instance", expression: "$DB.getCollection('gm__items').find().sort({ name: 1 }).toArray().map((r) => [r.name, r._instance])", expected: "[[\"default\",null],[\"tenant one\",\"t1\"],[\"tenant two\",\"t2\"]]" }],
   }),
+  "plain-data": scenario({ title: "toPlainData gives unlocked values without _internal, and leaves a still-locked field undefined", body: PLAIN_DATA, printed: "{\"keys\":[\"_id\",\"name\",\"password\",\"secret\",\"title\"],\"noInternal\":true,\"name\":\"Ann\",\"secret\":{\"token\":\"t\"},\"passwordIsHash\":true,\"lockedTitle\":\"undefined\",\"unlockedTitle\":\"Hello\",\"json\":{\"token\":\"t\"},\"stillLocked\":[\"password\",\"secret\",\"title\"],\"notAnInstance\":true}" }),
   "compound-get-by": scenario({ title: "getBy matches a compound index of three fields by its keys in field order", body: COMPOUND, printed: "{\"exact\":[\"one\"],\"other\":[\"two\"],\"none\":[],\"order\":[]}" }),
   "partial-update-keeps-modified-fields": scenario({
     title: "KNOWN FINDING AntelopeJS/interface-database-decorators#80, fails until fixed: update with one field keeps the row's other encrypted, hashed and localized fields",

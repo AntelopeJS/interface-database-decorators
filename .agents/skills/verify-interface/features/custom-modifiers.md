@@ -9,6 +9,7 @@ journeys:
   - one-way-modifier
   - two-way-modifier
   - container-modifier
+  - modifier-helpers
   - modifier-events
 ---
 
@@ -20,6 +21,7 @@ journeys:
 
 - `one-way-modifier`: transform on write; a second one-way modifier on a field is refused.
 - `two-way-modifier`: transform on write, unlock on read.
+- `modifier-helpers`: the exported helpers of the modifier machinery.
 - `container-modifier`: values by key and the wildcard.
 - `modifier-events`: event order for insert, update and reads; events-only modifiers add no accessor.
 

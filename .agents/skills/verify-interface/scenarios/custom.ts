@@ -104,6 +104,47 @@ const EVENTS = `${PRELUDE}
   return { onInsert, onUpdate, onRead, onReadAll, onPlain, eventsOnlyKeepPlainValue: plainAccessor === undefined };
 `;
 
+const HELPERS = `
+  class Profile extends d.Table.with(d.HashModifier, d.LocalizationModifier) {}
+  decorate(Profile, {
+    password: [d.Hashed(), d.Field("string")],
+    title: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
+    summary: [d.Localized(), d.Field("string")],
+    plain: [d.Field("string")],
+  });
+  d.RegisterTable("profiles", "helpers")(Profile);
+  class Other extends d.Table {}
+  d.RegisterTable("others", "helpers")(Other);
+  const row = new Profile();
+  const names = { hashed: d.getModifiedFields(row, d.HashModifier), localized: d.getModifiedFields(row, d.LocalizationModifier), none: d.getModifiedFields(row, d.EncryptionModifier) };
+  row.title = "floating";
+  const floatingRead = row.title;
+  const floatingStored = Object.keys(d.toDatabase(row)).sort();
+  d.unlock(row, d.LocalizationModifier, ["title"], "fr");
+  const afterUnlock = [row.title, row.localize("fr").title, row.localize("en").title ?? "undefined"];
+  const stored = d.toDatabase(row);
+  const lockedKeys = Object.keys(stored._internal.data).sort();
+  row.localize("fr").summary = "résumé";
+  d.unlock(row, d.LocalizationModifier, ["title"], "en");
+  const restricted = [row.title ?? "undefined", row.summary ?? "undefined"];
+  const tables = d.getTablesForSchema("helpers");
+  const parentMeta = d.getMetadata(Profile, d.DatumStaticMetadata);
+  class Child extends Profile {}
+  const own = d.getMetadata(Child, d.DatumStaticMetadata, false);
+  class Child2 extends Profile {}
+  const inherited = d.getMetadata(Child2, d.DatumStaticMetadata);
+  return {
+    names,
+    floatingRead,
+    floatingStored,
+    afterUnlock,
+    lockedKeys,
+    restricted,
+    tables: [Object.keys(tables).sort(), tables.profiles === Profile, d.getTablesForSchema("nothing-here") ?? "undefined"],
+    metadata: [parentMeta.tableName, own.tableName ?? "undefined", inherited.tableName, own === inherited, inherited === parentMeta, d.getMetadata(Profile, d.DatumStaticMetadata) === parentMeta],
+  };
+`;
+
 export const CUSTOM_JOURNEYS = {
   "one-way-modifier": scenario({ title: "a custom OneWayModifier transforms a value when it is written", body: ONE_WAY, printed: "{\"tested\":[true,false,true],\"stored\":[true,true],\"secondOneWay\":\"Attempted adding Modifier PrefixHashModifier on Twice.f but it already has a One-Way Modifier\"}" }),
   "two-way-modifier": scenario({
@@ -112,6 +153,7 @@ export const CUSTOM_JOURNEYS = {
     printed: "{\"read\":[{\"a\":[1,2]},\"plain\"],\"storedBody\":\"b64-eyJhIjpbMSwyXX0=\",\"storedTagged\":\"x:InBsYWluIg==\",\"notAString\":\"undefined\"}",
     stored: [{ name: "the stored encodings", expression: "$DB.getCollection('twoway__docs').find({ title: 't' }).toArray().map((r) => [r._internal.data.body, r._internal.data.tagged])", expected: "[[\"b64-eyJhIjpbMSwyXX0=\",\"x:InBsYWluIg==\"]]" }],
   }),
+  "modifier-helpers": scenario({ title: "getModifiedFields, unlock, lock, floating values, getMetadata and getTablesForSchema do what their TSDoc says", body: HELPERS, printed: "{\"names\":{\"hashed\":[\"password\"],\"localized\":[\"title\",\"summary\"],\"none\":[]},\"floatingRead\":\"floating\",\"floatingStored\":[\"_internal\"],\"afterUnlock\":[\"floating\",\"floating\",\"undefined\"],\"lockedKeys\":[\"title\"],\"restricted\":[\"undefined\",\"r\u00e9sum\u00e9\"],\"tables\":[[\"others\",\"profiles\"],true,\"undefined\"],\"metadata\":[\"profiles\",\"undefined\",\"profiles\",false,false,true]}" }),
   "container-modifier": scenario({ title: "a ContainerModifier keeps values by key and treats the wildcard key as the whole record", body: CONTAINER, printed: "{\"both\":{\"a\":1,\"b\":2},\"afterOverwrite\":{\"a\":3,\"b\":2},\"replaced\":{\"z\":26},\"byKey\":[26,\"undefined\",\"undefined\"]}" }),
   "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc\",\"insert/note/true/Doc\",\"toDatabase/note/true/Doc\"],\"onUpdate\":[\"fromPlainData/note/true/Doc\",\"update/note/true/Doc\",\"toDatabase/note/true/Doc\"],\"onRead\":[\"fromDatabase/note/true/Doc\"],\"onReadAll\":[\"fromDatabase/note/true/Doc\"],\"onPlain\":[\"toPlainData/note/true/Doc\"],\"eventsOnlyKeepPlainValue\":true}" }),
 } satisfies { [id: string]: Journey };

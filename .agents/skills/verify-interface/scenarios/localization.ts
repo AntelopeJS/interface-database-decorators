@@ -80,7 +80,10 @@ const STORED = `${PRODUCT}
   const [second] = await model.insert(alone);
   const only = await model.get(second);
   const raw = await rawTable("loc", "products").get(id);
-  return { rawKeys: Object.keys(raw._internal.data).sort(), raw: raw._internal.data.name, onlyFrench: [only.localize("fr").name, only.localize("en").name ?? "undefined"] };
+  await rawTable("loc", "products").insert({ _id: "raw-empty", price: 7, _internal: { meta: {}, data: { name: { en: "Hello", fr: "" }, bare: { fr: "" } } } }).run();
+  const rawRow = await model.get("raw-empty");
+  const fromRaw = [rawRow.localize("fr").name, rawRow.localize("fr").bare ?? "undefined", rawRow.localize("en").name];
+  return { fromRaw, rawKeys: Object.keys(raw._internal.data).sort(), raw: raw._internal.data.name, onlyFrench: [only.localize("fr").name, only.localize("en").name ?? "undefined"] };
 `;
 
 const AUTO = `
@@ -131,8 +134,8 @@ export const LOCALIZATION_JOURNEYS = {
   "localized-storage": scenario({
     title: "a localized field is stored as one value per locale",
     body: STORED,
-    printed: "{\"rawKeys\":[\"name\"],\"raw\":{\"en\":\"Hello\",\"fr\":\"Bonjour\"},\"onlyFrench\":[\"Seulement\",\"undefined\"]}",
-    stored: [{ name: "the stored translations", expression: "$DB.getCollection('loc__products').find().sort({ price: 1 }).toArray().map((r) => r._internal.data.name)", expected: "[{\"en\":\"Hello\",\"fr\":\"Bonjour\"},{\"fr\":\"Seulement\"}]" }],
+    printed: "{\"fromRaw\":[\"Hello\",\"undefined\",\"Hello\"],\"rawKeys\":[\"name\"],\"raw\":{\"en\":\"Hello\",\"fr\":\"Bonjour\"},\"onlyFrench\":[\"Seulement\",\"undefined\"]}",
+    stored: [{ name: "the stored translations", expression: "$DB.getCollection('loc__products').find().sort({ price: 1 }).toArray().map((r) => r._internal.data.name)", expected: "[{\"en\":\"Hello\",\"fr\":\"Bonjour\"},{\"fr\":\"Seulement\"},{\"en\":\"Hello\",\"fr\":\"\"}]" }],
   }),
 } satisfies { [id: string]: Journey };
 

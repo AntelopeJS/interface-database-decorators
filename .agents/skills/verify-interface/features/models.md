@@ -9,6 +9,7 @@ journeys:
   - conversion
   - validation
   - get-model
+  - plain-data
   - compound-get-by
   - autodate-object-update
   - partial-update-keeps-modified-fields
@@ -27,6 +28,7 @@ journeys:
 - `validation`: codecs, opt-in `validate`, partial patches.
 - `get-model`: one cached model per class and instance id; instances stay apart.
 - `autodate-object-update`: the update form that carries the primary key, as in [autodate](autodate.md).
+- `plain-data`: `toPlainData` output.
 - `compound-get-by`: a three-field compound index.
 - `partial-update-keeps-modified-fields`: known finding #80, fails until fixed.
 - `model-factory`: the table name comes from the argument or `RegisterTable`.
