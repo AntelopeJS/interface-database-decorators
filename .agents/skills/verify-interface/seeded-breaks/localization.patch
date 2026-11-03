@@ -1,0 +1,13 @@
+diff --git a/src/modifiers/localization.ts b/src/modifiers/localization.ts
+index c672436..539a822 100644
+--- a/src/modifiers/localization.ts
++++ b/src/modifiers/localization.ts
+@@ -83,7 +83,7 @@ export class LocalizationModifier extends ContainerModifier<
+   // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
+   public override unlock(locked_value: Record<string, unknown>, key: string) {
+     const unlocked = super.unlock(locked_value, key);
+-    if (unlocked !== undefined && unlocked !== EMPTY_TEXT) {
++    if (unlocked !== undefined) {
+       return unlocked;
+     }
+     if (this.options.fallbackLocale) {

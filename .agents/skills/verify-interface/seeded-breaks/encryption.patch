@@ -1,0 +1,13 @@
+diff --git a/src/modifiers/encryption.ts b/src/modifiers/encryption.ts
+index b569dc7..4e86667 100644
+--- a/src/modifiers/encryption.ts
++++ b/src/modifiers/encryption.ts
+@@ -95,7 +95,7 @@ export class EncryptionModifier extends TwoWayModifier<
+     // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
+     value: unknown,
+   ): LockedType {
+-    const iv = randomBytes(this.options.ivSize || 16);
++    const iv = randomBytes(16);
+     const cipher = createCipheriv(
+       this.options.algorithm || "aes-256-gcm",
+       this.options.secretKey,

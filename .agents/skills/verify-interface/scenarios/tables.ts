@@ -1,0 +1,147 @@
+import type { Journey } from "@antelopejs/tooling-configs/verify";
+
+import { scenario } from "../runner.ts";
+
+const INDEX_OPTIONS = `
+  class User extends d.Table {}
+  decorate(User, {
+    email: [d.Field("string"), d.Index({ unique: true })],
+    first: [d.Field("string"), d.Index({ group: "name", crossInstance: true })],
+    last: [d.Field("string"), d.Index({ group: "name" })],
+    age: [d.Index(), d.Field("number")],
+    note: [],
+  });
+  d.RegisterTable("users", "idx")(User);
+  await d.RegisterSchema("idx");
+  const definition = iface.Schema.get("idx").definition;
+  const Model = d.BasicDataModel(User);
+  const model = d.GetModel(Model);
+  const other = d.GetModel(Model, "tenant-2");
+  await model.insert({ email: "a@x", first: "Ada", last: "Lovelace", age: 36 });
+  const duplicate = await rejection(model.insert({ email: "a@x", first: "Bob", last: "Brown", age: 40 }));
+  const otherInstance = await other.insert({ email: "a@x", first: "Ada", last: "Lovelace", age: 36 });
+  const byGroup = (await model.getBy("name", "Ada", "Lovelace")).map((row) => row.email);
+  const bySingle = (await model.getBy("age", 36)).map((row) => row.first);
+  const between = (await rawTable("idx", "users").between("age", 30, 38)).map((row) => row.first);
+  const symbolKey = caught(() => d.Index()({}, Symbol("k")));
+  await sleep(2500);
+  return { definition: definition.users, duplicate, otherInstanceStored: otherInstance.length, byGroup, bySingle, between, symbolKey };
+`;
+
+const GROUP_FLAGS = `
+  class Pair extends d.Table {}
+  decorate(Pair, {
+    a: [d.Field("string"), d.Index({ group: "ab" })],
+    b: [d.Field("string"), d.Index({ group: "ab", unique: true })],
+    c: [d.Field("string"), d.Index({ group: "cd", crossInstance: true })],
+    e: [d.Field("string"), d.Index({ group: "cd" })],
+  });
+  d.RegisterTable("pairs", "grp")(Pair);
+  await d.RegisterSchema("grp");
+  const model = d.GetModel(d.BasicDataModel(Pair));
+  await model.insert({ a: "1", b: "x", c: "p", e: "q" });
+  const sameKey = await rejection(model.insert({ a: "1", b: "x", c: "r", e: "s" }));
+  const otherSecond = await model.insert({ a: "1", b: "y", c: "p", e: "q" });
+  return { indexes: iface.Schema.get("grp").definition.pairs.indexes, sameKey, otherSecond: otherSecond.length };
+`;
+
+const FIELD_TYPES = `
+  const codec = { _tag: "codec", name: "Positive", decode: (u) => (typeof u === "number" && u > 0 ? { _tag: "Right", right: u } : { _tag: "Left", left: [{ message: "not positive" }] }), encode: (a) => a, is: (u) => typeof u === "number" };
+  class Order extends d.Table {}
+  decorate(Order, {
+    id: [d.Field("string")],
+    tags: [d.Field(["string"])],
+    address: [d.Field({ street: "string", geo: { lat: "number", lng: "number" } })],
+    total: [d.Field(codec), d.Index()],
+    lateIndex: [d.Index(), d.Field("number")],
+    plain: [],
+  });
+  d.RegisterTable("orders", "fld")(Order);
+  await d.RegisterSchema("fld");
+  const fields = iface.Schema.get("fld").definition.orders.fields;
+  return {
+    names: Object.keys(fields),
+    id: fields.id,
+    tags: fields.tags,
+    address: fields.address,
+    codecIsTheSameObject: fields.total === codec,
+    lateIndexType: fields.lateIndex,
+    indexes: Object.keys(iface.Schema.get("fld").definition.orders.indexes),
+  };
+`;
+
+const RELATION = `
+  class Author extends d.Table {}
+  decorate(Author, { name: [d.Field("string")] });
+  class Post extends d.Table {}
+  decorate(Post, {
+    authorId: [d.Index(), d.Field("string"), d.Relation({ to: () => Author })],
+    tagIds: [d.Relation({ to: () => Author, toField: "name", many: true }), d.Field(["string"])],
+    title: [d.Field("string")],
+  });
+  d.RegisterTable("authors", "rel")(Author);
+  d.RegisterTable("posts", "rel")(Post);
+  await d.RegisterSchema("rel");
+  const metadata = d.getMetadata(Post, d.RelationStaticMetadata).relations;
+  const posts = d.GetModel(d.BasicDataModel(Post));
+  const ids = await posts.insert({ authorId: "nobody", tagIds: ["ghost"], title: "Dangling" });
+  const stored = await posts.get(ids[0]);
+  const definition = iface.Schema.get("rel").definition.posts;
+  class Child extends Post {}
+  decorate(Child, { editorId: [d.Field("string"), d.Relation({ to: () => Author })] });
+  return {
+    relationFields: Object.keys(metadata),
+    authorTarget: metadata.authorId.to() === Author,
+    authorToField: metadata.authorId.toField ?? null,
+    tagMany: metadata.tagIds.many,
+    tagToField: metadata.tagIds.toField,
+    dangling: [stored.authorId, stored.tagIds],
+    fieldsKept: Object.keys(definition.fields),
+    childRelations: Object.keys(d.getMetadata(Child, d.RelationStaticMetadata).relations),
+    parentRelations: Object.keys(d.getMetadata(Post, d.RelationStaticMetadata).relations),
+  };
+`;
+
+const INHERITANCE = `
+  class Base extends d.Table {}
+  decorate(Base, { createdAt: [d.Field("date")] });
+  d.RegisterTable("people", "inh")(Base);
+  class Person extends Base {}
+  decorate(Person, { email: [d.Field("string"), d.Index({ unique: true })] });
+  class Employee extends Person {}
+  decorate(Employee, { badge: [d.Field("string"), d.Index()] });
+  class Contractor extends Base {}
+  decorate(Contractor, { rate: [d.Field("number")] });
+  const meta = (cls) => { const m = d.getMetadata(cls, d.DatumStaticMetadata); return { table: m.tableName ?? null, schema: m.schemaName ?? null, fields: Object.keys(m.fields), indexes: Object.keys(m.indexes), unique: [...m.uniqueIndexes] }; };
+  return { base: meta(Base), person: meta(Person), employee: meta(Employee), contractor: meta(Contractor) };
+`;
+
+const WITH = `
+  class Plain extends d.Table {}
+  class Hashing extends d.Table.with(d.HashModifier) {}
+  class Both extends d.Table.with(d.HashModifier, d.LocalizationModifier) {}
+  const has = (cls, name) => typeof new cls()[name] === "function";
+  const sub = d.Table.with(d.HashModifier);
+  return {
+    plainHasTestHash: has(Plain, "testHash"),
+    hashingHas: [has(Hashing, "testHash"), has(Hashing, "testHashAsync"), has(Hashing, "isHashOutdated"), has(Hashing, "localize")],
+    bothHas: [has(Both, "testHash"), has(Both, "localize")],
+    isTableSubclass: new Hashing() instanceof d.Table,
+    tableItselfUntouched: typeof d.Table.prototype.testHash,
+    subIsASubclass: sub.prototype instanceof d.Table,
+  };
+`;
+
+export const TABLE_JOURNEYS = {
+  "index-options": scenario({
+    title: "Field and Index reach the database as fields and plain, compound, cross-instance and unique indexes",
+    body: INDEX_OPTIONS,
+    printed: "{\"definition\":{\"fields\":{\"email\":\"string\",\"first\":\"string\",\"last\":\"string\",\"age\":\"number\"},\"indexes\":{\"email\":{\"fields\":null,\"unique\":true},\"name\":{\"fields\":[\"first\",\"last\"],\"crossInstance\":true},\"age\":{\"fields\":null}}},\"duplicate\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"email\\\" (email)\"},\"otherInstanceStored\":1,\"byGroup\":[\"a@x\"],\"bySingle\":[\"Ada\"],\"between\":[\"Ada\"],\"symbolKey\":\"@Index on Symbol(k): a database index names a field, never a symbol\"}",
+    stored: [{ name: "the indexes of the users collection", expression: "$DB.getCollection('idx__users').getIndexes().map((i) => [i.name, i.unique === true]).sort()", expected: "[[\"_id_\",false],[\"age__i\",false],[\"email__i\",true],[\"name\",false],[\"name__i\",false]]" }],
+  }),
+  "group-flags": scenario({ title: "unique and crossInstance on any field of a group apply to the whole group", body: GROUP_FLAGS, printed: "{\"indexes\":{\"ab\":{\"fields\":[\"a\",\"b\"],\"unique\":true},\"cd\":{\"fields\":[\"c\",\"e\"],\"crossInstance\":true}},\"sameKey\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"ab\\\" (a, b)\"},\"otherSecond\":1}" }),
+  "field-types": scenario({ title: "Field hands every type to the database unchanged and combines with Index in either order", body: FIELD_TYPES, printed: "{\"names\":[\"id\",\"tags\",\"address\",\"total\",\"lateIndex\"],\"id\":\"string\",\"tags\":[\"string\"],\"address\":{\"street\":\"string\",\"geo\":{\"lat\":\"number\",\"lng\":\"number\"}},\"codecIsTheSameObject\":true,\"lateIndexType\":\"number\",\"indexes\":[\"total\",\"lateIndex\"]}" }),
+  "relation-metadata": scenario({ title: "Relation records links without enforcing them", body: RELATION, printed: "{\"relationFields\":[\"authorId\",\"tagIds\"],\"authorTarget\":true,\"authorToField\":null,\"tagMany\":true,\"tagToField\":\"name\",\"dangling\":[\"nobody\",[\"ghost\"]],\"fieldsKept\":[\"authorId\",\"tagIds\",\"title\"],\"childRelations\":[\"authorId\",\"tagIds\",\"editorId\"],\"parentRelations\":[\"authorId\",\"tagIds\"]}" }),
+  inheritance: scenario({ title: "a table subclass starts with a copy of its parent and never changes it", body: INHERITANCE, printed: "{\"base\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\"],\"indexes\":[],\"unique\":[]},\"person\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\"],\"indexes\":[\"email\"],\"unique\":[\"email\"]},\"employee\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\",\"badge\"],\"indexes\":[\"email\",\"badge\"],\"unique\":[\"email\"]},\"contractor\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"rate\"],\"indexes\":[],\"unique\":[]}}" }),
+  "table-with": scenario({ title: "Table.with adds the mixin methods of the modifiers to a subclass", body: WITH, printed: "{\"plainHasTestHash\":false,\"hashingHas\":[true,true,true,false],\"bothHas\":[true,true],\"isTableSubclass\":true,\"tableItselfUntouched\":\"undefined\",\"subIsASubclass\":true}" }),
+} satisfies { [id: string]: Journey };

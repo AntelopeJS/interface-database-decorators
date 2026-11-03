@@ -1,0 +1,13 @@
+diff --git a/src/table.ts b/src/table.ts
+index 89445f4..78cf036 100644
+--- a/src/table.ts
++++ b/src/table.ts
+@@ -220,7 +220,7 @@ export const Index = MakePropertyDecorator(
+     const key = propertyKey;
+     metadata.addIndex(
+       key,
+-      options?.group || key,
++      key,
+       options?.crossInstance,
+       options?.unique,
+     );

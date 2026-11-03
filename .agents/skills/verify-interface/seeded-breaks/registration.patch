@@ -1,0 +1,13 @@
+diff --git a/src/database.ts b/src/database.ts
+index 93cbfa4..b8e814a 100644
+--- a/src/database.ts
++++ b/src/database.ts
+@@ -94,7 +94,7 @@ async function insertFixtureData(
+     return;
+   }
+   const count = await schema.instance().table(tableName).count();
+-  if (count > 0) {
++  if (count > 1) {
+     return;
+   }
+   const fixtureData = await generator(tableClass);

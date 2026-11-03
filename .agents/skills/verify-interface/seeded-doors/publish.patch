@@ -1,0 +1,13 @@
+diff --git a/.release-it.json b/.release-it.json
+index a7604b6..90251b6 100644
+--- a/.release-it.json
++++ b/.release-it.json
+@@ -18,7 +18,7 @@
+     }
+   },
+   "npm": {
+-    "publish": true,
++    "publish": false,
+     "skipChecks": true
+   }
+ }

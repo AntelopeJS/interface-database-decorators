@@ -1,0 +1,13 @@
+diff --git a/src/modifiers/hash.ts b/src/modifiers/hash.ts
+index f23cce8..4e4b4e2 100644
+--- a/src/modifiers/hash.ts
++++ b/src/modifiers/hash.ts
+@@ -51,7 +51,7 @@ type HashCheck = {
+   verdict: (derived: Buffer | undefined) => boolean;
+ };
+ 
+-const SCRYPT_COST: ScryptCost = { ln: 15, r: 8, p: 3 };
++const SCRYPT_COST: ScryptCost = { ln: 14, r: 8, p: 3 };
+ const SALT_BYTES = 16;
+ const KEY_BYTES = 32;
+ const DECOY_SALT = Buffer.alloc(SALT_BYTES);
