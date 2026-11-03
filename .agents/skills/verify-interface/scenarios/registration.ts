@@ -165,7 +165,7 @@ export const REGISTRATION_JOURNEYS = {
     printed: "{\"first\":{\"roles\":2,\"settings\":1,\"plans\":3,\"nothing\":0},\"afterSecondStart\":1,\"plans\":[\"plans:fixture:0\",\"plans:fixture:1\",\"plans:fixture:2\"],\"unregisteredClassProvisioned\":false,\"hashedAtInsert\":[true,true],\"insertEventFired\":true}",
     stored: [
       { name: "the plan rows", expression: "$DB.getCollection('fx__plans').find({}, { name: 0 }).sort({ _id: 1 }).toArray().map((r) => [r._id, r.label])", expected: "[[\"plans:fixture:0\",\"free\"],[\"plans:fixture:1\",\"pro\"],[\"plans:fixture:2\",\"team\"]]" },
-      { name: "the stamped row", expression: "$DB.getCollection('fx__stamped').find().sort({ _id: 1 }).toArray().map((r) => [r._id, r._internal.data.secret.startsWith('$' + 'scrypt' + '$ln=15,r=8,p=3$'), r._internal.data.secret.includes('hunter'), r.created !== undefined])", expected: "[[\"plans:fixture:0\",\"free\"],[\"plans:fixture:1\",\"pro\"],[\"plans:fixture:2\",\"team\"]]" },
+      { name: "the stamped row", expression: "$DB.getCollection('fx__stamped').find().sort({ _id: 1 }).toArray().map((r) => [r._id, r._internal.data.secret.startsWith('$' + 'scrypt' + '$ln=15,r=8,p=3$'), r._internal.data.secret.includes('hunter'), r.created !== undefined])", expected: "[[\"s1\",true,false,true],[\"s2\",true,false,true]]" },
     ],
   }),
   "fixture-race": scenario({
