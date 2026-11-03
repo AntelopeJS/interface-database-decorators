@@ -67,6 +67,17 @@ const CRUD_CONTROLLER = `${HTTP}
   return { created: [created.status, typeof id], updated, read, removed, gone };
 `;
 
+const CUSTOM_PROVIDER = `${HTTP}
+  const { MakeParameterAndPropertyDecorator } = require(require.resolve("@antelopejs/interface-core/decorators", { paths: [dist] }));
+  const CustomModel = MakeParameterAndPropertyDecorator((target, key, index, modelClass, resolver) => {
+    api.SetParameterProvider(target, key, index, (ctx) => d.GetModel(modelClass, resolver(ctx)));
+  });
+  class Custom extends api.Controller("/custom") {}
+  route(Custom, "list", "Get", "/:tenant", async (model) => (await model.getAll()).map((row) => row.title), [CustomModel(NoteModel, (ctx) => "c-" + ctx.routeParameters.tenant)]);
+  await d.GetModel(NoteModel, "c-x").insert({ title: "custom x" });
+  return { x: await call("/custom/x"), y: await call("/custom/y") };
+`;
+
 export const DECORATION_JOURNEYS = {
   "fixed-instance": scenario({
     title: "@Model with an instance id injects the cached model of that instance into a controller method",
@@ -82,6 +93,7 @@ export const DECORATION_JOURNEYS = {
     api: true,
     stored: [{ name: "the notes by instance", expression: "$DB.getCollection('http__notes').find().sort({ title: 1 }).toArray().map((r) => [r.title, r._instance])", expected: "[[\"alpha\",\"tenant-a\"],[\"beta\",\"tenant-b\"],[\"default instance\",null]]" }],
   }),
+  "custom-parameter-provider": scenario({ title: "a custom decorator can register its own parameter provider that resolves a model with GetModel", body: CUSTOM_PROVIDER, printed: "{\"x\":{\"status\":200,\"body\":\"[\\\"custom x\\\"]\"},\"y\":{\"status\":200,\"body\":\"[]\"}}", api: true }),
   "property-decoration": scenario({
     title: "@Model on a property gives the controller its model while a request is handled",
     body: PROPERTY,

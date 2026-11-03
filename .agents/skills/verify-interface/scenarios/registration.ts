@@ -70,7 +70,7 @@ const FIXTURES = `
     afterSecondStart,
     plans: ids,
     unregisteredClassProvisioned: Object.keys(iface.Schema.get("fx").definition).includes("loose"),
-    hashedAtInsert: stamped._internal.data.secret.startsWith("$scrypt$ln=15,r=8,p=3$") && !stamped._internal.data.secret.includes("hunter2"),
+    hashedAtInsert: stamped._internal.data.secret.startsWith("$" + "scrypt" + "$ln=15,r=8,p=3$") && !stamped._internal.data.secret.includes("hunter2"),
     insertEventFired: stamped.created !== undefined,
   };
 `;
@@ -121,6 +121,36 @@ const TABLE_ACCESS = `
   };
 `;
 
+const FIXTURE_MIXED = `
+  class Mixed extends d.Table {}
+  decorate(Mixed, { name: [d.Field("string")] });
+  d.Fixture(() => [{ _id: "keep", name: "a" }, { name: "b" }, { name: "c" }])(Mixed);
+  d.RegisterTable("mixed", "mix")(Mixed);
+  class Single extends d.Table {}
+  decorate(Single, { name: [d.Field("string")] });
+  d.Fixture(() => ({ name: "only" }))(Single);
+  d.RegisterTable("single", "mix")(Single);
+  class Last extends d.Table {}
+  decorate(Last, { name: [d.Field("string")] });
+  d.Fixture(() => [{ name: "x" }, { _id: "named", name: "y" }])(Last);
+  d.RegisterTable("last", "mix")(Last);
+  await d.RegisterSchema("mix");
+  const ids = async (table) => (await rawTable("mix", table)).map((row) => row._id).sort();
+  return { mixed: await ids("mixed"), last: await ids("last"), single: await ids("single") };
+`;
+
+const FOREIGN = `
+  class Item extends d.Table {}
+  decorate(Item, { name: [d.Field("string")] });
+  d.RegisterTable("items", "home")(Item);
+  await d.RegisterSchema("home");
+  new iface.Schema("away", { items: { fields: { name: "string" }, indexes: {} } });
+  const away = iface.Schema.get("away").instance("away-1");
+  await Item.table(away).insert({ _id: "foreign", name: "stored away" }).run();
+  await Item.table().insert({ _id: "local", name: "stored home" }).run();
+  return { homeCount: await Item.table().count(), awayCount: await Item.table(away).count() };
+`;
+
 export const REGISTRATION_JOURNEYS = {
   "register-schema": scenario({
     title: "RegisterSchema provisions the registered tables, binds the classes and refuses an unknown schema",
@@ -134,7 +164,7 @@ export const REGISTRATION_JOURNEYS = {
     printed: "{\"first\":{\"roles\":2,\"settings\":1,\"plans\":3,\"nothing\":0},\"afterSecondStart\":1,\"plans\":[\"plans:fixture:0\",\"plans:fixture:1\",\"plans:fixture:2\"],\"unregisteredClassProvisioned\":false,\"hashedAtInsert\":true,\"insertEventFired\":true}",
     stored: [
       { name: "the plan rows", expression: "$DB.getCollection('fx__plans').find({}, { name: 0 }).sort({ _id: 1 }).toArray().map((r) => [r._id, r.label])", expected: "[[\"plans:fixture:0\",\"free\"],[\"plans:fixture:1\",\"pro\"],[\"plans:fixture:2\",\"team\"]]" },
-      { name: "the stamped row", expression: "$DB.getCollection('fx__stamped').find().toArray().map((r) => [r._id, r._internal.data.secret.startsWith('$scrypt$ln=15,r=8,p=3$'), r._internal.data.secret.includes('hunter2'), r.created !== undefined])", expected: "[[\"s1\",true,false,true]]" },
+      { name: "the stamped row", expression: "$DB.getCollection('fx__stamped').find().toArray().map((r) => [r._id, r._internal.data.secret.startsWith('$' + 'scrypt' + '$ln=15,r=8,p=3$'), r._internal.data.secret.includes('hunter2'), r.created !== undefined])", expected: "[[\"s1\",true,false,true]]" },
     ],
   }),
   "fixture-race": scenario({
@@ -142,6 +172,21 @@ export const REGISTRATION_JOURNEYS = {
     body: FIXTURE_RACE,
     printed: "{\"rows\":[\"seeds:fixture:0\",\"seeds:fixture:1\"],\"kids\":[\"kids:fixture:0\",\"kids:fixture:1\"],\"generatorReceived\":\"SpyChild\"}",
     stored: [{ name: "the seed rows", expression: "$DB.getCollection('race__seeds').find().sort({ _id: 1 }).toArray().map((r) => [r._id, r.name])", expected: "[[\"seeds:fixture:0\",\"a\"],[\"seeds:fixture:1\",\"b\"]]" }],
+  }),
+  "fixture-ids-mixed": scenario({
+    title: "a fixture mixing rows with and without an id keeps the ids it has and numbers the others by position",
+    body: FIXTURE_MIXED,
+    printed: "{\"mixed\":[\"keep\",\"mixed:fixture:1\",\"mixed:fixture:2\"],\"last\":[\"last:fixture:0\",\"named\"],\"single\":[\"single:fixture:0\"]}",
+    stored: [{ name: "the mixed ids", expression: "$DB.getCollection('mix__mixed').find().sort({ _id: 1 }).toArray().map((r) => r._id)", expected: "[\"keep\",\"mixed:fixture:1\",\"mixed:fixture:2\"]" }],
+  }),
+  "table-foreign-instance": scenario({
+    title: "Table.table with a schema instance takes the table from that instance as is, even of another schema",
+    body: FOREIGN,
+    printed: "{\"homeCount\":1,\"awayCount\":1}",
+    stored: [
+      { name: "the home rows", expression: "$DB.getCollection('home__items').find().toArray().map((r) => r._id)", expected: "[\"local\"]" },
+      { name: "the away rows", expression: "$DB.getCollection('away__items').find().toArray().map((r) => [r._id, r._instance])", expected: "[[\"foreign\",\"away-1\"]]" },
+    ],
   }),
   "table-access": scenario({
     title: "Table.table opens the bound table for the default instance, an instance id, all instances or a held instance",

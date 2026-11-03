@@ -105,6 +105,25 @@ const AUTO = `
   };
 `;
 
+const AUTO_OBJECT = `
+  class Article extends d.Table {}
+  decorate(Article, { title: [d.Field("string")], creationDate: [d.CreationTime(), d.Field("date")], updateDate: [d.UpdateTime(), d.Field("date")] });
+  d.RegisterTable("articles", "autoobj")(Article);
+  await d.RegisterSchema("autoobj");
+  const model = d.GetModel(d.BasicDataModel(Article));
+  const [id] = await model.insert({ title: "One" });
+  const inserted = await rawTable("autoobj", "articles").get(id);
+  await sleep(60);
+  await model.update({ _id: id, title: "Two", creationDate: new Date(0) });
+  const updated = await rawTable("autoobj", "articles").get(id);
+  const stamp = (value) => new Date(value).getTime();
+  return {
+    title: updated.title,
+    updateRefreshed: stamp(updated.updateDate) >= stamp(inserted.updateDate) + 50,
+    creationKept: stamp(updated.creationDate) === stamp(inserted.creationDate),
+  };
+`;
+
 export const LOCALIZATION_JOURNEYS = {
   localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"short\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
   "localize-wildcard": scenario({ title: "the wildcard key reads and writes every translation at once", body: WILDCARD, printed: "{\"all\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\"},\"replaced\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\",\"de\":\"Premium-Kopfhoerer\"},\"german\":\"Premium-Kopfhoerer\",\"stored\":[\"Bonjour\",\"Hello\",{\"en\":\"Hello\",\"fr\":\"Bonjour\"}]}" }),
@@ -117,6 +136,7 @@ export const LOCALIZATION_JOURNEYS = {
 } satisfies { [id: string]: Journey };
 
 export const AUTODATE_JOURNEYS = {
+  "autodate-object-update": scenario({ title: "update with the primary key inside the object refreshes UpdateTime and keeps CreationTime", body: AUTO_OBJECT, printed: "{\"title\":\"Two\",\"updateRefreshed\":true,\"creationKept\":true}" }),
   autodate: scenario({
     title: "CreationTime is set on insert and kept on update, UpdateTime is set on insert and refreshed on update",
     body: AUTO,

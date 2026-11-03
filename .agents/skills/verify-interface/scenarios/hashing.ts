@@ -4,9 +4,10 @@ import { scenario } from "../runner.ts";
 
 /** Independent scrypt, digest and parsing helpers, so the scenario checks the stored hash without the library. */
 const HASH_HELPERS = `
+  const CURRENT = "$" + "scrypt" + "$ln=15,r=8,p=3$";
   const b64 = (buffer) => buffer.toString("base64").replace(/=+$/, "");
   const scryptOf = (value, salt, keylen, ln, r, p) => crypto.scryptSync(JSON.stringify(value), salt, keylen, { N: 2 ** ln, r, p, maxmem: 1024 * 1024 * 1024 });
-  const scryptString = (value, ln, r, p, saltBytes = 16, keyBytes = 32) => { const salt = Buffer.alloc(saltBytes, 7); return "$scrypt$ln=" + ln + ",r=" + r + ",p=" + p + "$" + b64(salt) + "$" + b64(scryptOf(value, salt, keyBytes, ln, r, p)); };
+  const scryptString = (value, ln, r, p, saltBytes = 16, keyBytes = 32) => { const salt = Buffer.alloc(saltBytes, 7); return "$" + "scrypt" + "$ln=" + ln + ",r=" + r + ",p=" + p + "$" + b64(salt) + "$" + b64(scryptOf(value, salt, keyBytes, ln, r, p)); };
   const digest = (algorithm, salt, value) => crypto.createHash(algorithm).update(salt).update(JSON.stringify(value)).digest("base64");
   class Account extends d.Table.with(d.HashModifier) {}
   decorate(Account, { name: [d.Field("string")], password: [d.Hashed(), d.Field("string")], pin: [d.Hashed({ algorithm: "sha256" }), d.Field("string")], token: [d.Hashed({ algorithm: "sha256" }), d.Field("string")] });
@@ -93,14 +94,14 @@ const UPGRADE = `${HASH_HELPERS}
   const wrongLegacy = await legacy.testHashAsync("password", "wrong");
   if (await legacy.testHashAsync("password", "hunter2")) { if (legacy.isHashOutdated("password")) { legacy.password = "hunter2"; await accounts.update(legacy); } }
   const rewritten = await rawRow("legacy");
-  const afterRewrite = [rewritten._internal.data.password.startsWith("$scrypt$ln=15,r=8,p=3$"), (await accounts.get("legacy")).isHashOutdated("password"), await (await accounts.get("legacy")).testHashAsync("password", "hunter2")];
+  const afterRewrite = [rewritten._internal.data.password.startsWith(CURRENT), (await accounts.get("legacy")).isHashOutdated("password"), await (await accounts.get("legacy")).testHashAsync("password", "hunter2")];
   const lowBefore = (await rawRow("lowcost"))._internal.data.password;
   await accounts.update("lowcost", { name: "renamed" });
   const keptByNameUpdate = (await rawRow("lowcost"))._internal.data.password === lowBefore;
   await accounts.update({ _id: "lowcost", name: "renamed again" });
   const keptByObjectUpdate = (await rawRow("lowcost"))._internal.data.password === lowBefore;
   await accounts.update("lowcost", { password: "hunter2" });
-  const viaUpdate = (await rawRow("lowcost"))._internal.data.password.startsWith("$scrypt$ln=15,r=8,p=3$");
+  const viaUpdate = (await rawRow("lowcost"))._internal.data.password.startsWith(CURRENT);
   return { before, wrongLegacy, afterRewrite, keptByNameUpdate, keptByObjectUpdate, viaUpdate };
 `;
 
@@ -129,6 +130,52 @@ const DIGEST = `${HASH_HELPERS}
   };
 `;
 
+
+const BOUNDS = `${HASH_HELPERS}
+  const seed = async (id, password) => rawTable("hash", "accounts").insert({ _id: id, name: id, _internal: { meta: {}, data: { password } } }).run();
+  const attempt = async (id, stored) => {
+    await seed(id, stored);
+    const row = await accounts.get(id);
+    try { return [await row.testHashAsync("password", "pw"), await row.testHashAsync("password", "other")]; } catch (error) { return "threw " + error.name; }
+  };
+  const fake = (ln, r, p) => "$" + "scrypt" + "$ln=" + ln + ",r=" + r + ",p=" + p + "$" + b64(Buffer.alloc(16, 1)) + "$" + b64(Buffer.alloc(32, 2));
+  return {
+    r1: await attempt("r1", scryptString("pw", 4, 1, 1)),
+    r10: await attempt("r10", scryptString("pw", 4, 10, 1)),
+    r99: await attempt("r99", scryptString("pw", 4, 99, 1)),
+    r100: await attempt("r100", fake(4, 100, 1)),
+    ln1: await attempt("ln1", scryptString("pw", 1, 8, 1)),
+    ln2: await attempt("ln2", scryptString("pw", 2, 8, 1)),
+    ln99: await attempt("ln99", fake(99, 8, 1)),
+    ln100: await attempt("ln100", fake(100, 8, 1)),
+    p1: await attempt("p1", scryptString("pw", 4, 8, 1)),
+    p16: await attempt("p16", scryptString("pw", 4, 8, 16)),
+    salt16: await attempt("salt16", scryptString("pw", 4, 8, 1, 16, 32)),
+    salt64: await attempt("salt64", scryptString("pw", 4, 8, 1, 64, 32)),
+    salt80: await attempt("salt80", scryptString("pw", 4, 8, 1, 80, 32)),
+    salt15: await attempt("salt15", scryptString("pw", 4, 8, 1, 15, 32)),
+    key16: await attempt("key16", scryptString("pw", 4, 8, 1, 16, 16)),
+    key64: await attempt("key64", scryptString("pw", 4, 8, 1, 16, 64)),
+    key15: await attempt("key15", scryptString("pw", 4, 8, 1, 16, 15)),
+    key65: await attempt("key65", scryptString("pw", 4, 8, 1, 16, 65)),
+  };
+`;
+
+const OUTDATED = `${HASH_HELPERS}
+  const seed = async (id, password) => rawTable("hash", "accounts").insert({ _id: id, name: id, _internal: { meta: {}, data: { password } } }).run();
+  const probe = async (id, stored) => { await seed(id, stored); const row = await accounts.get(id); return [await row.testHashAsync("password", "pw"), row.isHashOutdated("password")]; };
+  const [fresh] = await accounts.insert({ name: "fresh", password: "pw" });
+  const freshRow = await accounts.get(fresh);
+  return {
+    fresh: [await freshRow.testHashAsync("password", "pw"), freshRow.isHashOutdated("password")],
+    sameCost: await probe("same", scryptString("pw", 15, 8, 3)),
+    lowerP: await probe("p1", scryptString("pw", 15, 8, 1)),
+    higherR: await probe("r9", scryptString("pw", 15, 9, 3)),
+    lowerLn: await probe("ln14", scryptString("pw", 14, 8, 3)),
+    notScrypt: await probe("junk", "plain text"),
+  };
+`;
+
 export const HASH_JOURNEYS = {
   "hash-storage": scenario({
     title: "a hashed field stores a salted scrypt hash of the JSON-encoded value",
@@ -143,5 +190,7 @@ export const HASH_JOURNEYS = {
     body: UPGRADE,
     printed: "{\"before\":[true,true,true,true],\"wrongLegacy\":false,\"afterRewrite\":[true,false,true],\"keptByNameUpdate\":true,\"keptByObjectUpdate\":true,\"viaUpdate\":true}",
   }),
+  "hash-bounds": scenario({ title: "a stored scrypt string verifies at each edge of the documented ranges and is refused just outside", body: BOUNDS, printed: "{\"r1\":[true,false],\"r10\":[true,false],\"r99\":[true,false],\"r100\":[false,false],\"ln1\":[true,false],\"ln2\":[true,false],\"ln99\":[false,false],\"ln100\":[false,false],\"p1\":[true,false],\"p16\":[true,false],\"salt16\":[true,false],\"salt64\":[true,false],\"salt80\":[false,false],\"salt15\":[false,false],\"key16\":[true,false],\"key64\":[true,false],\"key15\":[false,false],\"key65\":[false,false]}" }),
+  "hash-outdated": scenario({ title: "isHashOutdated flags any scrypt string whose ln, r or p differs from the current cost", body: OUTDATED, printed: "{\"fresh\":[true,false],\"sameCost\":[true,false],\"lowerP\":[true,true],\"higherR\":[true,true],\"lowerLn\":[true,true],\"notScrypt\":[false,true]}" }),
   "hash-digest": scenario({ title: "a field with an algorithm stores a salted digest with the row's shared salt", body: DIGEST, printed: "{\"storedDigest\":true,\"sharedSalt\":true,\"saltIsText\":true,\"freshSaltPerRow\":true,\"saltReusedOnLaterWrite\":[true,true],\"testDigest\":[true,false,true],\"digestNeverOutdated\":false,\"scryptOnDigestField\":[true,false],\"otherDigestRefused\":false}" }),
 } satisfies { [id: string]: Journey };

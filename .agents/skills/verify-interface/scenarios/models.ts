@@ -94,7 +94,12 @@ const VALIDATION = `
   const patchRefused = await errorOf(people.update(accepted[0], { age: "old" }, { validate: true }));
   const objectPatchRefused = await errorOf(people.update({ _id: accepted[0], name: 7 }, { validate: true }));
   const unvalidatedPatch = await people.update(accepted[0], { age: "old" });
-  return { valid, invalid, notAnObject, partialOk, partialEmpty, partialBad, tokenSkipped, optIn: optIn.length, refused, batchRefused, patched, patchRefused, objectPatchRefused, unvalidatedPatch };
+  const hole = { _tag: "codec", name: "hole", is: () => false, encode: (a) => a, decode: () => ({ _tag: "Left", left: [{}, { message: "after a hole" }, { message: "last" }] }) };
+  const silent = { _tag: "codec", name: "silent", is: () => false, encode: (a) => a, decode: () => ({ _tag: "Left", left: [{}, { message: "" }] }) };
+  class Odd extends d.Table {}
+  decorate(Odd, { a: [d.Field(hole)], b: [d.Field(silent)] });
+  const oddMessages = d.BasicDataModel(Odd, "odd").validate({});
+  return { valid, invalid, notAnObject, partialOk, partialEmpty, partialBad, tokenSkipped, optIn: optIn.length, refused, batchRefused, patched, patchRefused, objectPatchRefused, unvalidatedPatch, oddMessages };
 `;
 
 const GET_MODEL = `
@@ -170,6 +175,57 @@ const EXTEND = `
   return { isModel: model instanceof CustomUserModel, duplicate, active: active.map((user) => [user instanceof User, user.name]) };
 `;
 
+const COMPOUND = `
+  class Event extends d.Table {}
+  decorate(Event, {
+    kind: [d.Field("string"), d.Index({ group: "triple" })],
+    day: [d.Field("string"), d.Index({ group: "triple" })],
+    room: [d.Field("string"), d.Index({ group: "triple" })],
+    title: [d.Field("string")],
+  });
+  d.RegisterTable("events", "tri")(Event);
+  await d.RegisterSchema("tri");
+  const model = d.GetModel(d.BasicDataModel(Event));
+  await model.insert([
+    { kind: "talk", day: "mon", room: "A", title: "one" },
+    { kind: "talk", day: "mon", room: "B", title: "two" },
+    { kind: "talk", day: "tue", room: "A", title: "three" },
+    { kind: "demo", day: "mon", room: "A", title: "four" },
+  ]);
+  await sleep(2500);
+  const titles = async (...keys) => (await model.getBy("triple", ...keys)).map((row) => row.title).sort();
+  return { exact: await titles("talk", "mon", "A"), other: await titles("talk", "mon", "B"), none: await titles("talk", "tue", "B"), order: await titles("mon", "talk", "A") };
+`;
+
+const PARTIAL = `
+  const secretKey = "${KEY}";
+  class UserProfile extends d.Table.with(d.EncryptionModifier, d.HashModifier, d.LocalizationModifier) {}
+  decorate(UserProfile, {
+    privateInfo: [d.Encrypted({ secretKey }), d.Field("any")],
+    password: [d.Hashed(), d.Field("string")],
+    bio: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
+  });
+  d.RegisterTable("profiles", "partial")(UserProfile);
+  await d.RegisterSchema("partial");
+  const model = d.GetModel(d.BasicDataModel(UserProfile));
+  const profile = new UserProfile();
+  profile.privateInfo = { address: "1 Main St", phoneNumber: "555" };
+  profile.password = "old-password";
+  profile.localize("en").bio = "Hello";
+  const [id] = await model.insert(profile);
+  const before = Object.keys((await rawTable("partial", "profiles").get(id))._internal.data).sort();
+  await model.update(id, { password: "new-password" });
+  const row = await model.get(id);
+  const after = Object.keys((await rawTable("partial", "profiles").get(id))._internal.data).sort();
+  return {
+    before,
+    after,
+    passwordReplaced: [await row.testHashAsync("password", "new-password"), await row.testHashAsync("password", "old-password")],
+    privateInfo: row.privateInfo ?? "lost",
+    bio: row.localize("en").bio ?? "lost",
+  };
+`;
+
 export const MODEL_JOURNEYS = {
   crud: scenario({
     title: "a model inserts, reads, updates and deletes rows and answers ids and counts",
@@ -186,7 +242,7 @@ export const MODEL_JOURNEYS = {
   validation: scenario({
     title: "validate checks the io-ts codecs, and insert and update refuse invalid input only when asked",
     body: VALIDATION,
-    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1}",
+    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1,\"oddMessages\":{\"ok\":false,\"errors\":[{\"field\":\"a\",\"message\":\"after a hole\"},{\"field\":\"b\",\"message\":\"invalid b\"}]}}",
     stored: [{ name: "the people", expression: "$DB.getCollection('val__people').find().sort({ name: 1 }).toArray().map((r) => [r.name, r.age])", expected: "[[42,\"anything\"],[\"Bob\",\"old\"]]" }],
   }),
   "get-model": scenario({
@@ -194,6 +250,12 @@ export const MODEL_JOURNEYS = {
     body: GET_MODEL,
     printed: "{\"cache\":[true,true,true,true,true,true,true],\"defaultSees\":[\"default\"],\"tenantSees\":[\"tenant one\"],\"otherSees\":[\"tenant two\"],\"everywhereSees\":[\"default\",\"tenant one\",\"tenant two\"],\"customSchema\":[true,true],\"lost\":\"Schema not found for 'absent-schema'\",\"statics\":[\"gm\",true]}",
     stored: [{ name: "the rows by instance", expression: "$DB.getCollection('gm__items').find().sort({ name: 1 }).toArray().map((r) => [r.name, r._instance])", expected: "[[\"default\",null],[\"tenant one\",\"t1\"],[\"tenant two\",\"t2\"]]" }],
+  }),
+  "compound-get-by": scenario({ title: "getBy matches a compound index of three fields by its keys in field order", body: COMPOUND, printed: "{\"exact\":[\"one\"],\"other\":[\"two\"],\"none\":[],\"order\":[]}" }),
+  "partial-update-keeps-modified-fields": scenario({
+    title: "KNOWN FINDING AntelopeJS/interface-database-decorators#80, fails until fixed: update with one field keeps the row's other encrypted, hashed and localized fields",
+    body: PARTIAL,
+    printed: "{\"before\":[\"bio\",\"password\",\"privateInfo\"],\"after\":[\"bio\",\"password\",\"privateInfo\"],\"passwordReplaced\":[true,false],\"privateInfo\":{\"address\":\"1 Main St\",\"phoneNumber\":\"555\"},\"bio\":\"Hello\"}",
   }),
   "model-factory": scenario({ title: "BasicDataModel takes its table name from the argument or from RegisterTable", body: FACTORY, printed: "{\"missingName\":\"tableName must be provided or set via @RegisterTable\",\"explicit\":\"named by argument\",\"schemaOfPlain\":\"undefined\",\"schemaOfRegistered\":\"fac\",\"overriddenTable\":1}" }),
   "extend-model": scenario({

@@ -30,7 +30,7 @@ const config: VerifyConfig = {
       globs: ["src/modifiers/encryption.ts", "src/modifiers/hash.ts", "src/modifiers/localization.ts", "src/modifiers/internal/records.ts"],
       funnels: [],
       containments: ["encryption/encryption-at-rest", "hashing/hash-storage"],
-      why: "the encrypted [ciphertext, iv, authTag] triple, the $scrypt$ln=15,r=8,p=3$salt$key string, the digest and salt and the per-locale record are what rows persist as",
+      why: "the encrypted [ciphertext, iv, authTag] triple, the scrypt string with its ln, r and p cost, salt and key, the digest and salt and the per-locale record are what rows persist as",
     },
     contract: {
       globs: ["src/index.ts", "package.json"],

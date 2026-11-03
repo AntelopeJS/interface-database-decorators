@@ -9,6 +9,8 @@ journeys:
   - conversion
   - validation
   - get-model
+  - compound-get-by
+  - partial-update-keeps-modified-fields
   - model-factory
   - extend-model
 ---
@@ -23,6 +25,8 @@ journeys:
 - `conversion`: the three static conversions save nothing; reads convert.
 - `validation`: codecs, opt-in `validate`, partial patches.
 - `get-model`: one cached model per class and instance id; instances stay apart.
+- `compound-get-by`: a three-field compound index.
+- `partial-update-keeps-modified-fields`: known finding #80, fails until fixed.
 - `model-factory`: the table name comes from the argument or `RegisterTable`.
 - `extend-model`: a model subclass adds query methods.
 

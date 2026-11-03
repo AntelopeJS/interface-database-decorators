@@ -8,6 +8,8 @@ journeys:
   - hash-verify
   - hash-limits
   - hash-upgrade
+  - hash-bounds
+  - hash-outdated
   - hash-digest
 ---
 
@@ -19,6 +21,8 @@ journeys:
 
 - `hash-storage`: the scrypt format and parameters, checked with an independent scrypt.
 - `hash-verify`: `testHash`, `testHashAsync`, `isHashOutdated`.
+- `hash-bounds`: both edges of the `ln`, `r`, `p`, salt and key ranges.
+- `hash-outdated`: `isHashOutdated` for a changed `p`, `r` and `ln`.
 - `hash-limits`: the limits a stored scrypt string must stay inside.
 - `hash-upgrade`: older formats verify, are flagged and are rewritten.
 - `hash-digest`: `algorithm` digests with the row's shared salt.

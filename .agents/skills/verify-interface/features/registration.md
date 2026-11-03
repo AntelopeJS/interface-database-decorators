@@ -12,6 +12,8 @@ journeys:
   - fixtures
   - fixture-race
   - table-access
+  - fixture-ids-mixed
+  - table-foreign-instance
 ---
 
 # Registration
@@ -23,6 +25,8 @@ journeys:
 - `register-schema`: provisioning, binding and the unknown-schema error.
 - `fixtures`: fixtures fill an empty table once, with generated ids and the insert conversion.
 - `fixture-race`: two starts write each row once; a subclass gets its parent's fixture.
+- `fixture-ids-mixed`: ids kept and positions for the rest.
+- `table-foreign-instance`: a held instance of another schema is used as is.
 - `table-access`: `Table.table` for the default, a named, the cross-instance and a held instance, and its two errors.
 
 ## How to get to it (user POV)

@@ -6,6 +6,7 @@ docs:
 journeys:
   - fixed-instance
   - per-request-instance
+  - custom-parameter-provider
   - property-decoration
   - crud-controller
 ---
@@ -18,6 +19,7 @@ journeys:
 
 - `fixed-instance`: an instance id.
 - `per-request-instance`: a callback picks the instance, or `undefined` for the default.
+- `custom-parameter-provider`: the docs' custom decorator example.
 - `property-decoration`: a property is set while a request is handled.
 - `crud-controller`: `@Model` beside `@Parameter` and `@RawBody` in a CRUD controller.
 

@@ -20,7 +20,9 @@ const ONE_WAY = `${PRELUDE}
   const model = d.GetModel(d.BasicDataModel(Doc));
   const [id] = await model.insert({ title: "t", digest: "value", strong: "value" });
   const raw = await rawTable("oneway", "docs").get(id);
+  const loaded = await model.get(id);
   return {
+    tested: [d.testValue(loaded, "digest", "value"), d.testValue(loaded, "digest", "other"), d.testValue(loaded, "strong", "value")],
     stored: [raw._internal.data.digest === crypto.createHash("sha256").update(JSON.stringify("value")).digest("hex"), raw._internal.data.strong === crypto.createHash("sha512").update(JSON.stringify("value")).digest("hex")],
     secondOneWay: caught(() => { class Twice extends d.Table {} decorate(Twice, { f: [PrefixHashed(), PrefixHashed()] }); }),
   };
@@ -71,11 +73,11 @@ const EVENTS = `${PRELUDE}
   const log = [];
   class Spy extends d.Modifier {
     fromPlainData(object, field) { log.push(["fromPlainData", field, this instanceof Spy, object.constructor.name]); }
-    toPlainData(object, field) { log.push(["toPlainData", field]); }
-    fromDatabase(object, field) { log.push(["fromDatabase", field]); }
-    toDatabase(object, field) { log.push(["toDatabase", field]); }
-    insert(object, field) { log.push(["insert", field]); }
-    update(object, field) { log.push(["update", field]); }
+    toPlainData(object, field) { log.push(["toPlainData", field, this instanceof Spy, object.constructor.name]); }
+    fromDatabase(object, field) { log.push(["fromDatabase", field, this instanceof Spy, object.constructor.name]); }
+    toDatabase(object, field) { log.push(["toDatabase", field, this instanceof Spy, object.constructor.name]); }
+    insert(object, field) { log.push(["insert", field, this instanceof Spy, object.constructor.name]); }
+    update(object, field) { log.push(["update", field, this instanceof Spy, object.constructor.name]); }
     [d.MixinSymbol] = class {};
   }
   const Spied = MakePropertyDecorator((target, propertyKey, options) => { d.attachModifier(target.constructor, Spy, propertyKey, options || {}); });
@@ -84,7 +86,7 @@ const EVENTS = `${PRELUDE}
   d.RegisterTable("docs", "events")(Doc);
   await d.RegisterSchema("events");
   const model = d.GetModel(d.BasicDataModel(Doc));
-  const phase = (_name, entries) => entries.map((entry) => entry[0]);
+  const phase = (_name, entries) => entries.map((entry) => entry.join("/"));
   const mark = () => log.splice(0);
   const [id] = await model.insert({ note: "n" });
   const onInsert = phase("insert", mark());
@@ -103,7 +105,7 @@ const EVENTS = `${PRELUDE}
 `;
 
 export const CUSTOM_JOURNEYS = {
-  "one-way-modifier": scenario({ title: "a custom OneWayModifier transforms a value when it is written", body: ONE_WAY, printed: "{\"stored\":[true,true],\"secondOneWay\":\"Attempted adding Modifier PrefixHashModifier on Twice.f but it already has a One-Way Modifier\"}" }),
+  "one-way-modifier": scenario({ title: "a custom OneWayModifier transforms a value when it is written", body: ONE_WAY, printed: "{\"tested\":[true,false,true],\"stored\":[true,true],\"secondOneWay\":\"Attempted adding Modifier PrefixHashModifier on Twice.f but it already has a One-Way Modifier\"}" }),
   "two-way-modifier": scenario({
     title: "a custom TwoWayModifier stores a transformed value and unlocks it on read",
     body: TWO_WAY,
@@ -111,5 +113,5 @@ export const CUSTOM_JOURNEYS = {
     stored: [{ name: "the stored encodings", expression: "$DB.getCollection('twoway__docs').find({ title: 't' }).toArray().map((r) => [r._internal.data.body, r._internal.data.tagged])", expected: "[[\"b64-eyJhIjpbMSwyXX0=\",\"x:InBsYWluIg==\"]]" }],
   }),
   "container-modifier": scenario({ title: "a ContainerModifier keeps values by key and treats the wildcard key as the whole record", body: CONTAINER, printed: "{\"both\":{\"a\":1,\"b\":2},\"afterOverwrite\":{\"a\":3,\"b\":2},\"replaced\":{\"z\":26},\"byKey\":[26,\"undefined\",\"undefined\"]}" }),
-  "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData\",\"insert\",\"toDatabase\"],\"onUpdate\":[\"fromPlainData\",\"update\",\"toDatabase\"],\"onRead\":[\"fromDatabase\"],\"onReadAll\":[\"fromDatabase\"],\"onPlain\":[\"toPlainData\"],\"eventsOnlyKeepPlainValue\":true}" }),
+  "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc\",\"insert/note/true/Doc\",\"toDatabase/note/true/Doc\"],\"onUpdate\":[\"fromPlainData/note/true/Doc\",\"update/note/true/Doc\",\"toDatabase/note/true/Doc\"],\"onRead\":[\"fromDatabase/note/true/Doc\"],\"onReadAll\":[\"fromDatabase/note/true/Doc\"],\"onPlain\":[\"toPlainData/note/true/Doc\"],\"eventsOnlyKeepPlainValue\":true}" }),
 } satisfies { [id: string]: Journey };
