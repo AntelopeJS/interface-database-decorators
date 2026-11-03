@@ -37,6 +37,13 @@ const GROUP_FLAGS = `
     b: [d.Field("string"), d.Index({ group: "ab", unique: true })],
     c: [d.Field("string"), d.Index({ group: "cd", crossInstance: true })],
     e: [d.Field("string"), d.Index({ group: "cd" })],
+    f: [d.Field("string"), d.Index({ group: "ef" })],
+    g: [d.Field("string"), d.Index({ group: "ef", crossInstance: true })],
+    h: [d.Field("string"), d.Index({ group: "ef" })],
+    i: [d.Field("string"), d.Index({ group: "ij", unique: true })],
+    j: [d.Field("string"), d.Index({ group: "ij" })],
+    k: [d.Field("string"), d.Index({ group: "plain" })],
+    l: [d.Field("string"), d.Index({ group: "plain" })],
   });
   d.RegisterTable("pairs", "grp")(Pair);
   await d.RegisterSchema("grp");
@@ -105,6 +112,9 @@ const RELATION = `
 `;
 
 const INHERITANCE = `
+  class Cross extends d.Table {}
+  decorate(Cross, { a: [d.Field("string"), d.Index({ group: "ab" })], b: [d.Field("string"), d.Index({ group: "ab", crossInstance: true, unique: true })], c: [d.Field("string"), d.Index({ group: "c" })] });
+  d.RegisterTable("crosses", "inh")(Cross);
   class Base extends d.Table {}
   decorate(Base, { createdAt: [d.Field("date")] });
   d.RegisterTable("people", "inh")(Base);
@@ -112,10 +122,15 @@ const INHERITANCE = `
   decorate(Person, { email: [d.Field("string"), d.Index({ unique: true })] });
   class Employee extends Person {}
   decorate(Employee, { badge: [d.Field("string"), d.Index()] });
+  class Sub extends Cross {}
+  decorate(Sub, { extra: [d.Field("string")] });
+  d.RegisterTable("subs", "inh")(Sub);
   class Contractor extends Base {}
   decorate(Contractor, { rate: [d.Field("number")] });
-  const meta = (cls) => { const m = d.getMetadata(cls, d.DatumStaticMetadata); return { table: m.tableName ?? null, schema: m.schemaName ?? null, fields: Object.keys(m.fields), indexes: Object.keys(m.indexes), unique: [...m.uniqueIndexes] }; };
-  return { base: meta(Base), person: meta(Person), employee: meta(Employee), contractor: meta(Contractor) };
+  const meta = (cls) => { const m = d.getMetadata(cls, d.DatumStaticMetadata); return { table: m.tableName ?? null, schema: m.schemaName ?? null, fields: Object.keys(m.fields), indexes: Object.keys(m.indexes), unique: [...m.uniqueIndexes], cross: [...m.crossInstanceIndexes] }; };
+  await d.RegisterSchema("inh");
+  const built = iface.Schema.get("inh").definition;
+  return { built: [built.subs.indexes.ab, built.crosses.indexes.ab], base: meta(Base), person: meta(Person), employee: meta(Employee), contractor: meta(Contractor), cross: meta(Cross), sub: meta(Sub) };
 `;
 
 const WITH = `
@@ -169,10 +184,10 @@ export const TABLE_JOURNEYS = {
     printed: "{\"definition\":{\"fields\":{\"email\":\"string\",\"first\":\"string\",\"last\":\"string\",\"age\":\"number\"},\"indexes\":{\"email\":{\"fields\":null,\"unique\":true},\"name\":{\"fields\":[\"first\",\"last\"],\"crossInstance\":true},\"age\":{\"fields\":null}}},\"duplicate\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"email\\\" (email)\"},\"recognised\":[true,false],\"otherInstanceStored\":1,\"byGroup\":[\"a@x\"],\"bySingle\":[\"Ada\"],\"between\":[\"Ada\"],\"symbolKey\":\"@Index on Symbol(k): a database index names a field, never a symbol\"}",
     stored: [{ name: "the indexes of the users collection", expression: "$DB.getCollection('idx__users').getIndexes().map((i) => [i.name, i.unique === true]).sort()", expected: "[[\"_id_\",false],[\"age__i\",false],[\"email__i\",true],[\"name\",false],[\"name__i\",false]]" }],
   }),
-  "group-flags": scenario({ title: "unique and crossInstance on any field of a group apply to the whole group", body: GROUP_FLAGS, printed: "{\"indexes\":{\"ab\":{\"fields\":[\"a\",\"b\"],\"unique\":true},\"cd\":{\"fields\":[\"c\",\"e\"],\"crossInstance\":true}},\"sameKey\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"ab\\\" (a, b)\"},\"otherSecond\":1}" }),
+  "group-flags": scenario({ title: "unique and crossInstance on any field of a group apply to the whole group", body: GROUP_FLAGS, printed: "{\"indexes\":{\"ab\":{\"fields\":[\"a\",\"b\"],\"unique\":true},\"cd\":{\"fields\":[\"c\",\"e\"],\"crossInstance\":true},\"ef\":{\"fields\":[\"f\",\"g\",\"h\"],\"crossInstance\":true},\"ij\":{\"fields\":[\"i\",\"j\"],\"unique\":true},\"plain\":{\"fields\":[\"k\",\"l\"]}},\"sameKey\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"ab\\\" (a, b)\"},\"otherSecond\":1}" }),
   "field-types": scenario({ title: "Field hands every type to the database unchanged and combines with Index in either order", body: FIELD_TYPES, printed: "{\"names\":[\"id\",\"tags\",\"address\",\"total\",\"lateIndex\"],\"id\":\"string\",\"tags\":[\"string\"],\"address\":{\"street\":\"string\",\"geo\":{\"lat\":\"number\",\"lng\":\"number\"}},\"codecIsTheSameObject\":true,\"lateIndexType\":\"number\",\"indexes\":[\"total\",\"lateIndex\"]}" }),
   "relation-metadata": scenario({ title: "Relation records links without enforcing them", body: RELATION, printed: "{\"relationFields\":[\"authorId\",\"tagIds\"],\"authorTarget\":true,\"authorToField\":null,\"tagMany\":true,\"tagToField\":\"name\",\"dangling\":[\"nobody\",[\"ghost\"]],\"fieldsKept\":[\"authorId\",\"tagIds\",\"title\"],\"childRelations\":[\"authorId\",\"tagIds\",\"editorId\"],\"parentRelations\":[\"authorId\",\"tagIds\"]}" }),
-  inheritance: scenario({ title: "a table subclass starts with a copy of its parent and never changes it", body: INHERITANCE, printed: "{\"base\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\"],\"indexes\":[],\"unique\":[]},\"person\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\"],\"indexes\":[\"email\"],\"unique\":[\"email\"]},\"employee\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\",\"badge\"],\"indexes\":[\"email\",\"badge\"],\"unique\":[\"email\"]},\"contractor\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"rate\"],\"indexes\":[],\"unique\":[]}}" }),
+  inheritance: scenario({ title: "a table subclass starts with a copy of its parent and never changes it", body: INHERITANCE, printed: "{\"built\":[{\"fields\":[\"a\",\"b\"],\"crossInstance\":true,\"unique\":true},{\"fields\":[\"a\",\"b\"],\"crossInstance\":true,\"unique\":true}],\"base\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\"],\"indexes\":[],\"unique\":[],\"cross\":[]},\"person\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\"],\"indexes\":[\"email\"],\"unique\":[\"email\"],\"cross\":[]},\"employee\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\",\"badge\"],\"indexes\":[\"email\",\"badge\"],\"unique\":[\"email\"],\"cross\":[]},\"contractor\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"rate\"],\"indexes\":[],\"unique\":[],\"cross\":[]},\"cross\":{\"table\":\"crosses\",\"schema\":\"inh\",\"fields\":[\"a\",\"b\",\"c\"],\"indexes\":[\"ab\",\"c\"],\"unique\":[\"ab\"],\"cross\":[\"ab\"]},\"sub\":{\"table\":\"subs\",\"schema\":\"inh\",\"fields\":[\"a\",\"b\",\"c\",\"extra\"],\"indexes\":[\"ab\",\"c\"],\"unique\":[\"ab\"],\"cross\":[\"ab\"]}}" }),
   "combine-modifiers": scenario({ title: "Table.with combines the encryption, hashing and localization modifiers on one table", body: COMBINE, printed: "{\"stored\":[\"bio\",\"password\",\"privateInfo\"],\"privateInfo\":{\"address\":\"1 Main St\",\"phoneNumber\":\"555\"},\"password\":[true,false],\"bio\":[\"Bonjour\",\"Hello\"],\"mixins\":[\"function\",\"function\"]}" }),
   "table-with": scenario({ title: "Table.with adds the mixin methods of the modifiers to a subclass", body: WITH, printed: "{\"plainHasTestHash\":false,\"hashingHas\":[true,true,true,false],\"bothHas\":[true,true],\"isTableSubclass\":true,\"tableItselfUntouched\":\"undefined\",\"subIsASubclass\":true}" }),
 } satisfies { [id: string]: Journey };

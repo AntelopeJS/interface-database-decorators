@@ -38,7 +38,7 @@ const AT_REST = `${DECRYPT}
     topLevelHoldsNoCiphertext: raw.card === undefined && raw.personal === undefined,
     gcmShape: shape(data.card),
     cbcShape: [data.legacy.length, data.legacy[2] ?? null],
-    ivBytes: [Buffer.from(data.card[1], "base64").length, Buffer.from(data.short[1], "base64").length],
+    ivBytes: [Buffer.from(data.card[1], "base64").length, Buffer.from(data.short[1], "base64").length, Buffer.from(data.personal[1], "base64").length, Buffer.from(data.legacy[1], "base64").length],
     plaintextAbsent: !JSON.stringify(raw).includes("4242") && !JSON.stringify(raw).includes("078-05-1120"),
     independentDecrypt: [decrypt(data.card), decrypt(data.personal), decrypt(data.legacy, "aes-256-cbc")],
     sameValueTwice: [data.card[1] !== rawAgain._internal.data.card[1], data.card[0] !== rawAgain._internal.data.card[0]],
@@ -52,6 +52,8 @@ const DATES = `${DECRYPT}
   await d.RegisterSchema("encdate");
   const model = d.GetModel(d.BasicDataModel(Event));
   const moment = new Date("2026-01-02T03:04:05.678Z");
+  const [nestedId] = await model.insert({ when: { inside: { at: moment }, list: [moment, "text", [moment]] }, plainObject: 1 });
+  const nested = (await model.get(nestedId)).when;
   const [id] = await model.insert({ when: moment, plainObject: { type: "Date", value: "not a date", extra: 1 } });
   const read = await model.get(id);
   const raw = await rawTable("encdate", "events").get(id);
@@ -60,6 +62,7 @@ const DATES = `${DECRYPT}
     iso: read.when.toISOString(),
     storedText: JSON.parse(decrypt(raw._internal.data.when)),
     lookalikeKept: read.plainObject,
+    nested: [nested.inside.at instanceof Date, nested.inside.at.toISOString(), nested.list[0] instanceof Date, nested.list[1], nested.list[2][0] instanceof Date, nested.list[2][0].toISOString()],
   };
 `;
 
@@ -88,7 +91,7 @@ export const ENCRYPTION_JOURNEYS = {
   "encryption-at-rest": scenario({
     title: "an encrypted field is stored as base64 ciphertext, iv and auth tag that only the key opens",
     body: AT_REST,
-    printed: "{\"read\":[\"4242 4242 4242 4242\",{\"ssn\":\"078-05-1120\",\"birthDate\":\"1990-01-01\"},\"old cipher\",\"twelve\"],\"topLevelHoldsNoCiphertext\":true,\"gcmShape\":[true,3,\"string\"],\"cbcShape\":[3,null],\"ivBytes\":[16,12],\"plaintextAbsent\":true,\"independentDecrypt\":[\"\\\"4242 4242 4242 4242\\\"\",\"{\\\"ssn\\\":\\\"078-05-1120\\\",\\\"birthDate\\\":\\\"1990-01-01\\\"}\",\"\\\"old cipher\\\"\"],\"sameValueTwice\":[true,true]}",
+    printed: "{\"read\":[\"4242 4242 4242 4242\",{\"ssn\":\"078-05-1120\",\"birthDate\":\"1990-01-01\"},\"old cipher\",\"twelve\"],\"topLevelHoldsNoCiphertext\":true,\"gcmShape\":[true,3,\"string\"],\"cbcShape\":[3,null],\"ivBytes\":[16,12,16,16],\"plaintextAbsent\":true,\"independentDecrypt\":[\"\\\"4242 4242 4242 4242\\\"\",\"{\\\"ssn\\\":\\\"078-05-1120\\\",\\\"birthDate\\\":\\\"1990-01-01\\\"}\",\"\\\"old cipher\\\"\"],\"sameValueTwice\":[true,true]}",
     stored: [
       {
         name: "the stored triples",
@@ -97,6 +100,6 @@ export const ENCRYPTION_JOURNEYS = {
       },
     ],
   }),
-  "encryption-dates": scenario({ title: "an encrypted Date comes back as a Date with whole-second precision", body: DATES, printed: "{\"isDate\":true,\"iso\":\"2026-01-02T03:04:05.000Z\",\"storedText\":{\"value\":\"Fri, 02 Jan 2026 03:04:05 GMT\",\"type\":\"Date\"},\"lookalikeKept\":{\"type\":\"Date\",\"value\":\"not a date\",\"extra\":1}}" }),
+  "encryption-dates": scenario({ title: "an encrypted Date comes back as a Date with whole-second precision", body: DATES, printed: "{\"isDate\":true,\"iso\":\"2026-01-02T03:04:05.000Z\",\"storedText\":{\"value\":\"Fri, 02 Jan 2026 03:04:05 GMT\",\"type\":\"Date\"},\"lookalikeKept\":{\"type\":\"Date\",\"value\":\"not a date\",\"extra\":1},\"nested\":[true,\"2026-01-02T03:04:05.000Z\",true,\"text\",true,\"2026-01-02T03:04:05.000Z\"]}" }),
   "encryption-keys": scenario({ title: "the key goes to the cipher as a UTF-8 string, so a hex-encoded key is refused", body: KEYS, printed: "{\"hexKeyBytes\":64,\"hexRefused\":{\"name\":\"RangeError\",\"message\":\"Invalid key length\"},\"goodStored\":\"kept\",\"hexStored\":0}" }),
 } satisfies { [id: string]: Journey };

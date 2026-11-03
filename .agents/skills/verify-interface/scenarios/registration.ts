@@ -55,7 +55,7 @@ const FIXTURES = `
   d.Fixture(() => [{ _id: "loose", name: "never inserted" }])(Loose);
   class Stamped extends d.Table.with(d.HashModifier) {}
   decorate(Stamped, { secret: [d.Hashed(), d.Field("string")], created: [d.CreationTime(), d.Field("date")] });
-  d.Fixture(() => [{ _id: "s1", secret: "hunter2" }])(Stamped);
+  d.Fixture(() => [{ _id: "s1", secret: "hunter2" }, { _id: "s2", secret: "hunter3" }])(Stamped);
   d.RegisterTable("stamped", "fx")(Stamped);
   await d.RegisterSchema("fx");
   const count = (name) => rawTable("fx", name).count();
@@ -64,13 +64,14 @@ const FIXTURES = `
   await d.RegisterSchema("fx");
   const afterSecondStart = await count("roles");
   const ids = (await rawTable("fx", "plans")).map((row) => row._id).sort();
-  const stamped = await rawTable("fx", "stamped").get("s1");
+  const stampedRows = [await rawTable("fx", "stamped").get("s1"), await rawTable("fx", "stamped").get("s2")];
+  const stamped = stampedRows[0];
   return {
     first,
     afterSecondStart,
     plans: ids,
     unregisteredClassProvisioned: Object.keys(iface.Schema.get("fx").definition).includes("loose"),
-    hashedAtInsert: stamped._internal.data.secret.startsWith("$" + "scrypt" + "$ln=15,r=8,p=3$") && !stamped._internal.data.secret.includes("hunter2"),
+    hashedAtInsert: stampedRows.map((row) => row._internal.data.secret.startsWith("$" + "scrypt" + "$ln=15,r=8,p=3$") && !row._internal.data.secret.includes("hunter")),
     insertEventFired: stamped.created !== undefined,
   };
 `;
@@ -161,10 +162,10 @@ export const REGISTRATION_JOURNEYS = {
   fixtures: scenario({
     title: "fixtures fill an empty table once, with generated ids and the same conversion as an insert",
     body: FIXTURES,
-    printed: "{\"first\":{\"roles\":2,\"settings\":1,\"plans\":3,\"nothing\":0},\"afterSecondStart\":1,\"plans\":[\"plans:fixture:0\",\"plans:fixture:1\",\"plans:fixture:2\"],\"unregisteredClassProvisioned\":false,\"hashedAtInsert\":true,\"insertEventFired\":true}",
+    printed: "{\"first\":{\"roles\":2,\"settings\":1,\"plans\":3,\"nothing\":0},\"afterSecondStart\":1,\"plans\":[\"plans:fixture:0\",\"plans:fixture:1\",\"plans:fixture:2\"],\"unregisteredClassProvisioned\":false,\"hashedAtInsert\":[true,true],\"insertEventFired\":true}",
     stored: [
       { name: "the plan rows", expression: "$DB.getCollection('fx__plans').find({}, { name: 0 }).sort({ _id: 1 }).toArray().map((r) => [r._id, r.label])", expected: "[[\"plans:fixture:0\",\"free\"],[\"plans:fixture:1\",\"pro\"],[\"plans:fixture:2\",\"team\"]]" },
-      { name: "the stamped row", expression: "$DB.getCollection('fx__stamped').find().toArray().map((r) => [r._id, r._internal.data.secret.startsWith('$' + 'scrypt' + '$ln=15,r=8,p=3$'), r._internal.data.secret.includes('hunter2'), r.created !== undefined])", expected: "[[\"s1\",true,false,true]]" },
+      { name: "the stamped row", expression: "$DB.getCollection('fx__stamped').find().sort({ _id: 1 }).toArray().map((r) => [r._id, r._internal.data.secret.startsWith('$' + 'scrypt' + '$ln=15,r=8,p=3$'), r._internal.data.secret.includes('hunter'), r.created !== undefined])", expected: "[[\"plans:fixture:0\",\"free\"],[\"plans:fixture:1\",\"pro\"],[\"plans:fixture:2\",\"team\"]]" },
     ],
   }),
   "fixture-race": scenario({

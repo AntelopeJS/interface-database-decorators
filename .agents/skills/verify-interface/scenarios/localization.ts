@@ -85,7 +85,7 @@ const STORED = `${PRODUCT}
 
 const AUTO = `
   class Article extends d.Table {}
-  decorate(Article, { title: [d.Field("string")], creationDate: [d.CreationTime(), d.Field("date")], updateDate: [d.UpdateTime(), d.Field("date")] });
+  decorate(Article, { title: [d.Field("string")], creationDate: [d.CreationTime(), d.Field("date")], updateDate: [d.UpdateTime(), d.Field("date")], born: [d.CreationTime(), d.Field("date")], touched: [d.UpdateTime(), d.Field("date")] });
   d.RegisterTable("articles", "auto")(Article);
   await d.RegisterSchema("auto");
   const model = d.GetModel(d.BasicDataModel(Article));
@@ -101,6 +101,7 @@ const AUTO = `
     insertSetsBoth: [stamp(inserted.creationDate) >= before, stamp(inserted.updateDate) >= before, stamp(inserted.creationDate) <= after],
     creationKeptOnUpdate: stamp(updated.creationDate) === stamp(inserted.creationDate),
     updateRefreshed: stamp(updated.updateDate) >= stamp(inserted.updateDate) + 50,
+    secondFieldsToo: [stamp(inserted.born) >= before, stamp(inserted.touched) >= before, stamp(updated.born) === stamp(inserted.born), stamp(updated.touched) >= stamp(inserted.touched) + 50],
     noMixinNeeded: Object.getPrototypeOf(Article.prototype) === d.Table.prototype,
   };
 `;
@@ -140,7 +141,7 @@ export const AUTODATE_JOURNEYS = {
   autodate: scenario({
     title: "CreationTime is set on insert and kept on update, UpdateTime is set on insert and refreshed on update",
     body: AUTO,
-    printed: "{\"insertSetsBoth\":[true,true,true],\"creationKeptOnUpdate\":true,\"updateRefreshed\":true,\"noMixinNeeded\":true}",
+    printed: "{\"insertSetsBoth\":[true,true,true],\"creationKeptOnUpdate\":true,\"updateRefreshed\":true,\"secondFieldsToo\":[true,true,true,true],\"noMixinNeeded\":true}",
     stored: [{ name: "the article dates", expression: "$DB.getCollection('auto__articles').find().toArray().map((r) => [r.title, r.creationDate instanceof Date, r.updateDate > r.creationDate])", expected: "[[\"Two\",true,true]]" }],
   }),
 } satisfies { [id: string]: Journey };

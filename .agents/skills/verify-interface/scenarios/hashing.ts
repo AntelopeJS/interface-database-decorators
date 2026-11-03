@@ -143,7 +143,13 @@ const BOUNDS = `${HASH_HELPERS}
     r1: await attempt("r1", scryptString("pw", 4, 1, 1)),
     r10: await attempt("r10", scryptString("pw", 4, 10, 1)),
     r99: await attempt("r99", scryptString("pw", 4, 99, 1)),
-    r100: await attempt("r100", fake(4, 100, 1)),
+    r100: await attempt("r100", scryptString("pw", 4, 100, 1)),
+    r0: await attempt("r0", fake(4, 0, 1)),
+    ln0: await attempt("ln0", fake(0, 8, 1)),
+    p0: await attempt("p0", fake(4, 8, 0)),
+    p99: await attempt("p99", scryptString("pw", 4, 8, 99)),
+    ln16r1: await attempt("ln16r1", fake(16, 1, 1)),
+    salt65: await attempt("salt65", scryptString("pw", 4, 8, 1, 65, 32)),
     ln1: await attempt("ln1", scryptString("pw", 1, 8, 1)),
     ln2: await attempt("ln2", scryptString("pw", 2, 8, 1)),
     ln99: await attempt("ln99", fake(99, 8, 1)),
@@ -158,6 +164,23 @@ const BOUNDS = `${HASH_HELPERS}
     key64: await attempt("key64", scryptString("pw", 4, 8, 1, 16, 64)),
     key15: await attempt("key15", scryptString("pw", 4, 8, 1, 16, 15)),
     key65: await attempt("key65", scryptString("pw", 4, 8, 1, 16, 65)),
+  };
+`;
+
+const MEMORY = `${HASH_HELPERS}
+  const seed = async (id, password) => rawTable("hash", "accounts").insert({ _id: id, name: id, _internal: { meta: {}, data: { password } } }).run();
+  const attempt = async (id, stored) => {
+    await seed(id, stored);
+    const row = await accounts.get(id);
+    try { return [await row.testHashAsync("password", "pw"), await row.testHashAsync("password", "other")]; } catch (error) { return "threw " + error.name; }
+  };
+  return {
+    exactR64: await attempt("a", scryptString("pw", 14, 64, 1)),
+    overR65: await attempt("b", scryptString("pw", 14, 65, 1)),
+    exactR2: await attempt("c", scryptString("pw", 19, 2, 1)),
+    underR3: await attempt("d", scryptString("pw", 18, 3, 1)),
+    overR5: await attempt("e", scryptString("pw", 18, 5, 1)),
+    overR9: await attempt("f", scryptString("pw", 17, 9, 1)),
   };
 `;
 
@@ -190,7 +213,8 @@ export const HASH_JOURNEYS = {
     body: UPGRADE,
     printed: "{\"before\":[true,true,true,true],\"wrongLegacy\":false,\"afterRewrite\":[true,false,true],\"keptByNameUpdate\":true,\"keptByObjectUpdate\":true,\"viaUpdate\":true}",
   }),
-  "hash-bounds": scenario({ title: "a stored scrypt string verifies at each edge of the documented ranges and is refused just outside", body: BOUNDS, printed: "{\"r1\":[true,false],\"r10\":[true,false],\"r99\":[true,false],\"r100\":[false,false],\"ln1\":[true,false],\"ln2\":[true,false],\"ln99\":[false,false],\"ln100\":[false,false],\"p1\":[true,false],\"p16\":[true,false],\"salt16\":[true,false],\"salt64\":[true,false],\"salt80\":[false,false],\"salt15\":[false,false],\"key16\":[true,false],\"key64\":[true,false],\"key15\":[false,false],\"key65\":[false,false]}" }),
+  "hash-bounds": scenario({ title: "a stored scrypt string verifies at each edge of the documented ranges and is refused just outside", body: BOUNDS, printed: "{\"r1\":[true,false],\"r10\":[true,false],\"r99\":[true,false],\"r100\":[false,false],\"r0\":[false,false],\"ln0\":[false,false],\"p0\":[false,false],\"p99\":[false,false],\"ln16r1\":[false,false],\"salt65\":[false,false],\"ln1\":[true,false],\"ln2\":[true,false],\"ln99\":[false,false],\"ln100\":[false,false],\"p1\":[true,false],\"p16\":[true,false],\"salt16\":[true,false],\"salt64\":[true,false],\"salt80\":[false,false],\"salt15\":[false,false],\"key16\":[true,false],\"key64\":[true,false],\"key15\":[false,false],\"key65\":[false,false]}" }),
+  "hash-memory": scenario({ title: "a stored scrypt string verifies up to 128 MiB of memory (128 x N x r) and is refused above it", body: MEMORY, printed: "{\"exactR64\":[true,false],\"overR65\":[false,false],\"exactR2\":[true,false],\"underR3\":[true,false],\"overR5\":[false,false],\"overR9\":[false,false]}" }),
   "hash-outdated": scenario({ title: "isHashOutdated flags any scrypt string whose ln, r or p differs from the current cost", body: OUTDATED, printed: "{\"fresh\":[true,false],\"sameCost\":[true,false],\"lowerP\":[true,true],\"higherR\":[true,true],\"lowerLn\":[true,true],\"notScrypt\":[false,true]}" }),
   "hash-digest": scenario({ title: "a field with an algorithm stores a salted digest with the row's shared salt", body: DIGEST, printed: "{\"storedDigest\":true,\"sharedSalt\":true,\"saltIsText\":true,\"freshSaltPerRow\":true,\"saltReusedOnLaterWrite\":[true,true],\"testDigest\":[true,false,true],\"digestNeverOutdated\":false,\"scryptOnDigestField\":[true,false],\"otherDigestRefused\":false}" }),
 } satisfies { [id: string]: Journey };
