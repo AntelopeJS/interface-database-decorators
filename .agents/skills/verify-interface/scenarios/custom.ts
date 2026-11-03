@@ -71,13 +71,14 @@ const CONTAINER = `${PRELUDE}
 
 const EVENTS = `${PRELUDE}
   const log = [];
+  const shape = (args) => args.length + ":" + args.map((value) => (value !== null && typeof value === "object" ? Object.keys(value).filter((key) => key !== "_instance").sort().join("+") : String(value))).join(";");
   class Spy extends d.Modifier {
-    fromPlainData(object, field) { log.push(["fromPlainData", field, this instanceof Spy, object.constructor.name]); }
-    toPlainData(object, field) { log.push(["toPlainData", field, this instanceof Spy, object.constructor.name]); }
-    fromDatabase(object, field) { log.push(["fromDatabase", field, this instanceof Spy, object.constructor.name]); }
-    toDatabase(object, field) { log.push(["toDatabase", field, this instanceof Spy, object.constructor.name]); }
-    insert(object, field) { log.push(["insert", field, this instanceof Spy, object.constructor.name]); }
-    update(object, field) { log.push(["update", field, this instanceof Spy, object.constructor.name]); }
+    fromPlainData(object, field, ...args) { log.push(["fromPlainData", field, this instanceof Spy, object.constructor.name, shape(args)]); }
+    toPlainData(object, field, ...args) { log.push(["toPlainData", field, this instanceof Spy, object.constructor.name, shape(args)]); }
+    fromDatabase(object, field, ...args) { log.push(["fromDatabase", field, this instanceof Spy, object.constructor.name, shape(args)]); }
+    toDatabase(object, field, ...args) { log.push(["toDatabase", field, this instanceof Spy, object.constructor.name, shape(args)]); args[0].handled = "by-handler"; }
+    insert(object, field, ...args) { log.push(["insert", field, this instanceof Spy, object.constructor.name, shape(args)]); }
+    update(object, field, ...args) { log.push(["update", field, this instanceof Spy, object.constructor.name, shape(args)]); }
     [d.MixinSymbol] = class {};
   }
   const Spied = MakePropertyDecorator((target, propertyKey, options) => { d.attachModifier(target.constructor, Spy, propertyKey, options || {}); });
@@ -100,8 +101,9 @@ const EVENTS = `${PRELUDE}
   mark();
   d.toPlainData(instance);
   const onPlain = phase("plain", mark());
+  const storedByHandler = (await rawTable("events", "docs").get(id)).handled ?? "undefined";
   const plainAccessor = Object.getOwnPropertyDescriptor(Doc.prototype, "note");
-  return { onInsert, onUpdate, onRead, onReadAll, onPlain, eventsOnlyKeepPlainValue: plainAccessor === undefined };
+  return { onInsert, onUpdate, onRead, onReadAll, onPlain, storedByHandler, eventsOnlyKeepPlainValue: plainAccessor === undefined };
 `;
 
 const HELPERS = `
@@ -155,5 +157,5 @@ export const CUSTOM_JOURNEYS = {
   }),
   "modifier-helpers": scenario({ title: "getModifiedFields, unlock, lock, floating values, getMetadata and getTablesForSchema do what their TSDoc says", body: HELPERS, printed: "{\"names\":{\"hashed\":[\"password\"],\"localized\":[\"title\",\"summary\"],\"none\":[]},\"floatingRead\":\"floating\",\"floatingStored\":[\"_internal\"],\"afterUnlock\":[\"floating\",\"floating\",\"undefined\"],\"lockedKeys\":[\"title\"],\"restricted\":[\"undefined\",\"r\u00e9sum\u00e9\"],\"tables\":[[\"others\",\"profiles\"],true,\"undefined\"],\"metadata\":[\"profiles\",\"undefined\",\"profiles\",false,false,true]}" }),
   "container-modifier": scenario({ title: "a ContainerModifier keeps values by key and treats the wildcard key as the whole record", body: CONTAINER, printed: "{\"both\":{\"a\":1,\"b\":2},\"afterOverwrite\":{\"a\":3,\"b\":2},\"replaced\":{\"z\":26},\"byKey\":[26,\"undefined\",\"undefined\"]}" }),
-  "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc\",\"insert/note/true/Doc\",\"toDatabase/note/true/Doc\"],\"onUpdate\":[\"fromPlainData/note/true/Doc\",\"update/note/true/Doc\",\"toDatabase/note/true/Doc\"],\"onRead\":[\"fromDatabase/note/true/Doc\"],\"onReadAll\":[\"fromDatabase/note/true/Doc\"],\"onPlain\":[\"toPlainData/note/true/Doc\"],\"eventsOnlyKeepPlainValue\":true}" }),
+  "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc/1:note\",\"insert/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onUpdate\":[\"fromPlainData/note/true/Doc/1:note\",\"update/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onRead\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onReadAll\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onPlain\":[\"toPlainData/note/true/Doc/1:_id+handled+note\"],\"storedByHandler\":\"by-handler\",\"eventsOnlyKeepPlainValue\":true}" }),
 } satisfies { [id: string]: Journey };

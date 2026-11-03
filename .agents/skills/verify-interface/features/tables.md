@@ -12,6 +12,9 @@ journeys:
   - relation-metadata
   - inheritance
   - table-with
+  - table-with-subclass
+  - table-with-keeps-fields
+  - subclass-modifiers
   - combine-modifiers
 ---
 
@@ -27,6 +30,9 @@ A table class with `Field`, `Index`, `Relation`, subclasses and `Table.with`.
 - `relation-metadata`: `Relation` records links and enforces none.
 - `inheritance`: a subclass copies its parent and never writes into it.
 - `combine-modifiers`: three modifiers on one table.
+- `table-with-subclass`: the result of `with` extends the class it was called on.
+- `table-with-keeps-fields`: known finding #81, fails until fixed.
+- `subclass-modifiers`: modifier and event lists are copied per subclass.
 - `table-with`: mixin methods reach the subclass only.
 
 ## How to get to it (user POV)

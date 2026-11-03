@@ -10,6 +10,7 @@ journeys:
   - hash-upgrade
   - hash-bounds
   - hash-memory
+  - hash-sync-async
   - hash-outdated
   - hash-digest
 ---
@@ -24,6 +25,7 @@ journeys:
 - `hash-verify`: `testHash`, `testHashAsync`, `isHashOutdated`.
 - `hash-bounds`: both edges of the `ln`, `r`, `p`, salt and key ranges.
 - `hash-memory`: the 128 MiB limit at, under and over the line.
+- `hash-sync-async`: `testHash` equals `testHashAsync` on current, legacy, low-cost, junk, empty and digest rows.
 - `hash-outdated`: `isHashOutdated` for a changed `p`, `r` and `ln`.
 - `hash-limits`: the limits a stored scrypt string must stay inside.
 - `hash-upgrade`: older formats verify, are flagged and are rewritten.

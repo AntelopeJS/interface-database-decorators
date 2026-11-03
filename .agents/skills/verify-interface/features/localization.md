@@ -5,6 +5,7 @@ docs:
   - docs/3.table-modifiers.md
 journeys:
   - localize
+  - localized-query
   - localize-wildcard
   - localized-storage
 ---
@@ -16,6 +17,7 @@ journeys:
 ## Sub-features
 
 - `localize`: switching locale, fallback, restricting fields.
+- `localized-query`: `unlockrequest` with a fallback locale.
 - `localize-wildcard`: the `"*"` key.
 - `localized-storage`: one value per locale in MongoDB.
 

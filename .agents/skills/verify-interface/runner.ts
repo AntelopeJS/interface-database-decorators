@@ -38,6 +38,10 @@ const iface = require(require.resolve("@antelopejs/interface-database", { paths:
 const decorate = (cls, props) => { for (const [key, list] of Object.entries(props)) for (const apply of list) apply(cls.prototype, key); return cls; };
 const caught = (fn) => { try { fn(); return null; } catch (error) { return error.message; } };
 const rejection = async (promise) => { try { await promise; return null; } catch (error) { return { name: error.name, message: error.message }; } };
+const mongoDriver = () => require(require.resolve("mongodb", { paths: [process.env.VERIFY_MODULE_CACHE + "/@antelopejs/mongodb"] }));
+const indexNames = async (collection) => { const client = new (mongoDriver().MongoClient)(process.env.VERIFY_MONGO_URL); try { await client.connect(); return (await client.db("${DATABASE}").collection(collection).indexes()).map((index) => index.name).sort(); } finally { await client.close(); } };
+const untilIndexed = async (collection, names) => { for (let attempt = 0; attempt < 120; attempt += 1) { const have = await indexNames(collection); if (names.every((name) => have.includes(name))) return have; await new Promise((resolve) => setTimeout(resolve, 500)); } return null; };
+const refusedDuplicate = async (model, make) => { for (let attempt = 0; attempt < 60; attempt += 1) { try { const [id] = await model.insert(make(attempt)); await model.delete(id); } catch (error) { return error; } await new Promise((resolve) => setTimeout(resolve, 500)); } return null; };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const rawTable = (schemaId, table, instance) => iface.Schema.get(schemaId).instance(instance).table(table);
 `;
@@ -127,12 +131,12 @@ export function scenario({ title, body, printed, stored = [], api = false }: Sce
         equal("the scenario printed what the docs promise", line?.slice("RESULT ".length) ?? "", printed),
       ]);
       for (const read of stored) {
-        const result = await context.native(read.name, "mongo", [
-          "mongosh",
-          "--quiet",
-          "--eval",
-          `print(JSON.stringify(${read.expression.replaceAll("$DB", `db.getSiblingDB("${DATABASE}")`)}))`,
-        ]);
+        const expression = `print(JSON.stringify(${read.expression.replaceAll("$DB", `db.getSiblingDB("${DATABASE}")`)}))`;
+        let result = await context.native(read.name, "mongo", ["mongosh", "--quiet", "--eval", expression]);
+        for (let again = 0; again < 20 && compact(result.stdout) !== read.expected; again += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          result = await context.native(read.name, "mongo", ["mongosh", "--quiet", "--eval", expression]);
+        }
         const checks: Check[] = [equal(`MongoDB holds ${read.name}`, compact(result.stdout), read.expected)];
         context.expect(result.folder, checks);
       }
