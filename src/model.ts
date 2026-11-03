@@ -21,6 +21,10 @@ import {
 import { isRecord } from "./modifiers/internal/kinds";
 import { boundSchema } from "./internal/bound-schema";
 import {
+  type InternalRecord,
+  isEmptyInternal,
+} from "./modifiers/internal/records";
+import {
   type Constructible,
   DatumStaticMetadata,
   type DeepPartial,
@@ -272,13 +276,19 @@ export function BasicDataModel<T extends object>(
       if (parsed.id !== undefined) {
         const instance = Model.fromPlainData(parsed.data);
         triggerEvent(instance, "update");
-        return this.table.get(parsed.id).update(toDatabase(instance)).run();
+        return this.table
+          .get(parsed.id)
+          .update(withoutEmptyInternal(toDatabase(instance)))
+          .run();
       }
       const instance = Model.fromPlainData(parsed.data);
       triggerEvent(instance, "update");
       const id = parsed.data[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
-      return this.table.get(id).update(toDatabase(instance)).run();
+      return this.table
+        .get(id)
+        .update(withoutEmptyInternal(toDatabase(instance)))
+        .run();
     }
 
     /**
@@ -318,6 +328,20 @@ type ParsedUpdate<T> =
       data: DeepPartial<T> & KeyedRow;
       options?: ValidateOptions;
     };
+
+/**
+ * Leaves out an `_internal` with nothing in it. The update writes that key as
+ * one value, and a modifier event creates it empty: writing it would erase what
+ * the row stores there.
+ */
+function withoutEmptyInternal<R extends { _internal?: InternalRecord }>(
+  record: R,
+) {
+  if (record._internal && isEmptyInternal(record._internal)) {
+    delete record._internal;
+  }
+  return record;
+}
 
 function makeValidationError(errors: FieldError[]): Error {
   const summary = errors.map((e) => `${e.field} (${e.message})`).join(", ");

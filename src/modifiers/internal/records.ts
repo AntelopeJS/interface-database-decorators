@@ -41,6 +41,11 @@ export function getInternal(object: InternalHolder): InternalRecord {
   return object._internal;
 }
 
+/** Whether a row's modifier state holds no locked value and no modifier state. */
+export function isEmptyInternal({ meta, data }: InternalRecord): boolean {
+  return Object.keys(meta).length === 0 && Object.keys(data).length === 0;
+}
+
 /**
  * Throws when a modifier cannot be attached to the field named `field`: the
  * two names the table's own structures live under.
