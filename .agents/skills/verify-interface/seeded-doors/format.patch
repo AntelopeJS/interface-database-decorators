@@ -11,3 +11,16 @@ index f23cce8..4e4b4e2 100644
  const SALT_BYTES = 16;
  const KEY_BYTES = 32;
  const DECOY_SALT = Buffer.alloc(SALT_BYTES);
+diff --git a/src/modifiers/encryption.ts b/src/modifiers/encryption.ts
+index b569dc7..cf8f055 100644
+--- a/src/modifiers/encryption.ts
++++ b/src/modifiers/encryption.ts
+@@ -113,7 +113,7 @@ export class EncryptionModifier extends TwoWayModifier<
+         : undefined;
+     } catch {}
+ 
+-    return [encrypted, iv.toString("base64"), authTag];
++    return [encrypted, iv.toString("hex"), authTag];
+   }
+ 
+   readonly autounlock = true;
