@@ -20,6 +20,7 @@ type _FromDatabase = Assert<Identical<ReturnType<typeof Model.fromDatabase>, Use
 type _ToDatabase = Assert<Identical<ReturnType<typeof Model.toDatabase>, Api.StoredRow<User>>>;
 type _Validate = Assert<Identical<ReturnType<typeof Model.validate>, Api.ValidationResult>>;
 type _Register = Assert<Identical<typeof Api.RegisterSchema, (schemaId: string) => Promise<void>>>;
+type _Fixture = Assert<Identical<Api.DatumGeneratorOutput<{ a: 1 }>, { a: 1 } | { a: 1 }[] | undefined>>;
 type _PrimaryKey = Assert<Identical<User["_id"], string>>;
 type _Table = Assert<Identical<Parameters<typeof User.table>[0], Api.TableTarget | undefined>>;
 `;
