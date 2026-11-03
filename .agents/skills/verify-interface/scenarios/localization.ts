@@ -9,6 +9,7 @@ const PRODUCT = `
     name: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
     description: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
     bare: [d.Localized(), d.Field("string")],
+    summary: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
   });
   d.RegisterTable("products", "loc")(Product);
   await d.RegisterSchema("loc");
@@ -32,8 +33,10 @@ const LOCALIZE = `${PRODUCT}
   const frenchEmpty = product.localize("fr").description;
   product.localize("fr").bare = "sans repli";
   const noFallback = [product.localize("fr").bare, product.localize("de").bare ?? "undefined"];
+  product.localize("en").summary = "short";
+  product.localize("fr").summary = "court";
   const restricted = product.localize("en").localize("fr", ["name"]);
-  const restrictedReads = [restricted.name, restricted.description];
+  const restrictedReads = [restricted.name, restricted.summary];
   return {
     spanish: spanishNow,
     germanFallsBack: germanNow,
@@ -103,7 +106,7 @@ const AUTO = `
 `;
 
 export const LOCALIZATION_JOURNEYS = {
-  localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"Loud\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
+  localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"short\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
   "localize-wildcard": scenario({ title: "the wildcard key reads and writes every translation at once", body: WILDCARD, printed: "{\"all\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\"},\"replaced\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\",\"de\":\"Premium-Kopfhoerer\"},\"german\":\"Premium-Kopfhoerer\",\"stored\":[\"Bonjour\",\"Hello\",{\"en\":\"Hello\",\"fr\":\"Bonjour\"}]}" }),
   "localized-storage": scenario({
     title: "a localized field is stored as one value per locale",
