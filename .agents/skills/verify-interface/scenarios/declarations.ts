@@ -1,3 +1,7 @@
+import { existsSync, mkdirSync, symlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
+
+import { equal } from "@antelopejs/tooling-configs/verify";
 import type { Journey } from "@antelopejs/tooling-configs/verify";
 
 /** The probe header: `Assert<Identical<A, B>>` fails to compile unless A and B are the same type. */
@@ -38,6 +42,28 @@ type _InsertOptions = Assert<Identical<Parameters<Instance["insert"]>[1], Api.Va
 type _ValidateParams = Assert<Identical<Parameters<typeof Model.validate>, [obj: unknown, options?: Api.ValidateInputOptions]>>;
 type _ValidateOptions = Assert<Identical<Api.ValidateInputOptions, { partial?: boolean }>>;
 type _GetModelInstance = Assert<Identical<Parameters<typeof Api.GetModel>[1], Parameters<typeof User.table>[0] extends infer T ? Extract<T, string | symbol | undefined> : never>>;
+declare const u: User;
+const plain = Api.toPlainData(u);
+type _ToPlain = Assert<Identical<typeof plain, Api.PlainRow<User>>>;
+const modified = Api.getModifiedFields(u, Api.HashModifier);
+type _Modified = Assert<Identical<typeof modified, (keyof User)[]>>;
+type _Tables = Assert<Identical<InstanceType<NonNullable<ReturnType<typeof Api.getTablesForSchema>>[string]>, Api.Table>>;
+type _TablesMaybe = Assert<Identical<undefined extends ReturnType<typeof Api.getTablesForSchema> ? true : false, true>>;
+const meta = Api.getMetadata(User, Api.DatumStaticMetadata);
+type _Meta = Assert<Identical<typeof meta, Api.DatumStaticMetadata>>;
+const built = Api.fromPlainData({ name: "x" }, User);
+type _FromPlain = Assert<Identical<typeof built, User>>;
+const read = Api.fromDatabase({ name: "x" }, User);
+type _FromDb = Assert<Identical<typeof read, User>>;
+const stored = Api.toDatabase(u);
+type _ToDb = Assert<Identical<typeof stored extends User ? true : false, true>>;
+class Options extends Api.Table.with(Api.EncryptionModifier, Api.HashModifier, Api.LocalizationModifier) {
+  @Api.Index({ group: "g", crossInstance: true, unique: true }) @Api.Field("string") declare a: string;
+  @Api.Relation({ to: () => User, toField: "name", many: true }) @Api.Field("string") declare b: string;
+  @Api.Encrypted({ secretKey: "k", algorithm: "aes-256-gcm", ivSize: 16 }) @Api.Field("string") declare c: string;
+  @Api.Hashed({ algorithm: "sha256" }) @Api.Field("string") declare d: string;
+  @Api.Localized({ fallbackLocale: "en" }) @Api.Field("string") declare e: string;
+}
 type _Table = Assert<Identical<Parameters<typeof User.table>[0], Api.TableTarget | undefined>>;
 `;
 
@@ -99,6 +125,16 @@ const REJECTED = [
   "Api.Fixture(5);",
   "void Api.BasicDataModel(5);",
   "void Api.GetModel(5);",
+  'Api.Index({ crossInstance: 1 });',
+  'Api.RegisterTable(5, "schema");',
+  'Api.RegisterTable("table", 5);',
+  "Api.Encrypted({ secretKey: 5 });",
+  'Api.Encrypted({ secretKey: "k", algorithm: 5 });',
+  "Api.Relation({ to: User });",
+  "Api.Localized({ fallbackLocale: true });",
+  "Api.Hashed({ algorithm: true });",
+  "Api.Model(Model, 5);",
+  'void Api.getMetadata(User, "key");',
 ];
 
 const REJECT_PRELUDE = `
@@ -179,8 +215,66 @@ function declared(title: string, probe: string): Journey {
   };
 }
 
+const PACKED_CHECK = `
+const fs = require("node:fs");
+const path = require("node:path");
+const pack = process.argv[2];
+const consumer = process.argv[3];
+const skill = fs.readFileSync(path.join(pack, "skills", "database-decorators-interface", "SKILL.md"), "utf8");
+const name = "@antelopejs/interface-database-decorators";
+const result = { files: ["docs/1.introduction.md", "docs/5.parameter-decoration.md", "skills/database-decorators-interface/SKILL.md", "dist/index.js"].filter((file) => !fs.existsSync(path.join(pack, file))), imports: {} };
+const wanted = new Map();
+for (const match of skill.matchAll(/import \\{([^}]*)\\} from "(@antelopejs\\/interface-database-decorators[^"]*)"/g)) {
+  const names = match[1].split(",").map((entry) => entry.trim()).filter(Boolean);
+  wanted.set(match[2], [...(wanted.get(match[2]) ?? []), ...names]);
+}
+const requireFrom = require("node:module").createRequire(path.join(consumer, "index.js"));
+for (const [specifier, names] of wanted) {
+  try {
+    const loaded = requireFrom(specifier);
+    result.imports[specifier] = names.filter((entry) => loaded[entry] === undefined);
+  } catch (error) {
+    result.imports[specifier] = "ERR " + error.code;
+  }
+}
+console.log("RESULT " + JSON.stringify({ subpaths: [...wanted.keys()].sort(), files: result.files, imports: result.imports }));
+`;
+
+/** The folder `new` packed and extracted: the nearest ancestor of the journey folder that holds `pack/package`. */
+function packedPackage(work: string): string {
+  let folder = work;
+  while (!existsSync(join(folder, "pack", "package", "package.json"))) {
+    const parent = dirname(folder);
+    if (parent === folder) throw new Error(`no packed package above ${work}`);
+    folder = parent;
+  }
+  return join(folder, "pack", "package");
+}
+
+const packedSubpaths: Journey = {
+  title: "the packed package ships its docs and skill, and every subpath its skill file imports from exports the names the skill shows",
+  entryPoint: "a consumer resolving the packed tarball's exports, as npm would publish them",
+  async run(context) {
+    const pack = packedPackage(context.work);
+    const consumer = join(context.work, "consumer");
+    const scope = join(consumer, "node_modules", "@antelopejs");
+    mkdirSync(scope, { recursive: true });
+    symlinkSync(pack, join(scope, "interface-database-decorators"), "dir");
+    if (!existsSync(join(pack, "node_modules"))) symlinkSync(join(context.repo, "node_modules"), join(pack, "node_modules"), "dir");
+    const script = join(context.work, "packed-check.cjs");
+    context.edit("write the packed check", script, PACKED_CHECK);
+    const ran = await context.command("load every subpath of the skill's imports", "node", [script, pack, consumer]);
+    const line = ran.stdout.split("\n").find((entry) => entry.startsWith("RESULT "));
+    context.expect(ran.folder, [
+      { name: "the check ended cleanly", pass: ran.exitCode === 0, detail: ran.stderr.slice(-300) },
+      equal("the packed package carries what the skill imports", line?.slice("RESULT ".length) ?? "", "{\"subpaths\":[\"@antelopejs/interface-database-decorators/common\",\"@antelopejs/interface-database-decorators/database\",\"@antelopejs/interface-database-decorators/model\",\"@antelopejs/interface-database-decorators/modifiers/autodate\",\"@antelopejs/interface-database-decorators/modifiers/common\",\"@antelopejs/interface-database-decorators/modifiers/encryption\",\"@antelopejs/interface-database-decorators/modifiers/hash\",\"@antelopejs/interface-database-decorators/modifiers/localization\",\"@antelopejs/interface-database-decorators/relation\",\"@antelopejs/interface-database-decorators/schema\",\"@antelopejs/interface-database-decorators/table\"],\"files\":[],\"imports\":{\"@antelopejs/interface-database-decorators/table\":[],\"@antelopejs/interface-database-decorators/schema\":[],\"@antelopejs/interface-database-decorators/database\":[],\"@antelopejs/interface-database-decorators/model\":[],\"@antelopejs/interface-database-decorators/relation\":[],\"@antelopejs/interface-database-decorators/common\":[],\"@antelopejs/interface-database-decorators/modifiers/autodate\":[],\"@antelopejs/interface-database-decorators/modifiers/encryption\":[],\"@antelopejs/interface-database-decorators/modifiers/hash\":[],\"@antelopejs/interface-database-decorators/modifiers/localization\":[],\"@antelopejs/interface-database-decorators/modifiers/common\":[]}}"),
+    ]);
+  },
+};
+
 export const DECLARATION_JOURNEYS = {
   "model-signatures": declared("the model methods and RegisterSchema declare the return types the docs table lists", MODEL_SIGNATURES),
+  "packed-subpaths": packedSubpaths,
   "rejected-calls": rejected("calls with a wrong parameter type or a missing key are refused by the declarations", REJECTED),
   "modifier-signatures": declared("the hash and localization mixins declare the return types the docs describe", MODIFIER_SIGNATURES),
 } satisfies { [id: string]: Journey };

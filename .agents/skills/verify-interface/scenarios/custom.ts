@@ -24,6 +24,8 @@ const ONE_WAY = `${PRELUDE}
   return {
     tested: [d.testValue(loaded, "digest", "value"), d.testValue(loaded, "digest", "other"), d.testValue(loaded, "strong", "value")],
     stored: [raw._internal.data.digest === crypto.createHash("sha256").update(JSON.stringify("value")).digest("hex"), raw._internal.data.strong === crypto.createHash("sha512").update(JSON.stringify("value")).digest("hex")],
+    afterOneWay: caught(() => { class T extends d.Table.with(d.HashModifier, d.EncryptionModifier) {} decorate(T, { pin: [d.Hashed(), d.Encrypted({ secretKey: "12345678901234567890123456789012" })] }); }),
+    beforeOneWay: caught(() => { class T extends d.Table.with(d.HashModifier, d.EncryptionModifier) {} decorate(T, { pin: [d.Encrypted({ secretKey: "12345678901234567890123456789012" }), d.Hashed()] }); }),
     secondOneWay: caught(() => { class Twice extends d.Table {} decorate(Twice, { f: [PrefixHashed(), PrefixHashed()] }); }),
   };
 `;
@@ -223,7 +225,7 @@ const HELPERS = `
 `;
 
 export const CUSTOM_JOURNEYS = {
-  "one-way-modifier": scenario({ title: "a custom OneWayModifier transforms a value when it is written", body: ONE_WAY, printed: "{\"tested\":[true,false,true],\"stored\":[true,true],\"secondOneWay\":\"Attempted adding Modifier PrefixHashModifier on Twice.f but it already has a One-Way Modifier\"}" }),
+  "one-way-modifier": scenario({ title: "a custom OneWayModifier transforms a value when it is written", body: ONE_WAY, printed: "{\"tested\":[true,false,true],\"stored\":[true,true],\"afterOneWay\":\"Adding Modifier EncryptionModifier on T.pin after a One-Way Modifier, please review your ordering.\",\"beforeOneWay\":null,\"secondOneWay\":\"Attempted adding Modifier PrefixHashModifier on Twice.f but it already has a One-Way Modifier\"}" }),
   "two-way-modifier": scenario({
     title: "a custom TwoWayModifier stores a transformed value and unlocks it on read",
     body: TWO_WAY,
