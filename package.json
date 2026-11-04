@@ -145,7 +145,7 @@
     "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz",
     "@antelopejs/interface-api": "^0.0.15",
     "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz",
-    "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz",
+    "@antelopejs/interface-database": "^0.3.0",
     "@antelopejs/tooling-configs": "^0.2.17",
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10.0.10",
@@ -173,7 +173,6 @@
   "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
-      "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz",
       "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz",
       "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz"
     }
