@@ -103,12 +103,25 @@ const VALIDATION = `
   const missingRequired = await errorOf(people.insert({ name: "Alice" }, { validate: true }));
   const missingInArray = await errorOf(people.insert([{ name: "Ok", age: 1 }, { name: "No age" }], { validate: true }));
   const missingStored = (await people.getAll()).map((row) => row.name).sort();
+  const trim = { _tag: "codec", name: "trim", is: (u) => typeof u === "string", encode: (a) => a, decode: (u) => (typeof u === "string" ? { _tag: "Right", right: u.trim() } : { _tag: "Left", left: [{ message: "not text" }] }) };
+  class Label extends d.Table {}
+  decorate(Label, { label: [d.Field(trim)] });
+  d.RegisterTable("labels", "val")(Label);
+  await d.RegisterSchema("val");
+  const labels = d.GetModel(d.BasicDataModel(Label));
+  const [padded] = await labels.insert({ label: "  padded  " }, { validate: true });
+  const [batchA, batchB] = await labels.insert([{ label: " a " }, { label: " b " }], { validate: true });
+  const afterInsert = (await rawTable("val", "labels").get(padded)).label;
+  await labels.update(padded, { label: "  again  " }, { validate: true });
+  const [unvalidated] = await labels.insert({ label: 42 }, { validate: false });
+  await labels.update(unvalidated, { label: 43 }, { validate: false });
+  const storedLabels = await Promise.all([padded, batchA, batchB, unvalidated].map(async (labelId) => (await rawTable("val", "labels").get(labelId)).label));
   const hole = { _tag: "codec", name: "hole", is: () => false, encode: (a) => a, decode: () => ({ _tag: "Left", left: [{}, { message: "after a hole" }, { message: "last" }] }) };
   const silent = { _tag: "codec", name: "silent", is: () => false, encode: (a) => a, decode: () => ({ _tag: "Left", left: [{}, { message: "" }] }) };
   class Odd extends d.Table {}
   decorate(Odd, { a: [d.Field(hole)], b: [d.Field(silent)] });
   const oddMessages = d.BasicDataModel(Odd, "odd").validate({});
-  return { valid, invalid, notAnObject, partialOk, partialEmpty, partialBad, tokenSkipped, optIn: optIn.length, refused, batchRefused, patched, patchRefused, objectPatchRefused, unvalidatedPatch, oddMessages, missingRequired, missingInArray, missingStored, presentUndefined, absentAge };
+  return { valid, invalid, notAnObject, partialOk, partialEmpty, partialBad, tokenSkipped, optIn: optIn.length, refused, batchRefused, patched, patchRefused, objectPatchRefused, unvalidatedPatch, oddMessages, missingRequired, missingInArray, missingStored, afterInsert, storedLabels, presentUndefined, absentAge };
 `;
 
 const GET_MODEL = `
@@ -291,7 +304,7 @@ export const MODEL_JOURNEYS = {
   validation: scenario({
     title: "validate checks the io-ts codecs, and insert and update refuse invalid input only when asked",
     body: VALIDATION,
-    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1,\"oddMessages\":{\"ok\":false,\"errors\":[{\"field\":\"a\",\"message\":\"after a hole\"},{\"field\":\"b\",\"message\":\"invalid b\"}]},\"missingRequired\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingInArray\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingStored\":[42,\"Bob\"],\"presentUndefined\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"absentAge\":{\"ok\":true}}",
+    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1,\"oddMessages\":{\"ok\":false,\"errors\":[{\"field\":\"a\",\"message\":\"after a hole\"},{\"field\":\"b\",\"message\":\"invalid b\"}]},\"missingRequired\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingInArray\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingStored\":[42,\"Bob\"],\"afterInsert\":\"  padded  \",\"storedLabels\":[\"  again  \",\" a \",\" b \",43],\"presentUndefined\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"absentAge\":{\"ok\":true}}",
     stored: [{ name: "the people", expression: "$DB.getCollection('val__people').find().sort({ name: 1 }).toArray().map((r) => [r.name, r.age])", expected: "[[42,\"anything\"],[\"Bob\",\"old\"]]" }],
   }),
   "get-model": scenario({

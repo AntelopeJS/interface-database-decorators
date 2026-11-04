@@ -114,9 +114,12 @@ const AUTO = `
   await sleep(60);
   await model.update(id, { title: "Two", creationDate: new Date(0) });
   const updated = await rawTable("auto", "articles").get(id);
+  const batch = await model.insert([{ title: "B1", creationDate: new Date(0) }, { title: "B2" }, { title: "B3", updateDate: new Date(0) }]);
+  const batchRows = await Promise.all(batch.map((batchId) => rawTable("auto", "articles").get(batchId)));
   const after = Date.now();
   const stamp = (value) => new Date(value).getTime();
   return {
+    batchStamped: batchRows.map((row) => [row.title, stamp(row.creationDate) >= before, stamp(row.updateDate) >= before, stamp(row.born) >= before, stamp(row.touched) >= before]),
     insertSetsBoth: [stamp(inserted.creationDate) >= before, stamp(inserted.updateDate) >= before, stamp(inserted.creationDate) <= after],
     creationKeptOnUpdate: stamp(updated.creationDate) === stamp(inserted.creationDate),
     updateRefreshed: stamp(updated.updateDate) >= stamp(inserted.updateDate) + 50,
@@ -192,7 +195,7 @@ export const AUTODATE_JOURNEYS = {
   autodate: scenario({
     title: "CreationTime is set on insert and kept on update, UpdateTime is set on insert and refreshed on update",
     body: AUTO,
-    printed: "{\"insertSetsBoth\":[true,true,true],\"creationKeptOnUpdate\":true,\"updateRefreshed\":true,\"secondFieldsToo\":[true,true,true,true],\"noMixinNeeded\":true}",
+    printed: "{\"batchStamped\":[[\"B1\",true,true,true,true],[\"B2\",true,true,true,true],[\"B3\",true,true,true,true]],\"insertSetsBoth\":[true,true,true],\"creationKeptOnUpdate\":true,\"updateRefreshed\":true,\"secondFieldsToo\":[true,true,true,true],\"noMixinNeeded\":true}",
     stored: [{ name: "the article dates", expression: "$DB.getCollection('auto__articles').find().toArray().map((r) => [r.title, r.creationDate instanceof Date, r.updateDate > r.creationDate])", expected: "[[\"Two\",true,true]]" }],
   }),
 } satisfies { [id: string]: Journey };

@@ -13,6 +13,9 @@ journeys:
   - fixture-race
   - table-access
   - fixture-not-empty
+  - fixture-once
+  - fixture-mixed-tables
+  - quick-start
   - fixture-ids-mixed
   - table-foreign-instance
 ---
@@ -26,6 +29,9 @@ journeys:
 - `register-schema`: provisioning, binding and the unknown-schema error.
 - `fixtures`: fixtures fill an empty table once, with generated ids and the insert conversion.
 - `fixture-race`: two starts write each row once; a subclass gets its parent's fixture.
+- `fixture-once`: the generator runs once over several `RegisterSchema` calls.
+- `fixture-mixed-tables`: only the empty table of a schema gets its fixture.
+- `quick-start`: the docs/1 block, compiled and run as written.
 - `fixture-not-empty`: fixtures only fill an empty table.
 - `fixture-ids-mixed`: ids kept and positions for the rest.
 - `table-foreign-instance`: a held instance of another schema is used as is.

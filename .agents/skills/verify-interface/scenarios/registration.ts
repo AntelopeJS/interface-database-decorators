@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import type { Journey } from "@antelopejs/tooling-configs/verify";
 
 import { scenario } from "../runner.ts";
@@ -152,6 +155,38 @@ const FOREIGN = `
   return { homeCount: await Item.table().count(), awayCount: await Item.table(away).count() };
 `;
 
+const FIXTURE_ONCE = `
+  let calls = 0;
+  class Counted extends d.Table {}
+  decorate(Counted, { name: [d.Field("string")] });
+  d.Fixture(() => { calls += 1; return [{ name: "once" }]; })(Counted);
+  d.RegisterTable("counted", "once")(Counted);
+  await d.RegisterSchema("once");
+  const afterFirst = [calls, (await rawTable("once", "counted")).length];
+  await d.RegisterSchema("once");
+  await d.RegisterSchema("once");
+  return { afterFirst, afterThree: [calls, (await rawTable("once", "counted")).length] };
+`;
+
+const FIXTURE_MIXED_TABLES = `
+  class Filled extends d.Table {}
+  decorate(Filled, { name: [d.Field("string")] });
+  d.RegisterTable("filled", "twotables")(Filled);
+  await d.RegisterSchema("twotables");
+  await d.GetModel(d.BasicDataModel(Filled)).insert({ _id: "mine", name: "mine" });
+  class Fixtured extends d.Table {}
+  decorate(Fixtured, { name: [d.Field("string")] });
+  d.Fixture(() => [{ name: "seed" }])(Fixtured);
+  d.RegisterTable("empties", "twotables")(Fixtured);
+  class FilledFixtured extends d.Table {}
+  decorate(FilledFixtured, { name: [d.Field("string")] });
+  d.Fixture(() => [{ _id: "fixture-for-filled", name: "must not appear" }])(FilledFixtured);
+  d.RegisterTable("filled", "twotables")(FilledFixtured);
+  await d.RegisterSchema("twotables");
+  const ids = async (table) => (await rawTable("twotables", table)).map((row) => row._id).sort();
+  return { filled: await ids("filled"), empties: await ids("empties") };
+`;
+
 const FIXTURE_NOT_EMPTY = `
   class Plain extends d.Table {}
   decorate(Plain, { name: [d.Field("string")] });
@@ -191,6 +226,40 @@ export const REGISTRATION_JOURNEYS = {
     body: FIXTURE_RACE,
     printed: "{\"rows\":[\"seeds:fixture:0\",\"seeds:fixture:1\"],\"kids\":[\"kids:fixture:0\",\"kids:fixture:1\"],\"generatorReceived\":\"SpyChild\"}",
     stored: [{ name: "the seed rows", expression: "$DB.getCollection('race__seeds').find().sort({ _id: 1 }).toArray().map((r) => [r._id, r.name])", expected: "[[\"seeds:fixture:0\",\"a\"],[\"seeds:fixture:1\",\"b\"]]" }],
+  }),
+  "fixture-once": scenario({ title: "a fixture generator runs once, on the first RegisterSchema that finds its table empty", body: FIXTURE_ONCE, printed: "{\"afterFirst\":[1,1],\"afterThree\":[1,1]}" }),
+  "fixture-mixed-tables": scenario({ title: "in a schema with a filled table and an empty one, only the empty table gets its fixture", body: FIXTURE_MIXED_TABLES, printed: "{\"filled\":[\"mine\"],\"empties\":[\"empties:fixture:0\"]}" }),
+  "quick-start": scenario({
+    title: "the docs/1 quick start, compiled as written, saves and reads back a note",
+    body: `const quick = require(process.env.VERIFY_QUICKSTART);\n  return { title: await quick.tryNote() };`,
+    printed: "{\"title\":\"Learn models\"}",
+    async prepare(context, folder) {
+      const page = readFileSync(join(context.repo, "docs", "1.introduction.md"), "utf8");
+      const block: string | undefined = /```ts docs-check\n([\s\S]*?)```/.exec(page)?.[1];
+      if (block === undefined) throw new Error("docs/1 has no docs-check block");
+      const source = join(folder, "quick-start.ts");
+      context.edit("write the quick start as the docs show it", source, block.replace('"@antelopejs/interface-database-decorators"', JSON.stringify(join(context.repo, "dist", "index"))));
+      const compiled = await context.command("compile the quick start", "node", [
+        join(context.repo, "node_modules", "typescript", "bin", "tsc"),
+        "--strict",
+        "--skipLibCheck",
+        "--experimentalDecorators",
+        "--emitDecoratorMetadata",
+        "--target",
+        "es2022",
+        "--module",
+        "commonjs",
+        "--moduleResolution",
+        "node",
+        "--typeRoots",
+        join(context.repo, "node_modules", "@types"),
+        "--types",
+        "node",
+        source,
+      ]);
+      context.expect(compiled.folder, [{ name: "the docs/1 block compiles", pass: compiled.exitCode === 0, detail: compiled.stdout.slice(0, 400) }], { critical: true });
+      return { VERIFY_QUICKSTART: join(folder, "quick-start.js") };
+    },
   }),
   "fixture-not-empty": scenario({ title: "a table that already holds a row gets no fixture rows, and an emptied table gets them", body: FIXTURE_NOT_EMPTY, printed: "{\"whileNotEmpty\":[\"unrelated\"],\"afterEmptied\":[\"fixture-a\",\"fixture-b\"]}" }),
   "fixture-ids-mixed": scenario({

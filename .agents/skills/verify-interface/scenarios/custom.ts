@@ -162,6 +162,9 @@ const EVENTS = `${PRELUDE}
   const mark = () => log.splice(0);
   const [id] = await model.insert({ note: "n" });
   const onInsert = phase("insert", mark());
+  const batchIds = await model.insert([{ note: "x" }, { note: "y" }]);
+  const onBatch = phase("batch", mark());
+  const batchStored = (await Promise.all(batchIds.map((batchId) => rawTable("events", "docs").get(batchId)))).map((row) => [row.note, row.handled]);
   await model.update(id, { note: "m" });
   const onUpdate = phase("update", mark());
   await model.get(id);
@@ -174,7 +177,7 @@ const EVENTS = `${PRELUDE}
   const onPlain = phase("plain", mark());
   const storedByHandler = (await rawTable("events", "docs").get(id)).handled ?? "undefined";
   const plainAccessor = Object.getOwnPropertyDescriptor(Doc.prototype, "note");
-  return { onInsert, onUpdate, onRead, onReadAll, onPlain, storedByHandler, eventsOnlyKeepPlainValue: plainAccessor === undefined };
+  return { onInsert, onBatch, batchStored, onUpdate, onRead, onReadAll, onPlain, storedByHandler, eventsOnlyKeepPlainValue: plainAccessor === undefined };
 `;
 
 const HELPERS = `
@@ -237,5 +240,5 @@ export const CUSTOM_JOURNEYS = {
   "metadata-class": scenario({ title: "a metadata class without inherit is shared with the subclass, one with inherit is copied, and upgrade runs on stored metadata", body: METADATA, printed: "{\"identity\":[true,true,true],\"shared\":[true,[\"x\"]],\"copied\":[false,[\"x\",\"y\"],[\"x\"]],\"upgrade\":[true,2,[\"legacy\"],true]}" }),
   "legacy-metadata": scenario({ title: "metadata stored without uniqueIndexes is upgraded and unique indexes still register", body: LEGACY_METADATA, printed: "{\"upgraded\":[true,true,true,\"olds\"],\"definition\":{\"code\":{\"fields\":null,\"unique\":true}},\"uniqueEnforced\":\"DuplicateKeyError\"}" }),
   "container-modifier": scenario({ title: "a ContainerModifier keeps values by key and treats the wildcard key as the whole record", body: CONTAINER, printed: "{\"both\":{\"a\":1,\"b\":2},\"afterOverwrite\":{\"a\":3,\"b\":2},\"replaced\":{\"z\":26},\"byKey\":[26,\"undefined\",\"undefined\"]}" }),
-  "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc/1:note\",\"insert/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onUpdate\":[\"fromPlainData/note/true/Doc/1:note\",\"update/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onRead\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onReadAll\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onPlain\":[\"toPlainData/note/true/Doc/1:_id+handled+note\"],\"storedByHandler\":\"by-handler\",\"eventsOnlyKeepPlainValue\":true}" }),
+  "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc/1:note\",\"insert/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onBatch\":[\"fromPlainData/note/true/Doc/1:note\",\"insert/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\",\"fromPlainData/note/true/Doc/1:note\",\"insert/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"batchStored\":[[\"x\",\"by-handler\"],[\"y\",\"by-handler\"]],\"onUpdate\":[\"fromPlainData/note/true/Doc/1:note\",\"update/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onRead\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onReadAll\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\",\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\",\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onPlain\":[\"toPlainData/note/true/Doc/1:_id+handled+note\"],\"storedByHandler\":\"by-handler\",\"eventsOnlyKeepPlainValue\":true}" }),
 } satisfies { [id: string]: Journey };

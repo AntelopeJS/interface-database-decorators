@@ -26,6 +26,8 @@ export interface Scenario {
   stored?: Stored[];
   /** Also loads `@antelopejs/api` on a free port, exposed to the body as `process.env.VERIFY_API_PORT`. */
   api?: boolean;
+  /** Runs before the test with the module folder; the environment it returns is added to the run. */
+  prepare?: (context: JourneyContext, folder: string) => Promise<{ [name: string]: string }>;
 }
 
 /** The helpers every scenario shares: the packed decorators, the database interface, and small helpers. */
@@ -99,7 +101,7 @@ function compact(text: string): string {
 }
 
 /** Runs a scenario in a real `ajs module test` with the packed decorators and a MongoDB module wired to the Docker service, then reads the database back through `mongosh`: the second view. */
-export function scenario({ title, body, printed, stored = [], api = false }: Scenario): Journey {
+export function scenario({ title, body, printed, stored = [], api = false, prepare }: Scenario): Journey {
   return {
     title,
     entryPoint: "a module test run by `ajs module test` with the decorators, @antelopejs/mongodb and a MongoDB container",
@@ -114,11 +116,13 @@ export function scenario({ title, body, printed, stored = [], api = false }: Sce
       context.edit("write the scenario", join(folder, "scenario.test.js"), `${PRELUDE}\nasync function main() {\n${body}\n}\n${TAIL}`);
       const cache = join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "antelopejs-verify", "ids-modules");
       const apiPort = api ? String(await freePort()) : "";
+      const extra = prepare === undefined ? {} : await prepare(context, folder);
       const env = {
         VERIFY_REPO: context.repo,
         VERIFY_MODULE_CACHE: cache,
         VERIFY_MONGO_URL: `mongodb://${mongo.host}:${mongo.port}`,
         VERIFY_API_PORT: apiPort,
+        ...extra,
       };
       const ran = await context.command("run the scenario", join(context.repo, "node_modules", ".bin", "ajs"), ["module", "test", folder, "-f", join(folder, "scenario.test.js")], {
         cwd: folder,
