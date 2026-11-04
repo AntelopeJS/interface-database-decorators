@@ -142,7 +142,7 @@
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
-    "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz",
+    "@antelopejs/core": "^1.20.0",
     "@antelopejs/interface-api": "^0.0.15",
     "@antelopejs/interface-core": "^0.4.0",
     "@antelopejs/interface-database": "^0.3.0",
@@ -171,11 +171,6 @@
     "@antelopejs/interface-database": ">=0.1.11 <1.0.0"
   },
   "packageManager": "pnpm@10.33.0",
-  "pnpm": {
-    "overrides": {
-      "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz"
-    }
-  },
   "antelopeJs": {
     "standalone": true,
     "test": "src/antelope.test.ts",
