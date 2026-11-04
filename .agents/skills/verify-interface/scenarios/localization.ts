@@ -196,6 +196,6 @@ export const AUTODATE_JOURNEYS = {
     title: "CreationTime is set on insert and kept on update, UpdateTime is set on insert and refreshed on update",
     body: AUTO,
     printed: "{\"batchStamped\":[[\"B1\",true,true,true,true],[\"B2\",true,true,true,true],[\"B3\",true,true,true,true]],\"insertSetsBoth\":[true,true,true],\"creationKeptOnUpdate\":true,\"updateRefreshed\":true,\"secondFieldsToo\":[true,true,true,true],\"noMixinNeeded\":true}",
-    stored: [{ name: "the article dates", expression: "$DB.getCollection('auto__articles').find().toArray().map((r) => [r.title, r.creationDate instanceof Date, r.updateDate > r.creationDate])", expected: "[[\"Two\",true,true]]" }],
+    stored: [{ name: "the article dates", expression: "$DB.getCollection('auto__articles').find().sort({ title: 1 }).toArray().map((r) => [r.title, r.creationDate instanceof Date, r.updateDate instanceof Date, r.born instanceof Date, r.touched instanceof Date])", expected: "[[\"B1\",true,true,true,true],[\"B2\",true,true,true,true],[\"B3\",true,true,true,true],[\"Two\",true,true,true,true]]" }],
   }),
 } satisfies { [id: string]: Journey };
