@@ -22,12 +22,15 @@ const INDEX_OPTIONS = `
   const duplicate = refused && { name: refused.name, message: refused.message };
   const recognised = [iface.IsDuplicateKeyError(refused), iface.IsDuplicateKeyError(new Error("other"))];
   const otherInstance = await other.insert({ email: "a@x", first: "Ada", last: "Lovelace", age: 36 });
-  const byGroup = (await model.getBy("name", "Ada", "Lovelace")).map((row) => row.email);
-  const bySingle = (await model.getBy("age", 36)).map((row) => row.first);
+  const groupRows = await model.getBy("name", "Ada", "Lovelace");
+  const singleRows = await model.getBy("age", 36);
+  const converted = [groupRows.every((row) => row instanceof User), singleRows.every((row) => row instanceof User), groupRows.length, singleRows.length];
+  const byGroup = groupRows.map((row) => row.email);
+  const bySingle = singleRows.map((row) => row.first);
   const between = (await rawTable("idx", "users").between("age", 30, 38)).map((row) => row.first);
   const symbolKey = caught(() => d.Index()({}, Symbol("k")));
   const built = await untilIndexed("idx__users", ["email__i", "name__i", "age__i", "name"]);
-  return { indexed: built !== null, definition: definition.users, duplicate, recognised, otherInstanceStored: otherInstance.length, byGroup, bySingle, between, symbolKey };
+  return { converted, indexed: built !== null, definition: definition.users, duplicate, recognised, otherInstanceStored: otherInstance.length, byGroup, bySingle, between, symbolKey };
 `;
 
 const GROUP_FLAGS = `
@@ -245,7 +248,7 @@ export const TABLE_JOURNEYS = {
   "index-options": scenario({
     title: "Field and Index reach the database as fields and plain, compound, cross-instance and unique indexes",
     body: INDEX_OPTIONS,
-    printed: "{\"indexed\":true,\"definition\":{\"fields\":{\"email\":\"string\",\"first\":\"string\",\"last\":\"string\",\"age\":\"number\"},\"indexes\":{\"email\":{\"fields\":null,\"unique\":true},\"name\":{\"fields\":[\"first\",\"last\"],\"crossInstance\":true},\"age\":{\"fields\":null}}},\"duplicate\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"email\\\" (email)\"},\"recognised\":[true,false],\"otherInstanceStored\":1,\"byGroup\":[\"a@x\"],\"bySingle\":[\"Ada\"],\"between\":[\"Ada\"],\"symbolKey\":\"@Index on Symbol(k): a database index names a field, never a symbol\"}",
+    printed: "{\"converted\":[true,true,1,1],\"indexed\":true,\"definition\":{\"fields\":{\"email\":\"string\",\"first\":\"string\",\"last\":\"string\",\"age\":\"number\"},\"indexes\":{\"email\":{\"fields\":null,\"unique\":true},\"name\":{\"fields\":[\"first\",\"last\"],\"crossInstance\":true},\"age\":{\"fields\":null}}},\"duplicate\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"email\\\" (email)\"},\"recognised\":[true,false],\"otherInstanceStored\":1,\"byGroup\":[\"a@x\"],\"bySingle\":[\"Ada\"],\"between\":[\"Ada\"],\"symbolKey\":\"@Index on Symbol(k): a database index names a field, never a symbol\"}",
     stored: [{ name: "the indexes of the users collection", expression: "$DB.getCollection('idx__users').getIndexes().map((i) => [i.name, i.unique === true]).sort()", expected: "[[\"_id_\",false],[\"age__i\",false],[\"email__i\",true],[\"name\",false],[\"name__i\",false]]" }],
   }),
   "group-flags": scenario({ title: "unique and crossInstance on any field of a group apply to the whole group", body: GROUP_FLAGS, printed: "{\"indexes\":{\"ab\":{\"fields\":[\"a\",\"b\"],\"unique\":true},\"cd\":{\"fields\":[\"c\",\"e\"],\"crossInstance\":true},\"ef\":{\"fields\":[\"f\",\"g\",\"h\"],\"crossInstance\":true},\"ij\":{\"fields\":[\"i\",\"j\"],\"unique\":true},\"plain\":{\"fields\":[\"k\",\"l\"]}},\"sameKey\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"ab\\\" (a, b)\"},\"otherSecond\":1}" }),

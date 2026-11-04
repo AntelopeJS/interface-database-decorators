@@ -15,6 +15,7 @@ const CRUD = `
   const admins = (await users.getBy("role", "admin")).map((row) => row.name);
   const byEmail = (await users.getBy("email", "bob@example.com")).map((row) => row.name);
   const everyone = (await users.getAll()).map((row) => row.name).sort();
+  const instances = [got instanceof User, (await users.getBy("role", "admin")).every((row) => row instanceof User), (await users.getBy("email", "bob@example.com")).every((row) => row instanceof User), (await users.getAll()).every((row) => row instanceof User), (await users.getAll()).length];
   const updatedById = await users.update(single[0], { name: "Alice Liddell" });
   const updatedByObject = await users.update({ _id: batch[0], name: "Robert" });
   const updatedMissing = await users.update("no-such-id", { name: "Nobody" });
@@ -25,6 +26,7 @@ const CRUD = `
     insertedIds: [single.length, batch.length, [...single, ...batch].every((id) => typeof id === "string")],
     got: [got instanceof User, got._id === single[0], got.name],
     missing: missing ?? "undefined",
+    instances,
     admins, byEmail, everyone,
     updatedById, updatedByObject, updatedMissing, noKey,
     deleted, deletedMissing,
@@ -36,7 +38,7 @@ const KEY = "12345678901234567890123456789012";
 
 const CONVERSION = `
   class Account extends d.Table.with(d.EncryptionModifier) {}
-  decorate(Account, { name: [d.Field("string")], secret: [d.Encrypted({ secretKey: "${KEY}" }), d.Field("string")] });
+  decorate(Account, { name: [d.Field("string"), d.Index()], secret: [d.Encrypted({ secretKey: "${KEY}" }), d.Field("string")] });
   d.RegisterTable("accounts", "cnv")(Account);
   await d.RegisterSchema("cnv");
   const Model = d.BasicDataModel(Account);
@@ -53,6 +55,7 @@ const CONVERSION = `
   const read = await model.get(id);
   const direct = await model.table.get(id);
   const viaGetAll = await model.getAll();
+  const viaGetBy = await model.getBy("name", "Dee");
   return {
     fromPlain: [fromPlain instanceof Account, fromPlain.secret, fromPlain.name],
     sameInstance,
@@ -65,6 +68,7 @@ const CONVERSION = `
     read: [read instanceof Account, read.secret],
     direct: [direct instanceof Account, direct.name, direct._internal !== undefined],
     getAllConverted: viaGetAll.every((row) => row instanceof Account),
+    getByConverted: [viaGetBy.length, viaGetBy[0] instanceof Account, viaGetBy[0].secret, viaGetAll[0].secret, read.secret],
   };
 `;
 
@@ -234,7 +238,7 @@ const PARTIAL = `
 const PLAIN_DATA = `
   class Account extends d.Table.with(d.EncryptionModifier, d.HashModifier, d.LocalizationModifier) {}
   decorate(Account, {
-    name: [d.Field("string")],
+    name: [d.Field("string"), d.Index()],
     secret: [d.Encrypted({ secretKey: "${KEY}" }), d.Field("any")],
     password: [d.Hashed(), d.Field("string")],
     title: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
@@ -250,10 +254,14 @@ const PLAIN_DATA = `
   account.localize("en").title = "Hello";
   const [id] = await model.insert(account);
   const loaded = await model.get(id);
+  const everyPath = [await model.get(id), (await model.getBy("name", "Ann"))[0], (await model.getAll())[0]];
+  const pathResults = [];
+  for (const row of everyPath) pathResults.push([row instanceof Account, row.name, row.secret, await row.testHashAsync("password", "pw"), row.localize("en").title]);
   const plain = d.toPlainData(loaded);
   const unlocked = d.toPlainData(loaded.localize("en"));
   const events = [];
   return {
+    pathResults,
     keys: Object.keys(plain).filter((key) => key !== "_instance").sort(),
     noInternal: !("_internal" in plain),
     name: plain.name,
@@ -271,13 +279,13 @@ export const MODEL_JOURNEYS = {
   crud: scenario({
     title: "a model inserts, reads, updates and deletes rows and answers ids and counts",
     body: CRUD,
-    printed: "{\"insertedIds\":[1,2,true],\"got\":[true,true,\"Alice\"],\"missing\":\"undefined\",\"admins\":[\"Alice\"],\"byEmail\":[\"Bob\"],\"everyone\":[\"Alice\",\"Bob\",\"Carol\"],\"updatedById\":1,\"updatedByObject\":1,\"updatedMissing\":0,\"noKey\":{\"name\":\"AssertionError\",\"message\":\"Missing primary key in object update.\"},\"deleted\":1,\"deletedMissing\":0,\"left\":[\"Alice Liddell\",\"Robert\"]}",
+    printed: "{\"insertedIds\":[1,2,true],\"got\":[true,true,\"Alice\"],\"missing\":\"undefined\",\"instances\":[true,true,true,true,3],\"admins\":[\"Alice\"],\"byEmail\":[\"Bob\"],\"everyone\":[\"Alice\",\"Bob\",\"Carol\"],\"updatedById\":1,\"updatedByObject\":1,\"updatedMissing\":0,\"noKey\":{\"name\":\"AssertionError\",\"message\":\"Missing primary key in object update.\"},\"deleted\":1,\"deletedMissing\":0,\"left\":[\"Alice Liddell\",\"Robert\"]}",
     stored: [{ name: "the rows left", expression: "$DB.getCollection('crud__users').find().sort({ email: 1 }).toArray().map((r) => [r.email, r.name, r.role])", expected: "[[\"alice@example.com\",\"Alice Liddell\",\"admin\"],[\"bob@example.com\",\"Robert\",\"user\"]]" }],
   }),
   conversion: scenario({
     title: "fromPlainData, fromDatabase and toDatabase convert without saving, and reads convert their rows",
     body: CONVERSION,
-    printed: "{\"fromPlain\":[true,\"s3cret\",\"Ann\"],\"sameInstance\":true,\"storedShape\":[false,[\"_id\",\"_internal\",\"name\"],3,true],\"plainDataShape\":[false,[\"_id\",\"name\"]],\"nullIsUndefined\":[true,true],\"emptyObjectIsAnInstance\":true,\"copyNotSame\":[true,true,false,\"Cy\"],\"afterConversions\":0,\"read\":[true,\"hidden\"],\"direct\":[false,\"Dee\",true],\"getAllConverted\":true}",
+    printed: "{\"fromPlain\":[true,\"s3cret\",\"Ann\"],\"sameInstance\":true,\"storedShape\":[false,[\"_id\",\"_internal\",\"name\"],3,true],\"plainDataShape\":[false,[\"_id\",\"name\"]],\"nullIsUndefined\":[true,true],\"emptyObjectIsAnInstance\":true,\"copyNotSame\":[true,true,false,\"Cy\"],\"afterConversions\":0,\"read\":[true,\"hidden\"],\"direct\":[false,\"Dee\",true],\"getAllConverted\":true,\"getByConverted\":[1,true,\"hidden\",\"hidden\",\"hidden\"]}",
     stored: [{ name: "the one saved account", expression: "$DB.getCollection('cnv__accounts').find().toArray().map((r) => [r.name, Object.keys(r._internal.data), r._internal.data.secret.length])", expected: "[[\"Dee\",[\"secret\"],3]]" }],
   }),
   validation: scenario({
@@ -292,7 +300,7 @@ export const MODEL_JOURNEYS = {
     printed: "{\"cache\":[true,true,true,true,true,true,true],\"defaultSees\":[\"default\"],\"tenantSees\":[\"tenant one\"],\"otherSees\":[\"tenant two\"],\"everywhereSees\":[\"default\",\"tenant one\",\"tenant two\"],\"customSchema\":[true,true],\"lost\":\"Schema not found for 'absent-schema'\",\"statics\":[\"gm\",true]}",
     stored: [{ name: "the rows by instance", expression: "$DB.getCollection('gm__items').find().sort({ name: 1 }).toArray().map((r) => [r.name, r._instance])", expected: "[[\"default\",null],[\"tenant one\",\"t1\"],[\"tenant two\",\"t2\"]]" }],
   }),
-  "plain-data": scenario({ title: "toPlainData gives unlocked values without _internal, and leaves a still-locked field undefined", body: PLAIN_DATA, printed: "{\"keys\":[\"_id\",\"name\",\"password\",\"secret\",\"title\"],\"noInternal\":true,\"name\":\"Ann\",\"secret\":{\"token\":\"t\"},\"passwordIsHash\":true,\"lockedTitle\":\"undefined\",\"unlockedTitle\":\"Hello\",\"json\":{\"token\":\"t\"},\"stillLocked\":[\"password\",\"secret\",\"title\"],\"notAnInstance\":true}" }),
+  "plain-data": scenario({ title: "toPlainData gives unlocked values without _internal, and leaves a still-locked field undefined", body: PLAIN_DATA, printed: "{\"pathResults\":[[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"],[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"],[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"]],\"keys\":[\"_id\",\"name\",\"password\",\"secret\",\"title\"],\"noInternal\":true,\"name\":\"Ann\",\"secret\":{\"token\":\"t\"},\"passwordIsHash\":true,\"lockedTitle\":\"undefined\",\"unlockedTitle\":\"Hello\",\"json\":{\"token\":\"t\"},\"stillLocked\":[\"password\",\"secret\",\"title\"],\"notAnInstance\":true}" }),
   "compound-get-by": scenario({ title: "getBy matches a compound index of three fields by its keys in field order", body: COMPOUND, printed: "{\"exact\":[\"one\"],\"other\":[\"two\"],\"none\":[],\"order\":[]}" }),
   "partial-update-keeps-modified-fields": scenario({
     title: "KNOWN FINDING AntelopeJS/interface-database-decorators#80, fails until fixed: update with one field keeps the row's other encrypted, hashed and localized fields",

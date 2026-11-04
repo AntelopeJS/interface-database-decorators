@@ -23,11 +23,15 @@ const FIXED = `${HTTP}
   const seen = [];
   class Fixed extends api.Controller("/fixed") {}
   route(Fixed, "list", "Get", "/", async (model) => { seen.push(model); return (await model.getAll()).map((row) => row.title); }, [d.Model(NoteModel, "main")]);
+  const seenDefault = [];
+  route(Fixed, "plain", "Get", "/plain", async (model) => { seenDefault.push(model); return (await model.getAll()).map((row) => row.title); }, [d.Model(NoteModel)]);
   await d.GetModel(NoteModel, "main").insert({ title: "in main" });
   await d.GetModel(NoteModel).insert({ title: "in default" });
+  const plain = await call("/fixed/plain");
+  await call("/fixed/plain");
   const first = await call("/fixed");
   const second = await call("/fixed");
-  return { first, second, sameModelEveryRequest: seen.length === 2 && seen[0] === seen[1], isTheCachedModel: seen[0] === d.GetModel(NoteModel, "main") };
+  return { plain, defaultIsGetModel: [seenDefault.length, seenDefault[0] === d.GetModel(NoteModel), seenDefault[0] === seenDefault[1], seenDefault[0] === d.GetModel(NoteModel, "main")], first, second, sameModelEveryRequest: seen.length === 2 && seen[0] === seen[1], isTheCachedModel: seen[0] === d.GetModel(NoteModel, "main") };
 `;
 
 const PER_REQUEST = `${HTTP}
@@ -82,7 +86,7 @@ export const DECORATION_JOURNEYS = {
   "fixed-instance": scenario({
     title: "@Model with an instance id injects the cached model of that instance into a controller method",
     body: FIXED,
-    printed: "{\"first\":{\"status\":200,\"body\":\"[\\\"in main\\\"]\"},\"second\":{\"status\":200,\"body\":\"[\\\"in main\\\"]\"},\"sameModelEveryRequest\":true,\"isTheCachedModel\":true}",
+    printed: "{\"plain\":{\"status\":200,\"body\":\"[\\\"in default\\\"]\"},\"defaultIsGetModel\":[2,true,true,false],\"first\":{\"status\":200,\"body\":\"[\\\"in main\\\"]\"},\"second\":{\"status\":200,\"body\":\"[\\\"in main\\\"]\"},\"sameModelEveryRequest\":true,\"isTheCachedModel\":true}",
     api: true,
     stored: [{ name: "the notes by instance", expression: "$DB.getCollection('http__notes').find().sort({ title: 1 }).toArray().map((r) => [r.title, r._instance])", expected: "[[\"in default\",null],[\"in main\",\"main\"]]" }],
   }),
