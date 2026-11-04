@@ -9,6 +9,9 @@ journeys:
   - one-way-modifier
   - two-way-modifier
   - container-modifier
+  - container-query
+  - metadata-class
+  - legacy-metadata
   - modifier-helpers
   - modifier-events
 ---
@@ -22,6 +25,9 @@ journeys:
 - `one-way-modifier`: transform on write; a second one-way modifier on a field is refused.
 - `two-way-modifier`: transform on write, unlock on read.
 - `modifier-helpers`: the exported helpers of the modifier machinery.
+- `container-query`: the key used in a query.
+- `metadata-class`: `inherit` and `upgrade` of a published `MetadataClass`.
+- `legacy-metadata`: metadata stored by an older copy of the package.
 - `container-modifier`: values by key and the wildcard.
 - `modifier-events`: event order for insert, update and reads; events-only modifiers add no accessor.
 

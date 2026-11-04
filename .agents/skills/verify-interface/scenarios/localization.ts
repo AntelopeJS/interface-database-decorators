@@ -110,9 +110,9 @@ const AUTO = `
 `;
 
 const QUERY = `${PRODUCT}
-  const seed = (id, name) => rawTable("loc", "products").insert({ _id: id, price: 1, _internal: { meta: {}, data: { name } } }).run();
-  await seed("only-en", { en: "Hello" });
-  await seed("has-de", { en: "Hi", de: "Hallo" });
+  const seed = (id, name, bare) => rawTable("loc", "products").insert({ _id: id, price: 1, _internal: { meta: {}, data: bare ? { name, bare } : { name } } }).run();
+  await seed("only-en", { en: "Hello" }, { en: "Hello" });
+  await seed("has-de", { en: "Hi", de: "Hallo" }, { en: "Hi", de: "Hallo" });
   const written = new Product();
   written._id = "empty-de";
   written.localize("en").name = "Hello";
@@ -121,13 +121,16 @@ const QUERY = `${PRODUCT}
   await seed("none", { fr: "Salut" });
   const table = rawTable("loc", "products");
   const askedFor = async (locale, text) => (await table.filter((row) => d.unlockrequest(Product, row, "name", [{ modifier: d.LocalizationModifier, args: [locale] }]).eq(text))).map((row) => row._id).sort();
-  const noFallback = async (text) => (await table.filter((row) => d.unlockrequest(Product, row, "bare", [{ modifier: d.LocalizationModifier, args: ["de"] }]).eq(text))).map((row) => row._id).sort();
+  const noFallback = async (locale, text) => (await table.filter((row) => d.unlockrequest(Product, row, "bare", [{ modifier: d.LocalizationModifier, args: [locale] }]).eq(text))).map((row) => row._id).sort();
   return {
     germanHello: await askedFor("de", "Hello"),
     germanHallo: await askedFor("de", "Hallo"),
     englishHello: await askedFor("en", "Hello"),
     frenchSalut: await askedFor("fr", "Salut"),
     frenchHello: await askedFor("fr", "Hello"),
+    noFallbackGerman: await noFallback("de", "Hello"),
+    noFallbackEnglish: await noFallback("en", "Hello"),
+    noFallbackOwnText: await noFallback("de", "Hallo"),
   };
 `;
 
@@ -152,7 +155,7 @@ const AUTO_OBJECT = `
 
 export const LOCALIZATION_JOURNEYS = {
   localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"short\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
-  "localized-query": scenario({ title: "a query through unlockrequest answers the requested locale and falls back to the fallback locale, an empty text included", body: QUERY, printed: "{\"germanHello\":[\"empty-de\",\"only-en\"],\"germanHallo\":[\"has-de\"],\"englishHello\":[\"empty-de\",\"only-en\"],\"frenchSalut\":[\"none\"],\"frenchHello\":[\"empty-de\",\"only-en\"]}" }),
+  "localized-query": scenario({ title: "a query through unlockrequest answers the requested locale and falls back to the fallback locale, an empty text included", body: QUERY, printed: "{\"germanHello\":[\"empty-de\",\"only-en\"],\"germanHallo\":[\"has-de\"],\"englishHello\":[\"empty-de\",\"only-en\"],\"frenchSalut\":[\"none\"],\"frenchHello\":[\"empty-de\",\"only-en\"],\"noFallbackGerman\":[],\"noFallbackEnglish\":[\"only-en\"],\"noFallbackOwnText\":[\"has-de\"]}" }),
   "localize-wildcard": scenario({ title: "the wildcard key reads and writes every translation at once", body: WILDCARD, printed: "{\"all\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\"},\"replaced\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\",\"de\":\"Premium-Kopfhoerer\"},\"german\":\"Premium-Kopfhoerer\",\"stored\":[\"Bonjour\",\"Hello\",{\"en\":\"Hello\",\"fr\":\"Bonjour\"}]}" }),
   "localized-storage": scenario({
     title: "a localized field is stored as one value per locale",

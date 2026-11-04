@@ -69,6 +69,70 @@ const CONTAINER = `${PRELUDE}
   return { both, afterOverwrite, replaced, byKey: [doc.pick("z").values, doc.pick("missing").values ?? "undefined", doc.pick("constructor").values ?? "undefined"] };
 `;
 
+const CONTAINER_QUERY = `${PRELUDE}
+  class PickModifier extends d.ContainerModifier {
+    [d.MixinSymbol] = class {};
+  }
+  const Picked = MakePropertyDecorator((target, propertyKey, options) => { d.attachModifier(target.constructor, PickModifier, propertyKey, options || {}); });
+  class Doc extends d.Table.with(PickModifier) {}
+  decorate(Doc, { values: [Picked(), d.Field("any")] });
+  d.RegisterTable("docs", "ctquery")(Doc);
+  await d.RegisterSchema("ctquery");
+  const seed = (id, values) => rawTable("ctquery", "docs").insert({ _id: id, _internal: { meta: {}, data: { values } } }).run();
+  await seed("one", { a: 1, b: 2 });
+  await seed("two", { a: 2, b: 1 });
+  await seed("only-b", { b: 1 });
+  const table = rawTable("ctquery", "docs");
+  const where = async (key, value) => (await table.filter((row) => d.unlockrequest(Doc, row, "values", [{ modifier: PickModifier, args: [key] }]).eq(value))).map((row) => row._id).sort();
+  return { a1: await where("a", 1), a2: await where("a", 2), b1: await where("b", 1), b2: await where("b", 2), c1: await where("c", 1) };
+`;
+
+const METADATA = `${PRELUDE}
+  const share = { key: Symbol("shared") };
+  class Shared { constructor() { this.list = []; } }
+  Shared.key = share.key;
+  class Copied { constructor() { this.list = []; } static inherit(parent) { const copy = new Copied(); copy.list = [...parent.list]; return copy; } }
+  Copied.key = Symbol("copied");
+  class A {}
+  class B extends A {}
+  d.getMetadata(A, Shared).list.push("x");
+  d.getMetadata(A, Copied).list.push("x");
+  const sharedB = d.getMetadata(B, Shared);
+  const copiedB = d.getMetadata(B, Copied);
+  copiedB.list.push("y");
+  const upgraded = { upgrade: (stored) => (stored.version ? stored : Object.assign(new Copied(), stored, { version: 2 })) };
+  class Aged { constructor() { this.list = []; } static upgrade(stored) { return Object.hasOwn(stored, "version") ? stored : Object.assign(new Aged(), stored, { version: 2 }); } }
+  Aged.key = Symbol("aged");
+  class Old {}
+  Reflect.defineMetadata(Aged.key, { list: ["legacy"] }, Old);
+  const first = d.getMetadata(Old, Aged);
+  const second = d.getMetadata(Old, Aged);
+  return {
+    shared: [sharedB === d.getMetadata(A, Shared), sharedB.list],
+    copied: [copiedB === d.getMetadata(A, Copied), copiedB.list, d.getMetadata(A, Copied).list],
+    upgrade: [first instanceof Aged, first.version, first.list, first === second],
+  };
+`;
+
+const LEGACY_METADATA = `
+  class Old {}
+  Reflect.defineMetadata(d.DatumStaticMetadata.key, { schemaName: "legacy", tableName: "olds", indexes: {}, crossInstanceIndexes: new Set(), fields: {}, primary: "_id" }, Old);
+  const upgraded = d.getMetadata(Old, d.DatumStaticMetadata);
+  const again = d.getMetadata(Old, d.DatumStaticMetadata);
+  d.Field("string")(Old.prototype, "code");
+  d.Index({ unique: true })(Old.prototype, "code");
+  d.RegisterTable("olds", "legacy")(Old);
+  await d.RegisterSchema("legacy");
+  const model = d.GetModel(d.BasicDataModel(Old));
+  await model.insert({ code: "A" });
+  const refused = await refusedDuplicate(model, (attempt) => ({ code: "A" }));
+  return {
+    upgraded: [upgraded instanceof d.DatumStaticMetadata, upgraded.uniqueIndexes instanceof Set, upgraded === again, upgraded.tableName],
+    definition: iface.Schema.get("legacy").definition.olds.indexes,
+    uniqueEnforced: refused && refused.name,
+  };
+`;
+
 const EVENTS = `${PRELUDE}
   const log = [];
   const shape = (args) => args.length + ":" + args.map((value) => (value !== null && typeof value === "object" ? Object.keys(value).filter((key) => key !== "_instance").sort().join("+") : String(value))).join(";");
@@ -130,6 +194,10 @@ const HELPERS = `
   d.unlock(row, d.LocalizationModifier, ["title"], "en");
   const restricted = [row.title ?? "undefined", row.summary ?? "undefined"];
   const tables = d.getTablesForSchema("helpers");
+  const bound = d.getMetadata(Profile, d.DatumStaticMetadata);
+  class Early extends Profile {}
+  const earlyBefore = d.getMetadata(Early, d.DatumStaticMetadata);
+  const copiedArrays = [earlyBefore.indexes !== bound.indexes, earlyBefore.fields !== bound.fields, earlyBefore.primary, earlyBefore.schema === undefined];
   const parentMeta = d.getMetadata(Profile, d.DatumStaticMetadata);
   class Child extends Profile {}
   const own = d.getMetadata(Child, d.DatumStaticMetadata, false);
@@ -142,6 +210,7 @@ const HELPERS = `
     afterUnlock,
     lockedKeys,
     restricted,
+    copiedArrays,
     tables: [Object.keys(tables).sort(), tables.profiles === Profile, d.getTablesForSchema("nothing-here") ?? "undefined"],
     metadata: [parentMeta.tableName, own.tableName ?? "undefined", inherited.tableName, own === inherited, inherited === parentMeta, d.getMetadata(Profile, d.DatumStaticMetadata) === parentMeta],
   };
@@ -155,7 +224,10 @@ export const CUSTOM_JOURNEYS = {
     printed: "{\"read\":[{\"a\":[1,2]},\"plain\"],\"storedBody\":\"b64-eyJhIjpbMSwyXX0=\",\"storedTagged\":\"x:InBsYWluIg==\",\"notAString\":\"undefined\"}",
     stored: [{ name: "the stored encodings", expression: "$DB.getCollection('twoway__docs').find({ title: 't' }).toArray().map((r) => [r._internal.data.body, r._internal.data.tagged])", expected: "[[\"b64-eyJhIjpbMSwyXX0=\",\"x:InBsYWluIg==\"]]" }],
   }),
-  "modifier-helpers": scenario({ title: "getModifiedFields, unlock, lock, floating values, getMetadata and getTablesForSchema do what their TSDoc says", body: HELPERS, printed: "{\"names\":{\"hashed\":[\"password\"],\"localized\":[\"title\",\"summary\"],\"none\":[]},\"floatingRead\":\"floating\",\"floatingStored\":[\"_internal\"],\"afterUnlock\":[\"floating\",\"floating\",\"undefined\"],\"lockedKeys\":[\"title\"],\"restricted\":[\"undefined\",\"r\u00e9sum\u00e9\"],\"tables\":[[\"others\",\"profiles\"],true,\"undefined\"],\"metadata\":[\"profiles\",\"undefined\",\"profiles\",false,false,true]}" }),
+  "modifier-helpers": scenario({ title: "getModifiedFields, unlock, lock, floating values, getMetadata and getTablesForSchema do what their TSDoc says", body: HELPERS, printed: "{\"names\":{\"hashed\":[\"password\"],\"localized\":[\"title\",\"summary\"],\"none\":[]},\"floatingRead\":\"floating\",\"floatingStored\":[\"_internal\"],\"afterUnlock\":[\"floating\",\"floating\",\"undefined\"],\"lockedKeys\":[\"title\"],\"restricted\":[\"undefined\",\"r\u00e9sum\u00e9\"],\"copiedArrays\":[true,true,\"_id\",true],\"tables\":[[\"others\",\"profiles\"],true,\"undefined\"],\"metadata\":[\"profiles\",\"undefined\",\"profiles\",false,false,true]}" }),
+  "container-query": scenario({ title: "ContainerModifier.unlockrequest uses its key, so a query reads one entry of the stored record", body: CONTAINER_QUERY, printed: "{\"a1\":[\"one\"],\"a2\":[\"two\"],\"b1\":[\"only-b\",\"two\"],\"b2\":[\"one\"],\"c1\":[]}" }),
+  "metadata-class": scenario({ title: "a metadata class without inherit is shared with the subclass, one with inherit is copied, and upgrade runs on stored metadata", body: METADATA, printed: "{\"shared\":[true,[\"x\"]],\"copied\":[false,[\"x\",\"y\"],[\"x\"]],\"upgrade\":[true,2,[\"legacy\"],true]}" }),
+  "legacy-metadata": scenario({ title: "metadata stored without uniqueIndexes is upgraded and unique indexes still register", body: LEGACY_METADATA, printed: "{\"upgraded\":[true,true,true,\"olds\"],\"definition\":{\"code\":{\"fields\":null,\"unique\":true}},\"uniqueEnforced\":\"DuplicateKeyError\"}" }),
   "container-modifier": scenario({ title: "a ContainerModifier keeps values by key and treats the wildcard key as the whole record", body: CONTAINER, printed: "{\"both\":{\"a\":1,\"b\":2},\"afterOverwrite\":{\"a\":3,\"b\":2},\"replaced\":{\"z\":26},\"byKey\":[26,\"undefined\",\"undefined\"]}" }),
   "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc/1:note\",\"insert/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onUpdate\":[\"fromPlainData/note/true/Doc/1:note\",\"update/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onRead\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onReadAll\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onPlain\":[\"toPlainData/note/true/Doc/1:_id+handled+note\"],\"storedByHandler\":\"by-handler\",\"eventsOnlyKeepPlainValue\":true}" }),
 } satisfies { [id: string]: Journey };

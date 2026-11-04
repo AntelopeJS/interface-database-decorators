@@ -7,7 +7,7 @@ const KEY = "12345678901234567890123456789012";
 /** Decrypts a stored `[ciphertext, iv, authTag]` triple with Node's crypto alone: the scenario's second view of the cipher. */
 const DECRYPT = `
   const decrypt = (triple, algorithm = "aes-256-gcm", key = "${KEY}") => {
-    const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(triple[1], "base64"));
+    const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(triple[1], "base64"), triple[2] ? { authTagLength: 16 } : undefined);
     if (triple[2]) decipher.setAuthTag(Buffer.from(triple[2], "base64"));
     return Buffer.concat([decipher.update(Buffer.from(triple[0], "base64")), decipher.final()]).toString("utf8");
   };
@@ -21,12 +21,13 @@ const AT_REST = `${DECRYPT}
     personal: [d.Encrypted({ secretKey: "${KEY}" }), d.Field("any")],
     legacy: [d.Encrypted({ secretKey: "${KEY}", algorithm: "aes-256-cbc" }), d.Field("string")],
     short: [d.Encrypted({ secretKey: "${KEY}", ivSize: 12 }), d.Field("string")],
+    aead: [d.Encrypted({ secretKey: "${KEY}", algorithm: "chacha20-poly1305", ivSize: 12 }), d.Field("string")],
   });
   d.RegisterTable("vaults", "enc")(Vault);
   await d.RegisterSchema("enc");
   const model = d.GetModel(d.BasicDataModel(Vault));
   const personal = { ssn: "078-05-1120", birthDate: "1990-01-01" };
-  const [id] = await model.insert({ owner: "Ann", card: "4242 4242 4242 4242", personal, legacy: "old cipher", short: "twelve" });
+  const [id] = await model.insert({ owner: "Ann", card: "4242 4242 4242 4242", personal, legacy: "old cipher", short: "twelve", aead: "hello" });
   const [again] = await model.insert({ owner: "Bea", card: "4242 4242 4242 4242" });
   const read = await model.get(id);
   const raw = await rawTable("enc", "vaults").get(id);
@@ -34,11 +35,14 @@ const AT_REST = `${DECRYPT}
   const data = raw._internal.data;
   const shape = (triple) => [Array.isArray(triple), triple.length, typeof triple[2]];
   return {
-    read: [read.card, read.personal, read.legacy, read.short],
+    read: [read.card, read.personal, read.legacy, read.short, read.aead],
     topLevelHoldsNoCiphertext: raw.card === undefined && raw.personal === undefined,
     gcmShape: shape(data.card),
     cbcShape: [data.legacy.length, data.legacy[2] ?? null],
     ivBytes: [Buffer.from(data.card[1], "base64").length, Buffer.from(data.short[1], "base64").length, Buffer.from(data.personal[1], "base64").length, Buffer.from(data.legacy[1], "base64").length],
+    aeadShape: [data.aead.length, typeof data.aead[2], Buffer.from(data.aead[2], "base64").length, Buffer.from(data.aead[1], "base64").length],
+    aeadDecrypt: decrypt(data.aead, "chacha20-poly1305"),
+    aeadTagChecked: (() => { const bad = [...data.aead]; bad[2] = Buffer.alloc(16).toString("base64"); try { decrypt(bad, "chacha20-poly1305"); return "decrypted"; } catch { return "refused"; } })(),
     plaintextAbsent: !JSON.stringify(raw).includes("4242") && !JSON.stringify(raw).includes("078-05-1120"),
     independentDecrypt: [decrypt(data.card), decrypt(data.personal), decrypt(data.legacy, "aes-256-cbc")],
     sameValueTwice: [data.card[1] !== rawAgain._internal.data.card[1], data.card[0] !== rawAgain._internal.data.card[0]],
@@ -91,12 +95,12 @@ export const ENCRYPTION_JOURNEYS = {
   "encryption-at-rest": scenario({
     title: "an encrypted field is stored as base64 ciphertext, iv and auth tag that only the key opens",
     body: AT_REST,
-    printed: "{\"read\":[\"4242 4242 4242 4242\",{\"ssn\":\"078-05-1120\",\"birthDate\":\"1990-01-01\"},\"old cipher\",\"twelve\"],\"topLevelHoldsNoCiphertext\":true,\"gcmShape\":[true,3,\"string\"],\"cbcShape\":[3,null],\"ivBytes\":[16,12,16,16],\"plaintextAbsent\":true,\"independentDecrypt\":[\"\\\"4242 4242 4242 4242\\\"\",\"{\\\"ssn\\\":\\\"078-05-1120\\\",\\\"birthDate\\\":\\\"1990-01-01\\\"}\",\"\\\"old cipher\\\"\"],\"sameValueTwice\":[true,true]}",
+    printed: "{\"read\":[\"4242 4242 4242 4242\",{\"ssn\":\"078-05-1120\",\"birthDate\":\"1990-01-01\"},\"old cipher\",\"twelve\",\"hello\"],\"topLevelHoldsNoCiphertext\":true,\"gcmShape\":[true,3,\"string\"],\"cbcShape\":[3,null],\"ivBytes\":[16,12,16,16],\"aeadShape\":[3,\"string\",16,12],\"aeadDecrypt\":\"\\\"hello\\\"\",\"aeadTagChecked\":\"refused\",\"plaintextAbsent\":true,\"independentDecrypt\":[\"\\\"4242 4242 4242 4242\\\"\",\"{\\\"ssn\\\":\\\"078-05-1120\\\",\\\"birthDate\\\":\\\"1990-01-01\\\"}\",\"\\\"old cipher\\\"\"],\"sameValueTwice\":[true,true]}",
     stored: [
       {
         name: "the stored triples",
         expression: "$DB.getCollection('enc__vaults').find({ owner: 'Ann' }).toArray().map((r) => [Object.keys(r._internal.data).sort(), r._internal.data.card.length, r._internal.data.legacy.length, r.card === undefined])",
-        expected: "[[[\"card\",\"legacy\",\"personal\",\"short\"],3,3,true]]",
+        expected: "[[[\"aead\",\"card\",\"legacy\",\"personal\",\"short\"],3,3,true]]",
       },
     ],
   }),
