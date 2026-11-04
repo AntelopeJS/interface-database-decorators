@@ -9,6 +9,8 @@
 
 Database tables and data models as TypeScript classes, on top of [`@antelopejs/interface-database`](https://github.com/AntelopeJS/interface-database): declare fields and indexes with decorators, then read and write rows through a typed model.
 
+Part of [AntelopeJS](https://github.com/AntelopeJS/antelopejs). Used by [AntelopeJS DMS](https://github.com/AntelopeJS/dms), the open-source back office for your PostgreSQL, MongoDB or RethinkDB database.
+
 ## What it offers
 
 - `Table`, `@RegisterTable`, `@Field`, `@Index` and `@Fixture` declare tables, indexes and seed rows; `RegisterSchema` provisions them.
