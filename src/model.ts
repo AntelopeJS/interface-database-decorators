@@ -14,10 +14,12 @@ import {
 import {
   fromDatabase,
   fromPlainData,
+  type StoredRow,
   toDatabase,
   triggerEvent,
 } from "./modifiers/common";
 import { isRecord } from "./modifiers/internal/kinds";
+import { boundSchema } from "./internal/bound-schema";
 import {
   type InternalRecord,
   isEmptyInternal,
@@ -27,17 +29,22 @@ import {
   DatumStaticMetadata,
   type DeepPartial,
   getMetadata,
+  type PlainData,
 } from "./common";
 
 export type DataModel<T = any> = {
-  readonly schemaName: string;
+  /**
+   * Schema the table class registers into with `@RegisterTable`; `undefined`
+   * for a table class that does not.
+   */
+  readonly schemaName: string | undefined;
   readonly tableClass?: Constructible;
   new (database: DatabaseDev.SchemaInstance<any>): {
     readonly database: DatabaseDev.SchemaInstance<any>;
     readonly table: DatabaseDev.Table<T>;
   };
   fromDatabase(obj: any): T | undefined;
-  fromPlainData(obj: any): T;
+  fromPlainData(obj: PlainData<T> | T): T;
 };
 
 export type FieldError = { field: string; message: string };
@@ -67,6 +74,15 @@ function isCodec(type: FieldType): type is CodecLike & FieldType {
     typeof type.decode === "function"
   );
 }
+
+/**
+ * One key {@link BasicDataModel}'s `getBy` matches against an index: a value,
+ * or a value proxy, as `Table.getAll` takes it.
+ */
+export type IndexKey = Exclude<
+  Parameters<DatabaseDev.Table<object>["getAll"]>[0],
+  unknown[]
+>;
 
 type InstanceIdProvider = (ctx: RequestContext) => InstanceId | undefined;
 
@@ -102,7 +118,7 @@ export function BasicDataModel<T extends object>(
     // SAFETY: Model.fromDatabase returns undefined only for a falsy row, and the rows a table read or an index lookup returns are stored records, never null or undefined; the cast removes that undefined from the element type.
     dataR.map((row) => Model.fromDatabase(row)) as T[];
   const Model = class Model {
-    public static readonly schemaName = schemaName as string;
+    public static readonly schemaName: string | undefined = schemaName;
     /**
      * Table class this model was built from.
      */
@@ -113,7 +129,7 @@ export function BasicDataModel<T extends object>(
      * @param obj Plain data object containing the table fields
      * @returns Table class instance
      */
-    public static fromPlainData(obj: any) {
+    public static fromPlainData(obj: PlainData<T> | T): T {
       return obj instanceof dataType ? obj : fromPlainData(obj, dataType);
     }
 
@@ -133,7 +149,7 @@ export function BasicDataModel<T extends object>(
      * @param obj Table class instance
      * @returns Database-ready data
      */
-    public static toDatabase(obj: any) {
+    public static toDatabase(obj: PlainData<T> | T): StoredRow<T> {
       const instance = obj instanceof dataType ? obj : Model.fromPlainData(obj);
       return toDatabase(instance);
     }
@@ -143,6 +159,7 @@ export function BasicDataModel<T extends object>(
      * Pass `{ partial: true }` to skip fields not present on `obj` (patch semantics).
      */
     public static validate(
+      // oxlint-disable-next-line anti-slop/no-unknown-parameters -- validate is the parser: it narrows obj with isRecord and decodes every field with its codec before reading it
       obj: unknown,
       options?: ValidateInputOptions,
     ): ValidationResult {
@@ -167,6 +184,7 @@ export function BasicDataModel<T extends object>(
     public readonly table: DatabaseDev.Table<T>;
 
     constructor(public readonly database: DatabaseDev.SchemaInstance<any>) {
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- database is a SchemaInstance<any>, so its table is a Table<any>; a schema instance covers every table of its schema, so no type parameter of it states that this class's table holds this class's rows
       this.table = database.table(name);
     }
 
@@ -187,9 +205,9 @@ export function BasicDataModel<T extends object>(
      * @param keys Index value(s)
      * @returns Array of Table class instances.
      */
-    public getBy(index: keyof T, ...keys: any[]) {
+    public getBy(index: Extract<keyof T, string>, ...keys: IndexKey[]) {
       return this.table
-        .getAll(keys.length === 1 ? keys[0] : keys, <string>index)
+        .getAll(keys.length === 1 ? keys[0] : keys, index)
         .then((dataR) => toInstances(dataR));
     }
 
@@ -222,10 +240,10 @@ export function BasicDataModel<T extends object>(
         }
         if (allErrors.length > 0) throw makeValidationError(allErrors);
       }
-      const converter = (entry: any) => {
+      const converter = (entry: DeepPartial<T>) => {
         const instance = Model.fromPlainData(entry);
         triggerEvent(instance, "insert");
-        return Model.toDatabase(instance);
+        return toDatabase(instance);
       };
       return this.table
         .insert(Array.isArray(obj) ? obj.map(converter) : converter(obj))
@@ -246,7 +264,7 @@ export function BasicDataModel<T extends object>(
       options?: ValidateOptions,
     ): Promise<number>;
     public update(
-      obj: DeepPartial<T>,
+      obj: DeepPartial<T> & KeyedRow,
       options?: ValidateOptions,
     ): Promise<number>;
     public async update(...args: UpdateArgs<T>) {
@@ -260,17 +278,16 @@ export function BasicDataModel<T extends object>(
         triggerEvent(instance, "update");
         return this.table
           .get(parsed.id)
-          .update(withoutEmptyInternal(Model.toDatabase(instance)))
+          .update(withoutEmptyInternal(toDatabase(instance)))
           .run();
       }
       const instance = Model.fromPlainData(parsed.data);
       triggerEvent(instance, "update");
-      // SAFETY: parsed.data is the DeepPartial<T> object the caller passed as the first argument (the id form was handled above), so reading the property named by the table's primary key is defined and gives undefined when absent; the next line asserts it is present.
-      const id = (parsed.data as any)[primaryKey];
+      const id = parsed.data[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
       return this.table
         .get(id)
-        .update(withoutEmptyInternal(Model.toDatabase(instance)))
+        .update(withoutEmptyInternal(toDatabase(instance)))
         .run();
     }
 
@@ -301,11 +318,16 @@ function cacheKeyOf(instanceId: InstanceId | undefined): string | symbol {
 
 export type ValidateOptions = { validate?: boolean };
 
-type ParsedUpdate<T> = {
-  id?: string;
-  data: DeepPartial<T>;
-  options?: ValidateOptions;
-};
+/** The part of a row an update without an id finds the row by. */
+type KeyedRow = Record<DatumStaticMetadata["primary"], string>;
+
+type ParsedUpdate<T> =
+  | { id: string; data: DeepPartial<T>; options?: ValidateOptions }
+  | {
+      id?: undefined;
+      data: DeepPartial<T> & KeyedRow;
+      options?: ValidateOptions;
+    };
 
 /**
  * Leaves out an `_internal` with nothing in it. The update writes that key as
@@ -331,7 +353,10 @@ type IdUpdateArgs<T> = [
   data: DeepPartial<T>,
   options?: ValidateOptions,
 ];
-type ObjectUpdateArgs<T> = [data: DeepPartial<T>, options?: ValidateOptions];
+type ObjectUpdateArgs<T> = [
+  data: DeepPartial<T> & KeyedRow,
+  options?: ValidateOptions,
+];
 type UpdateArgs<T> = IdUpdateArgs<T> | ObjectUpdateArgs<T>;
 
 function isIdUpdate<T>(args: UpdateArgs<T>): args is IdUpdateArgs<T> {
@@ -349,11 +374,12 @@ function parseUpdateArgs<T>(args: UpdateArgs<T>): ParsedUpdate<T> {
 
 function schemaOf(cl: DataModel): Schema<any> {
   if (!cl.tableClass) {
-    const schema = Schema.get(cl.schemaName);
+    const schema =
+      cl.schemaName === undefined ? undefined : Schema.get(cl.schemaName);
     assert(schema, `Schema not found for '${cl.schemaName}'`);
     return schema;
   }
-  const schema = getMetadata(cl.tableClass, DatumStaticMetadata).schema;
+  const schema = boundSchema(getMetadata(cl.tableClass, DatumStaticMetadata));
   assert(
     schema,
     `${cl.tableClass.name} is not bound to a schema: call RegisterSchema("${cl.schemaName}") in the module that declares it`,

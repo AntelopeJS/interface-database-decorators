@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { Schema } from "@antelopejs/interface-database";
+import { Schema, type ValueProxy } from "@antelopejs/interface-database";
+import type { Constructible } from "../common";
 import { RegisterTable } from "../schema";
 import { RegisterSchema } from "../database";
 import { BasicDataModel, GetModel } from "../model";
@@ -10,6 +11,14 @@ import { LocalizationModifier, Localized } from "../modifiers/localization";
 import { unlockrequest } from "../modifiers/common";
 
 import { asFieldType, numberCodec } from "./codec_helpers";
+
+function unlockAny<T extends {}, K extends keyof T>(
+  table: Constructible<T>,
+  row: ValueProxy<T>,
+  field: K,
+) {
+  return unlockrequest(table, row, field, []);
+}
 
 function getDatabase(schemaId: string) {
   const instance = Schema.get(schemaId)?.instance();
@@ -53,7 +62,7 @@ describe("Integration - real database operations", () => {
 
     const userId = insertResult[0];
     const retrievedUserFromModel = await userModel.get(userId);
-    const retrievedUserFromDatabase = await schemaInstance
+    const retrievedUserFromDatabase: unknown = await schemaInstance
       .table("users")
       .get(userId)
       .run();
@@ -69,7 +78,7 @@ describe("Integration - real database operations", () => {
     expect(retrievedUserFromModel?.secretData).to.deep.equal({
       token: "secret-token-123",
     });
-    expect(retrievedUserFromDatabase?.secretData).to.not.deep.equal({
+    expect(retrievedUserFromDatabase).to.not.have.deep.property("secretData", {
       token: "secret-token-123",
     });
 
@@ -81,7 +90,10 @@ describe("Integration - real database operations", () => {
       expect(isPasswordValid).to.equal(true);
     }
 
-    const dbUser = await schemaInstance.table("users").get(userId).run();
+    const dbUser: unknown = await schemaInstance
+      .table("users")
+      .get(userId)
+      .run();
     expect(dbUser).to.have.property("email").that.equals("test@example.com");
     expect(dbUser).to.have.property("name").that.equals("John Doe");
   });
@@ -204,6 +216,11 @@ describe("Integration - real database operations", () => {
       )
       .run();
     expect(frenchTitles).to.deep.equal(["Only English"]);
+    const ids = await LocalizedContent.table(schemaInstance)
+      .filter((row) => row.key("_id").eq("content-untranslated"))
+      .map((row) => unlockAny(LocalizedContent, row, "_id"))
+      .run();
+    expect(ids).to.deep.equal(["content-untranslated"]);
   });
   it("manages encrypted sensitive data", async () => {
     @RegisterTable("sensitive_data", "integration-encrypt-schema")
@@ -237,13 +254,13 @@ describe("Integration - real database operations", () => {
     expect(retrievedData?.creditCard).to.equal("4111-1111-1111-1111");
     expect(retrievedData?.ssn).to.equal("123-45-6789");
 
-    const dbData = await schemaInstance
+    const dbData: unknown = await schemaInstance
       .table("sensitive_data")
       .get(dataId)
       .run();
     expect(dbData).to.have.property("userId").that.equals("user123");
-    expect(dbData?.creditCard).to.not.equal("4111-1111-1111-1111");
-    expect(dbData?.ssn).to.not.equal("123-45-6789");
+    expect(dbData).to.not.have.property("creditCard", "4111-1111-1111-1111");
+    expect(dbData).to.not.have.property("ssn", "123-45-6789");
   });
 });
 

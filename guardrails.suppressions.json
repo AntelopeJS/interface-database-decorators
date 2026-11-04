@@ -1,7 +1,14 @@
 {
-  "rules": {},
+  "rules": {
+    "anti-slop/no-unknown-parameters": 8,
+    "anti-slop/no-unknown-returns": 1,
+    "anti-slop/no-unsafe-dictionary-type": 11,
+    "typescript/no-unnecessary-type-parameters": 4,
+    "typescript/no-unsafe-assignment": 2,
+    "typescript/no-unsafe-return": 3
+  },
   "tsExpectError": 0,
   "tsIgnore": 0,
-  "safety": 5,
+  "safety": 9,
   "config": {}
 }

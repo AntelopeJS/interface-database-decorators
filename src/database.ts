@@ -7,10 +7,14 @@ import type { Table } from "./table";
 import { getTablesForSchema } from "./schema";
 import type { DatumGeneratorOutput } from "./common";
 import { DatumStaticMetadata, getMetadata } from "./common";
-import { fromPlainData, toDatabase, triggerEvent } from "./modifiers/common";
+import {
+  fromPlainData,
+  type StoredRow,
+  toDatabase,
+  triggerEvent,
+} from "./modifiers/common";
 
 type TableDefinitions = Record<string, Class<Table>>;
-type TableEntry = ReturnType<typeof toDatabase>;
 
 /**
  * Registers a schema with the database adapter and runs any fixtures.
@@ -100,10 +104,9 @@ async function insertFixtureData(
   if (rows.length === 0) {
     return;
   }
-  const payload: any = rows.length === 1 ? rows[0] : rows;
   const table = schema.instance().table(tableName);
   try {
-    await table.insert(payload);
+    await table.insert(rows.length === 1 ? rows[0] : rows);
   } catch (error) {
     if ((await table.count()) === 0) throw error;
   }
@@ -114,10 +117,10 @@ async function insertFixtureData(
  * processes starting on an empty table write one row between them.
  */
 function withStableId(
-  row: TableEntry,
+  row: StoredRow<Table>,
   tableName: string,
   position: number,
-): TableEntry {
+): StoredRow<Table> {
   return row._id === undefined
     ? { ...row, _id: `${tableName}:fixture:${position}` }
     : row;
@@ -126,7 +129,7 @@ function withStableId(
 function toFixtureRows(
   fixtureData: DatumGeneratorOutput,
   tableClass: Class<Table>,
-): TableEntry[] {
+): StoredRow<Table>[] {
   const entries = fixtureData
     ? Array.isArray(fixtureData)
       ? fixtureData
@@ -139,6 +142,6 @@ function toFixtureRows(
   });
 }
 
-function isTableEntry(value: unknown): value is TableEntry {
+function isTableEntry(value: unknown): value is object {
   return typeof value === "object" && value !== null;
 }

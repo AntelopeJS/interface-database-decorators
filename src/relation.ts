@@ -31,6 +31,20 @@ export class RelationStaticMetadata {
     "@antelopejs/interface-database-decorators/RelationStaticMetadata@1",
   );
 
+  /**
+   * The metadata of a subclass of a table: a copy of its parent's, so that
+   * relations declared on the subclass never reach the parent or its siblings.
+   */
+  public static inherit(
+    parent: RelationStaticMetadata,
+  ): RelationStaticMetadata {
+    const copy = new RelationStaticMetadata();
+    for (const [field, options] of Object.entries(parent.relations)) {
+      copy.relations[field] = options;
+    }
+    return copy;
+  }
+
   public readonly relations: Record<string, RelationOptions> = {};
 }
 

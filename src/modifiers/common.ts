@@ -1,21 +1,33 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
 
-import { type Constructible, getMetadata } from "../common";
+import {
+  type Constructible,
+  getMetadata,
+  type PlainData,
+  type PlainRow,
+} from "../common";
 import {
   ignoredEventNames,
-  isCallable,
+  isEventHandler,
   isLocking,
   isOnlyEvents,
   isTwoWay,
   isWriteOnly,
+  prototypeOf,
 } from "./internal/kinds";
 import {
+  assertModifiableField,
+  copyModifierLists,
   dataByKey,
   eventsByKey,
   fieldsByKey,
   floatingByKey,
   floatingOf,
   getInternal,
+  type InternalHolder,
+  type InternalRecord,
+  type ModifierState,
+  newModifiedField,
   unlockArgsOf,
   withRef,
 } from "./internal/records";
@@ -25,7 +37,9 @@ export const MixinSymbol = Symbol();
 export type MixinType<T> = T extends { [MixinSymbol]: infer A } ? A : never;
 
 export class Modifier<
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Meta is read only by subclasses, through this.meta; removing it changes the published Modifier<Meta, Options>
   Meta extends object = object,
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Options is read only by subclasses, through this.options; removing it changes the published Modifier<Meta, Options>
   Options extends object = object,
 > {
   protected meta!: Meta;
@@ -40,6 +54,7 @@ export class OneWayModifier<
 > extends Modifier<Meta, Options> {
   public lock(
     _locked_value: LockedType | undefined,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- the published override point of every modifier; a modified field's value has its table class's type, which the shared modifier chain cannot name
     _value: unknown,
     ..._args: Args
   ): LockedType {
@@ -47,6 +62,7 @@ export class OneWayModifier<
   }
   public test(
     locked_value: LockedType,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
     ...args: Args
   ): boolean {
@@ -64,6 +80,7 @@ export class TwoWayModifier<
   Meta extends object = object,
   Options extends object = object,
 > extends OneWayModifier<LockedType, Args, Meta, Options> {
+  // oxlint-disable-next-line anti-slop/no-unknown-returns -- the unlocked value has its table class's type, which the shared modifier chain cannot name
   public unlock(_locked_value: LockedType, ..._args: Args): unknown {
     throw new Error("Unimplemented");
   }
@@ -80,17 +97,22 @@ export class ContainerModifier<
   Meta extends object = object,
   Options extends object = object,
 > extends TwoWayModifier<
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
   Record<string, unknown>,
   [key: string],
   Meta,
   Options
 > {
   public override lock(
+    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
     locked_value: Record<string, unknown> | undefined,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
     key: string,
   ) {
     if (key === "*") {
+      // SAFETY: the "*" key addresses the whole container, which the table class declares as the record of values per key; a non-record value is stored as given.
+      // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
       return value as Record<string, unknown>;
     }
     return locked_value
@@ -100,10 +122,15 @@ export class ContainerModifier<
         }
       : { [key]: value };
   }
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
   public override unlock(locked_value: Record<string, unknown>, key: string) {
-    return key === "*" ? locked_value : locked_value[key];
+    if (key === "*") {
+      return locked_value;
+    }
+    return Object.hasOwn(locked_value, key) ? locked_value[key] : undefined;
   }
   public override unlockrequest(
+    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
     data: DatabaseDev.ValueProxy<Record<string, unknown>>,
     _meta: DatabaseDev.ValueProxy<Meta>,
     key: DatabaseDev.ValueProxyOrValue<string>,
@@ -112,14 +139,20 @@ export class ContainerModifier<
   }
 }
 
-interface InternalType {
-  meta: Record<string, object>;
-  data: Record<string, any>;
-}
+/**
+ * A table row as the database stores it: the fields of `T` that are set, with
+ * no prototype, and its modified fields locked in `_internal` instead of at the
+ * top level.
+ */
+export type StoredRow<T> = Partial<T> & InternalHolder;
 
-type ModifierEvent = <T>(
+/**
+ * A modifier method run for an event of the table instance (`insert`,
+ * `toDatabase`, ...), with the modifier as `this`.
+ */
+export type ModifierEvent = (
   this: Modifier,
-  object: T,
+  object: { constructor: any },
   field: PropertyKey,
   ...args: unknown[]
 ) => void;
@@ -127,7 +160,7 @@ type ModifierEvent = <T>(
 interface ModifiedField {
   id: string;
   modifier: Modifier;
-  metaRef: { _ref: any };
+  metaRef: { _ref: ModifierState | undefined };
 }
 
 export class ModifiersStaticMetadata {
@@ -135,11 +168,19 @@ export class ModifiersStaticMetadata {
     "@antelopejs/interface-database-decorators/ModifiersStaticMetadata@1",
   );
 
+  /**
+   * The metadata of a subclass of a table: a copy of its parent's lists, so
+   * modifiers attached on the subclass never reach the parent or its siblings.
+   */
+  public static inherit(parent: ModifiersStaticMetadata) {
+    return copyModifierLists(new ModifiersStaticMetadata(), parent);
+  }
+
   public fields: Record<string, Array<ModifiedField>> = {};
 
   public events = new Map<
     string,
-    Array<[field: string, modified: ModifiedField]>
+    Array<[field: string, modified: ModifiedField, handler: ModifierEvent]>
   >();
 }
 
@@ -153,8 +194,13 @@ export class ModifiersDynamicMetadata {
    * Values assigned to a field before its modifiers could lock them, by field
    * name. Reads return them; `unlock` and `lock` assign them again.
    */
-  floating: Record<string, any> = {};
-  fields: Record<string, Record<string, any[]>> = {};
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the values assigned before modifiers could lock them, by field name, have their table class's types
+  floating: Record<string, unknown> = {};
+  /**
+   * The arguments each modifier of a field was unlocked or locked with, by
+   * field name, then by modifier name.
+   */
+  fields: Record<string, Record<string, unknown[]>> = {};
 
   constructor(target: any) {
     this.staticMeta = getMetadata(target.constructor, ModifiersStaticMetadata);
@@ -181,8 +227,8 @@ export class ModifiersDynamicMetadata {
     );
   }
 
-  get(field: PropertyKey, internal: InternalType) {
-    if (field in this.floating) {
+  get(field: PropertyKey, internal: InternalRecord) {
+    if (Object.hasOwn(this.floating, field)) {
       return floatingByKey(this)[field];
     }
     if (!this.canGet(field)) {
@@ -216,7 +262,8 @@ export class ModifiersDynamicMetadata {
     );
   }
 
-  set(field: PropertyKey, internal: InternalType, value: unknown) {
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
+  set(field: PropertyKey, internal: InternalRecord, value: unknown) {
     if (!this.canSet(field)) {
       floatingByKey(this)[field] = value;
       return;
@@ -226,7 +273,7 @@ export class ModifiersDynamicMetadata {
     const prevlist: {
       id: string;
       modifier: Modifier;
-      metaRef: { _ref: any };
+      metaRef: ModifiedField["metaRef"];
       prev: unknown;
     }[] = [];
     let prev = dataByKey(internal)[field];
@@ -259,21 +306,27 @@ export class ModifiersDynamicMetadata {
   }
 }
 
+/** The names of the modified fields of a table instance. */
+function fieldNamesOf<T extends { constructor: any }>(object: T) {
+  const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
+  // SAFETY: the names attachModifier recorded are keys of the table class of object, so keys of T; Object.keys types them string.
+  return Object.keys(metaTable.fields) as Array<keyof T>;
+}
+
 /**
  * Builds a table instance from unlocked plain data: each key is assigned, so
  * modifiers lock the fields they can. Then runs the `fromPlainData` event.
  */
-export function fromPlainData<T extends Constructible>(
-  rawObject: Record<string, any>,
-  TableClass: T,
-): InstanceType<T> {
-  const shallowCopy: typeof rawObject = {};
-  Object.setPrototypeOf(shallowCopy, TableClass.prototype);
-  for (const [key, val] of Object.entries(rawObject)) {
-    shallowCopy[key] = val;
-  }
-  triggerEvent(shallowCopy, "fromPlainData", rawObject);
-  return shallowCopy as InstanceType<T>;
+export function fromPlainData<T extends object>(
+  rawObject: PlainData<T>,
+  TableClass: Constructible<T>,
+): T {
+  const instance = {};
+  Object.setPrototypeOf(instance, prototypeOf(TableClass));
+  Object.assign(instance, Object.fromEntries(Object.entries(rawObject)));
+  triggerEvent(instance, "fromPlainData", rawObject);
+  // SAFETY: instance gets the prototype of TableClass and the fields of rawObject, so it is a T, as fromPlainData returns; setPrototypeOf types no result.
+  return instance as T;
 }
 
 /**
@@ -282,13 +335,11 @@ export function fromPlainData<T extends Constructible>(
  */
 export function toPlainData<T extends { constructor: any }>(
   object: T,
-): Record<string, any> {
-  const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
+): PlainRow<T> {
   const result = { ...object };
   if ("_internal" in result) delete result._internal;
-  for (const field of Object.keys(metaTable.fields)) {
-    const key = <keyof T>field;
-    result[key] = object[key];
+  for (const field of fieldNamesOf(object)) {
+    result[field] = object[field];
   }
   triggerEvent(object, "toPlainData", result);
   return result;
@@ -302,9 +353,11 @@ export function fromDatabase<T extends Constructible>(
   rawObject: any,
   TableClass: T,
 ): InstanceType<T> {
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- rawObject is a stored row, typed any by the published fromDatabase signature; typing it T breaks consumers
   const shallowCopy = { ...rawObject };
-  Object.setPrototypeOf(shallowCopy, TableClass.prototype);
+  Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
   triggerEvent(shallowCopy, "fromDatabase", rawObject);
+  // oxlint-disable-next-line typescript/no-unsafe-return -- shallowCopy is a copy of the any-typed rawObject
   return shallowCopy;
 }
 
@@ -312,9 +365,9 @@ export function fromDatabase<T extends Constructible>(
  * Converts a table instance to the locked record to store, `_internal`
  * included and floating values left out. Then runs the `toDatabase` event.
  */
-export function toDatabase<T extends { constructor: any }>(
+export function toDatabase<T extends InternalHolder>(
   object: T,
-): Record<string, any> {
+): T & InternalHolder {
   const result = { ...object };
   triggerEvent(object, "toDatabase", result);
   return result;
@@ -325,38 +378,20 @@ type ExtractModifierOptions<T> =
 type ExtractModifierArgs<T> =
   T extends OneWayModifier<any, infer Args> ? Args : [];
 
-export function attachModifier<
-  T extends Constructible,
-  M extends Constructible<Modifier>,
->(
-  TableClass: T,
+export function attachModifier<M extends Constructible<Modifier>>(
+  TableClass: Function,
   Modifier: M,
-  field: keyof InstanceType<T>,
+  field: PropertyKey,
   options: ExtractModifierOptions<InstanceType<M>>,
 ) {
-  const entry: ModifiedField = {
-    id: Modifier.name,
-    modifier: new Modifier(),
-    metaRef: { _ref: {} },
-  };
-  Object.assign(entry.modifier, {
-    meta: new Proxy(entry.metaRef, {
-      get: (self, p) => {
-        if (!self._ref) return undefined;
-        return self._ref[p];
-      },
-      set: (self, p, v) => {
-        if (!self._ref) self._ref = {};
-        return Reflect.set(self._ref, p, v, self._ref);
-      },
-    }),
-  });
+  const entry = newModifiedField(Modifier);
   Object.assign(entry.modifier, { options });
 
   const metaTable = getMetadata(TableClass, ModifiersStaticMetadata);
 
   if (!isOnlyEvents(entry.modifier)) {
-    if (field in metaTable.fields) {
+    assertModifiableField(TableClass.name, entry.id, field);
+    if (Object.hasOwn(metaTable.fields, field)) {
       const list = fieldsByKey(metaTable)[field];
       const last = list[list.length - 1];
       if (isWriteOnly(last.modifier)) {
@@ -375,13 +410,13 @@ export function attachModifier<
     } else {
       fieldsByKey(metaTable)[field] = [entry];
       Object.defineProperty(TableClass.prototype, field, {
-        get: function () {
+        get: function (this: InternalHolder) {
           return getMetadata(this, ModifiersDynamicMetadata).get(
             field,
             getInternal(this),
           );
         },
-        set: function (value) {
+        set: function (this: InternalHolder, value) {
           getMetadata(this, ModifiersDynamicMetadata).set(
             field,
             getInternal(this),
@@ -401,37 +436,32 @@ export function attachModifier<
   }
 
   for (const event of Object.getOwnPropertyNames(Modifier.prototype)) {
-    if (
-      !(event in ignoredEventNames) &&
-      isCallable(Modifier.prototype[event])
-    ) {
+    const handler: unknown = Modifier.prototype[event];
+    if (!Object.hasOwn(ignoredEventNames, event) && isEventHandler(handler)) {
       if (!metaTable.events.has(event)) {
         metaTable.events.set(event, []);
       }
-      eventsByKey(metaTable).get(event)?.push([field, entry]);
+      eventsByKey(metaTable).get(event)?.push([field, entry, handler]);
     }
   }
 }
 
-function fieldsModifiedBy<T>(
-  metaTable: ModifiersStaticMetadata,
+function fieldsModifiedBy<T extends { constructor: any }>(
+  object: T,
   modifierClass: Constructible<Modifier>,
   fields?: Array<keyof T>,
 ): Array<keyof T> {
-  return (fields ?? (Object.keys(metaTable.fields) as Array<keyof T>)).filter(
-    (field) =>
-      fieldsByKey(metaTable)[field]?.find(
-        ({ id }) => id === modifierClass.name,
-      ),
+  const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
+  return (fields ?? fieldNamesOf(object)).filter((field) =>
+    fieldsByKey(metaTable)[field]?.find(({ id }) => id === modifierClass.name),
   );
 }
 
-export function getModifiedFields<
-  T extends { constructor: any },
-  M extends Constructible<Modifier>,
->(object: T, Modifier: M): (keyof T)[] {
-  const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  return fieldsModifiedBy<T>(metaTable, Modifier);
+export function getModifiedFields<T extends { constructor: any }>(
+  object: T,
+  Modifier: Constructible<Modifier>,
+): (keyof T)[] {
+  return fieldsModifiedBy(object, Modifier);
 }
 
 export function unlock<
@@ -443,23 +473,23 @@ export function unlock<
   fields: Array<keyof T> | undefined,
   ...args: ExtractModifierArgs<InstanceType<M>>
 ) {
-  const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  const usedFields = fieldsModifiedBy<T>(metaTable, Modifier, fields);
+  const usedFields = fieldsModifiedBy(object, Modifier, fields);
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   for (const field of usedFields) {
     unlockArgsOf(meta, field)[Modifier.name] = args;
     if (field in meta.floating) {
-      object[field] = floatingOf(meta, field);
+      Object.assign(object, { [field]: floatingOf(meta, field) });
     }
   }
 }
 
 type ModifierWithProxyArgs = {
   modifier: Constructible<TwoWayModifier<any, any[], any, any>>;
-  args: DatabaseDev.ValueProxyOrValue<any>[];
+  args: unknown[];
 };
+
 export function unlockrequest<T extends {}, K extends keyof T>(
-  table: Constructible<T>,
+  table: Constructible,
   object: DatabaseDev.ValueProxy<T>,
   field: K,
   modifiers: ModifierWithProxyArgs[],
@@ -468,18 +498,22 @@ export function unlockrequest<T extends {}, K extends keyof T>(
     modifiers.map(({ modifier, args: modArgs }) => [modifier.name, modArgs]),
   );
 
-  const stored = <any>object;
+  const stored = object.cast<{ _internal: InternalRecord }>();
   const meta = stored.key("_internal").key("meta");
   const metaTable = getMetadata(table, ModifiersStaticMetadata);
-  return (
-    fieldsByKey(metaTable)[field]?.reduce((data, { id, modifier }) => {
-      if (isWriteOnly(modifier) || !isTwoWay(modifier)) {
-        return data;
-      }
-      data = modifier.unlockrequest(data, meta.key(id), ...args[id]);
-      return data;
-    }, stored.key("_internal").key("data").key(field)) || stored.key(field)
+  const name = String(field);
+  const unlocked = fieldsByKey(metaTable)[field]?.reduce<
+    DatabaseDev.ValueProxy<unknown>
+  >(
+    (data, { id, modifier }) =>
+      isWriteOnly(modifier) || !isTwoWay(modifier)
+        ? data
+        : modifier.unlockrequest(data, meta.key(id), ...args[id]),
+    stored.key("_internal").key("data").key(name),
   );
+  return (unlocked ?? object.cast<InternalRecord["data"]>().key(name)).cast<
+    T[K]
+  >();
 }
 
 export function lock<
@@ -491,8 +525,7 @@ export function lock<
   fields: Array<keyof T> | undefined,
   ...args: ExtractModifierArgs<InstanceType<M>> | []
 ) {
-  const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  const usedFields = fieldsModifiedBy<T>(metaTable, Modifier, fields);
+  const usedFields = fieldsModifiedBy(object, Modifier, fields);
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   for (const field of usedFields) {
     const val = object[field];
@@ -529,6 +562,7 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
   return val === value;
 }
 
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- exported; removing the parameter changes the published signature
 export function triggerEvent<T extends { constructor: any }>(
   object: T,
   event: string,
@@ -545,9 +579,9 @@ export function triggerEvent<T extends { constructor: any }>(
   const eventEntries = metaTable.events.get(event);
   if (!eventEntries) return;
 
-  for (const [field, { id, modifier, metaRef }] of eventEntries) {
-    withRef(internal, id, modifier, metaRef, (modifier: Modifier) =>
-      (<ModifierEvent>modifier[<keyof Modifier>event])(object, field, ...args),
-    );
+  for (const [field, { id, modifier, metaRef }, handler] of eventEntries) {
+    withRef(internal, id, modifier, metaRef, (modifier) => {
+      handler.call(modifier, object, field, ...args);
+    });
   }
 }

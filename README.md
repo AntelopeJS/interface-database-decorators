@@ -1,13 +1,13 @@
-# @antelopejs/interface-database-decorators
+# `@antelopejs/interface-database-decorators`
 
 <div align="center">
-<a href="https://www.npmjs.com/package/@antelopejs/interface-database-decorators"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/interface-database-decorators?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/interface-database-decorators?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="https://discord.gg/g4pFt6eXqu"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
-<a href="https://interfaces.antelopejs.com/docs/database-decorators"><img alt="Docs" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/interface-database-decorators"><img data-illustration alt="npm" src="https://img.shields.io/npm/v/@antelopejs/interface-database-decorators?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="./LICENSE"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/interface-database-decorators?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="https://discord.gg/g4pFt6eXqu"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
+<a href="https://interfaces.antelopejs.com/docs/database-decorators"><img data-illustration alt="Docs" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
 </div>
 
-Database tables and data models as TypeScript classes, on top of [`@antelopejs/interface-database`](https://github.com/AntelopeJS/interface-database): declare fields and indexes with decorators, then read and write rows through a typed model.
+Database tables and data models as TypeScript classes, on top of [`@antelopejs/interface-database`](https://github.com/AntelopeJS/interface-database). Declare fields and indexes with decorators, then read and write rows through a typed model.
 
 Part of [AntelopeJS](https://github.com/AntelopeJS/antelopejs). Used by [AntelopeJS DMS](https://github.com/AntelopeJS/dms), the open-source back office for your PostgreSQL, MongoDB or RethinkDB database.
 
@@ -90,15 +90,15 @@ export async function start() {
 
 ## Compatibility
 
-Requires AntelopeJS core `1.x` and the following peer dependencies:
+The package declares these `@antelopejs/*` peer dependencies:
 
 <!-- antelopejs-docs-compat:start -->
 
 | Package                          | Supported         | Tested with |
 | -------------------------------- | ----------------- | ----------- |
 | `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` | `0.0.15`    |
-| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `0.2.4`     |
-| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `0.1.11`    |
+| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `0.4.0`     |
+| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `0.3.0`     |
 
 <!-- antelopejs-docs-compat:end -->
 

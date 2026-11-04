@@ -114,7 +114,10 @@ describe("Tables and models across interface instances", () => {
 function stagesOf(query: Database.Table<any>) {
   return query
     .build()
-    .map(({ stage, options }) => [stage, options?.id] as const);
+    .map(
+      ({ stage, options }) =>
+        [stage, options && "id" in options ? options.id : undefined] as const,
+    );
 }
 
 function BasicDataModelReadsOtherInstanceTest() {
@@ -148,7 +151,10 @@ function GetModelFromOtherInstanceTest() {
   const ItemModel = Decorators.BasicDataModel(Item);
   const model = Other.GetModel(ItemModel, "t3");
   expect(model.database).to.be.instanceOf(Database.SchemaInstance);
-  expect(model.database.build()[0].options.id).to.equal(boundSchemaId);
+  expect(model.database.build()[0]).to.deep.include({
+    stage: "schema",
+    options: { id: boundSchemaId },
+  });
 }
 
 function LockFromOtherInstanceTest() {

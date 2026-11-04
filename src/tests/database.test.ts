@@ -182,42 +182,9 @@ describe("Database - initialization", () => {
       delete val._id;
       delete val._instance;
     }
-    const sortById = (a: any, b: any) => a.id.localeCompare(b.id);
+    const sortById = (a: { id: string }, b: { id: string }) =>
+      a.id.localeCompare(b.id);
     expect(result.sort(sortById)).to.deep.equal(testData.sort(sortById));
-  });
-  it("writes one row when two processes register an id-less fixture at once", async () => {
-    @Fixture(() => [{ name: "Only row" }])
-    @RegisterTable("fixture_race_no_id", "test-fixture-race-no-id")
-    class _TestTable extends Table {
-      declare name: string;
-    }
-
-    await Promise.all([
-      RegisterSchema("test-fixture-race-no-id"),
-      RegisterSchema("test-fixture-race-no-id"),
-    ]);
-
-    const schema = Schema.get("test-fixture-race-no-id");
-    if (!schema) throw new Error("Schema not found");
-    expect(await schema.instance().table("fixture_race_no_id")).to.have.length(
-      1,
-    );
-  });
-  it("does not fail the process that loses a fixture insert", async () => {
-    @Fixture(() => [{ _id: "only-row", name: "Only row" }])
-    @RegisterTable("fixture_race_id", "test-fixture-race-id")
-    class _TestTable extends Table {
-      declare name: string;
-    }
-
-    await Promise.all([
-      RegisterSchema("test-fixture-race-id"),
-      RegisterSchema("test-fixture-race-id"),
-    ]);
-
-    const schema = Schema.get("test-fixture-race-id");
-    if (!schema) throw new Error("Schema not found");
-    expect(await schema.instance().table("fixture_race_id")).to.have.length(1);
   });
   it("handles multiple tables", async () => {
     @RegisterTable("users", "test-multi-table-schema")
@@ -255,8 +222,14 @@ describe("Database - initialization", () => {
     }
 
     const model = GetModel(BasicDataModel(Reloaded), "late-instance");
-    expect(model.database.build()[0].options.id).to.equal("test-late-schema");
-    expect(Reloaded.table().build()[0].options.id).to.equal("test-late-schema");
+    expect(model.database.build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "test-late-schema" },
+    });
+    expect(Reloaded.table().build()[0]).to.deep.include({
+      stage: "schema",
+      options: { id: "test-late-schema" },
+    });
   });
   it("populates TableDefinition.fields from @Field declarations", async () => {
     @RegisterTable("orders", "test-fields-schema")
@@ -284,3 +257,40 @@ function getIndexDefinitions(schemaId: string, tableName: string) {
   if (!schema) throw new Error("Schema not found");
   return schema.definition[tableName].indexes;
 }
+
+describe("Database - fixture race", () => {
+  it("writes one row when two processes register an id-less fixture at once", async () => {
+    @Fixture(() => [{ name: "Only row" }])
+    @RegisterTable("fixture_race_no_id", "test-fixture-race-no-id")
+    class _TestTable extends Table {
+      declare name: string;
+    }
+
+    await Promise.all([
+      RegisterSchema("test-fixture-race-no-id"),
+      RegisterSchema("test-fixture-race-no-id"),
+    ]);
+
+    const schema = Schema.get("test-fixture-race-no-id");
+    if (!schema) throw new Error("Schema not found");
+    expect(await schema.instance().table("fixture_race_no_id")).to.have.length(
+      1,
+    );
+  });
+  it("does not fail the process that loses a fixture insert", async () => {
+    @Fixture(() => [{ _id: "only-row", name: "Only row" }])
+    @RegisterTable("fixture_race_id", "test-fixture-race-id")
+    class _TestTable extends Table {
+      declare name: string;
+    }
+
+    await Promise.all([
+      RegisterSchema("test-fixture-race-id"),
+      RegisterSchema("test-fixture-race-id"),
+    ]);
+
+    const schema = Schema.get("test-fixture-race-id");
+    if (!schema) throw new Error("Schema not found");
+    expect(await schema.instance().table("fixture_race_id")).to.have.length(1);
+  });
+});

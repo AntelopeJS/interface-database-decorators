@@ -23,6 +23,7 @@ import {
   getInternal,
   withRef,
 } from "./internal/records";
+import { isString } from "./internal/kinds";
 
 type Options = {
   /**
@@ -181,13 +182,13 @@ function withHashedField<R>(
     throw new Error(`Field ${String(field)} is not hashed`);
   }
   const internal = getInternal(row);
+  const stored: unknown = dataByKey(internal)[field];
   return withRef(
     internal,
     entry.id,
     entry.modifier,
     entry.metaRef,
-    (modifier) =>
-      use(modifier, storedText(dataByKey<string | undefined>(internal)[field])),
+    (modifier) => use(modifier, isString(stored) ? stored : ""),
   );
 }
 
@@ -212,6 +213,7 @@ export class HashModifier extends OneWayModifier<
    * Blocks the event loop for one scrypt run: a setter and the conversions
    * behind `insert` and `update` are synchronous.
    */
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
   public override lock(locked_value: string | undefined, value: unknown) {
     if (value === undefined) {
       return value;

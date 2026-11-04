@@ -11,6 +11,7 @@ import {
 } from "node:crypto";
 
 import { attachModifier, MixinSymbol, TwoWayModifier } from "./common";
+import { isCallable, isRecord, isString } from "./internal/kinds";
 
 type Options = {
   /** Encryption algorithm (for supported algorithms refer to {@link createCipheriv}) */
@@ -24,35 +25,56 @@ type Meta = Record<string, never>;
 type LockedType = [ciphertext: string, iv: string, authTag?: string];
 
 function date_encoder(this: any, key: string) {
-  return this[key] instanceof Date
+  const held: unknown = this[key];
+  return held instanceof Date
     ? {
-        value: this[key].toUTCString(),
+        value: held.toUTCString(),
         type: "Date",
       }
-    : this[key];
+    : held;
 }
 
-function date_decoder(_key: string, value: any) {
-  return value !== null &&
-    typeof value === "object" &&
-    Object.keys(value).length === 2 &&
-    Object.keys(value).includes("type") &&
-    Object.keys(value).includes("value") &&
-    value.type === "Date"
-    ? new Date(value.value)
-    : value;
+type StoredValue =
+  | null
+  | boolean
+  | number
+  | string
+  | Date
+  | StoredValue[]
+  | { [key: string]: StoredValue };
+
+/**
+ * The Date a stored marker `{ type: "Date", value }` stands for, when `value`
+ * is a text `toUTCString` produces, as `date_encoder` writes it. Any other
+ * object was stored by the caller.
+ */
+function dateOfMarker(candidate: StoredValue): Date | undefined {
+  if (
+    !isRecord(candidate) ||
+    Object.keys(candidate).length !== 2 ||
+    candidate.type !== "Date" ||
+    !isString(candidate.value)
+  ) {
+    return undefined;
+  }
+  const date = new Date(candidate.value);
+  return date.toUTCString() === candidate.value ? date : undefined;
+}
+
+function date_decoder(_key: string, value: StoredValue) {
+  return dateOfMarker(value) ?? value;
 }
 
 function hasAuthTag(
   cipher: Cipher,
 ): cipher is Cipher & Pick<CipherGCM, "getAuthTag"> {
-  return "getAuthTag" in cipher;
+  return "getAuthTag" in cipher && isCallable(cipher.getAuthTag);
 }
 
 function acceptsAuthTag(
   decipher: Decipher,
 ): decipher is Decipher & Pick<DecipherGCM, "setAuthTag"> {
-  return "setAuthTag" in decipher;
+  return "setAuthTag" in decipher && isCallable(decipher.setAuthTag);
 }
 
 /**
@@ -70,6 +92,7 @@ export class EncryptionModifier extends TwoWayModifier<
 
   public override lock(
     _locked_value: LockedType | undefined,
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
   ): LockedType {
     const iv = randomBytes(this.options.ivSize || 16);

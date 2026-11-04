@@ -35,7 +35,7 @@ function isModuleExports(value: unknown): value is object {
 }
 
 function exportsOf(loaded: Module): object {
-  const exported = loaded.exports;
+  const exported: unknown = loaded.exports;
   if (!isModuleExports(exported)) {
     throw new Error(
       `${loaded.filename} does not export an object or a function`,
@@ -88,7 +88,7 @@ export function CreateOtherInstance(folders: string[]): ModuleRequire {
     if (isOwned) {
       return load(filename, parent);
     }
-    const required = Module.prototype.require.call(parent, request);
+    const required: unknown = Module.prototype.require.call(parent, request);
     if (!isModuleExports(required)) {
       throw new Error(`${request} does not export an object or a function`);
     }
