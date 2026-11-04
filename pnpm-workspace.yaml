@@ -1,4 +1,3 @@
 overrides:
-  "@antelopejs/interface-database": "file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz"
   "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz"
   "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz"
