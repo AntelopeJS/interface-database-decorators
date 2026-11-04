@@ -85,6 +85,20 @@ const REJECTED = [
   'void localized.localize("en", ["nope"]);',
   "void localized.localize(5);",
   'void Api.LocalizationModifier.fallbackLocaleOf(5, "name");',
+  'Api.Index({ unique: "yes" });',
+  "Api.Index({ group: 5 });",
+  'Api.Index({ crossInstance: "yes" });',
+  "Api.Relation({});",
+  'Api.Relation({ to: () => User, many: "yes" });',
+  'Api.Relation({ to: () => User, toField: 5 });',
+  'Api.RegisterTable("only-a-name");',
+  "Api.Encrypted({});",
+  'Api.Encrypted({ secretKey: "k", ivSize: "16" });',
+  "Api.Hashed({ algorithm: 5 });",
+  "Api.Localized({ fallbackLocale: 5 });",
+  "Api.Fixture(5);",
+  "void Api.BasicDataModel(5);",
+  "void Api.GetModel(5);",
 ];
 
 const REJECT_PRELUDE = `
