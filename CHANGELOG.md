@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.2.0
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.12...v0.2.0)
+
+### 📖 Documentation
+
+- **readme:** Link the package to AntelopeJS and AntelopeJS DMS ([82ae1bb](https://github.com/AntelopeJS/interface-database-decorators/commit/82ae1bb))
+
+### 🏡 Chore
+
+- Land the cleanup campaign on main ([#87](https://github.com/AntelopeJS/interface-database-decorators/pull/87))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.1.12
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.11...v0.1.12)
