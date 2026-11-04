@@ -107,7 +107,12 @@ const METADATA = `${PRELUDE}
   Reflect.defineMetadata(Aged.key, { list: ["legacy"] }, Old);
   const first = d.getMetadata(Old, Aged);
   const second = d.getMetadata(Old, Aged);
+  class Current {}
+  d.RegisterTable("currents", "meta")(Current);
+  const current = d.getMetadata(Current, d.DatumStaticMetadata);
+  const currentAgain = d.getMetadata(Current, d.DatumStaticMetadata);
   return {
+    identity: [current === currentAgain, d.DatumStaticMetadata.upgrade(current) === current, Aged.upgrade(first) === first],
     shared: [sharedB === d.getMetadata(A, Shared), sharedB.list],
     copied: [copiedB === d.getMetadata(A, Copied), copiedB.list, d.getMetadata(A, Copied).list],
     upgrade: [first instanceof Aged, first.version, first.list, first === second],
@@ -194,10 +199,11 @@ const HELPERS = `
   d.unlock(row, d.LocalizationModifier, ["title"], "en");
   const restricted = [row.title ?? "undefined", row.summary ?? "undefined"];
   const tables = d.getTablesForSchema("helpers");
+  await d.RegisterSchema("helpers");
   const bound = d.getMetadata(Profile, d.DatumStaticMetadata);
   class Early extends Profile {}
   const earlyBefore = d.getMetadata(Early, d.DatumStaticMetadata);
-  const copiedArrays = [earlyBefore.indexes !== bound.indexes, earlyBefore.fields !== bound.fields, earlyBefore.primary, earlyBefore.schema === undefined];
+  const copiedArrays = [earlyBefore.indexes !== bound.indexes, earlyBefore.fields !== bound.fields, earlyBefore.primary, bound.schema !== undefined, earlyBefore.schema === undefined];
   const parentMeta = d.getMetadata(Profile, d.DatumStaticMetadata);
   class Child extends Profile {}
   const own = d.getMetadata(Child, d.DatumStaticMetadata, false);
@@ -224,9 +230,9 @@ export const CUSTOM_JOURNEYS = {
     printed: "{\"read\":[{\"a\":[1,2]},\"plain\"],\"storedBody\":\"b64-eyJhIjpbMSwyXX0=\",\"storedTagged\":\"x:InBsYWluIg==\",\"notAString\":\"undefined\"}",
     stored: [{ name: "the stored encodings", expression: "$DB.getCollection('twoway__docs').find({ title: 't' }).toArray().map((r) => [r._internal.data.body, r._internal.data.tagged])", expected: "[[\"b64-eyJhIjpbMSwyXX0=\",\"x:InBsYWluIg==\"]]" }],
   }),
-  "modifier-helpers": scenario({ title: "getModifiedFields, unlock, lock, floating values, getMetadata and getTablesForSchema do what their TSDoc says", body: HELPERS, printed: "{\"names\":{\"hashed\":[\"password\"],\"localized\":[\"title\",\"summary\"],\"none\":[]},\"floatingRead\":\"floating\",\"floatingStored\":[\"_internal\"],\"afterUnlock\":[\"floating\",\"floating\",\"undefined\"],\"lockedKeys\":[\"title\"],\"restricted\":[\"undefined\",\"r\u00e9sum\u00e9\"],\"copiedArrays\":[true,true,\"_id\",true],\"tables\":[[\"others\",\"profiles\"],true,\"undefined\"],\"metadata\":[\"profiles\",\"undefined\",\"profiles\",false,false,true]}" }),
+  "modifier-helpers": scenario({ title: "getModifiedFields, unlock, lock, floating values, getMetadata and getTablesForSchema do what their TSDoc says", body: HELPERS, printed: "{\"names\":{\"hashed\":[\"password\"],\"localized\":[\"title\",\"summary\"],\"none\":[]},\"floatingRead\":\"floating\",\"floatingStored\":[\"_internal\"],\"afterUnlock\":[\"floating\",\"floating\",\"undefined\"],\"lockedKeys\":[\"title\"],\"restricted\":[\"undefined\",\"r\u00e9sum\u00e9\"],\"copiedArrays\":[true,true,\"_id\",true,true],\"tables\":[[\"others\",\"profiles\"],true,\"undefined\"],\"metadata\":[\"profiles\",\"undefined\",\"profiles\",false,false,true]}" }),
   "container-query": scenario({ title: "ContainerModifier.unlockrequest uses its key, so a query reads one entry of the stored record", body: CONTAINER_QUERY, printed: "{\"a1\":[\"one\"],\"a2\":[\"two\"],\"b1\":[\"only-b\",\"two\"],\"b2\":[\"one\"],\"c1\":[]}" }),
-  "metadata-class": scenario({ title: "a metadata class without inherit is shared with the subclass, one with inherit is copied, and upgrade runs on stored metadata", body: METADATA, printed: "{\"shared\":[true,[\"x\"]],\"copied\":[false,[\"x\",\"y\"],[\"x\"]],\"upgrade\":[true,2,[\"legacy\"],true]}" }),
+  "metadata-class": scenario({ title: "a metadata class without inherit is shared with the subclass, one with inherit is copied, and upgrade runs on stored metadata", body: METADATA, printed: "{\"identity\":[true,true,true],\"shared\":[true,[\"x\"]],\"copied\":[false,[\"x\",\"y\"],[\"x\"]],\"upgrade\":[true,2,[\"legacy\"],true]}" }),
   "legacy-metadata": scenario({ title: "metadata stored without uniqueIndexes is upgraded and unique indexes still register", body: LEGACY_METADATA, printed: "{\"upgraded\":[true,true,true,\"olds\"],\"definition\":{\"code\":{\"fields\":null,\"unique\":true}},\"uniqueEnforced\":\"DuplicateKeyError\"}" }),
   "container-modifier": scenario({ title: "a ContainerModifier keeps values by key and treats the wildcard key as the whole record", body: CONTAINER, printed: "{\"both\":{\"a\":1,\"b\":2},\"afterOverwrite\":{\"a\":3,\"b\":2},\"replaced\":{\"z\":26},\"byKey\":[26,\"undefined\",\"undefined\"]}" }),
   "modifier-events": scenario({ title: "a modifier's event methods run for inserts, updates and conversions, and an events-only modifier leaves the field plain", body: EVENTS, printed: "{\"onInsert\":[\"fromPlainData/note/true/Doc/1:note\",\"insert/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onUpdate\":[\"fromPlainData/note/true/Doc/1:note\",\"update/note/true/Doc/0:\",\"toDatabase/note/true/Doc/1:_internal+note\"],\"onRead\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onReadAll\":[\"fromDatabase/note/true/Doc/1:_id+_internal+handled+note\"],\"onPlain\":[\"toPlainData/note/true/Doc/1:_id+handled+note\"],\"storedByHandler\":\"by-handler\",\"eventsOnlyKeepPlainValue\":true}" }),

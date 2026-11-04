@@ -66,6 +66,22 @@ const WILDCARD = `${PRODUCT}
   return { all, replaced, german, stored: [loaded.localize("fr").name, loaded.localize("it").name, loaded.localize("*").name] };
 `;
 
+const WILDCARD_REPLACE = `${PRODUCT}
+  const model = d.GetModel(d.BasicDataModel(Product));
+  const product = new Product();
+  product._id = "wild";
+  product.price = 3;
+  product.localize("en").name = "Hello";
+  product.localize("fr").name = "Bonjour";
+  const before = product.localize("*").name;
+  Object.assign(product.localize("*"), { name: { de: "Hallo" } });
+  const afterWrite = product.localize("*").name;
+  const fallbacks = [product.localize("fr").name ?? "undefined", product.localize("en").name ?? "undefined", product.localize("de").name];
+  await model.insert(product);
+  const loaded = await model.get("wild");
+  return { before, afterWrite, fallbacks, read: loaded.localize("*").name, readFr: loaded.localize("fr").name ?? "undefined" };
+`;
+
 const STORED = `${PRODUCT}
   const model = d.GetModel(d.BasicDataModel(Product));
   const first = new Product();
@@ -156,6 +172,12 @@ const AUTO_OBJECT = `
 export const LOCALIZATION_JOURNEYS = {
   localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"short\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
   "localized-query": scenario({ title: "a query through unlockrequest answers the requested locale and falls back to the fallback locale, an empty text included", body: QUERY, printed: "{\"germanHello\":[\"empty-de\",\"only-en\"],\"germanHallo\":[\"has-de\"],\"englishHello\":[\"empty-de\",\"only-en\"],\"frenchSalut\":[\"none\"],\"frenchHello\":[\"empty-de\",\"only-en\"],\"noFallbackGerman\":[],\"noFallbackEnglish\":[\"only-en\"],\"noFallbackOwnText\":[\"has-de\"]}" }),
+  "localize-wildcard-replace": scenario({
+    title: "a wildcard write replaces every stored translation",
+    body: WILDCARD_REPLACE,
+    printed: "{\"before\":{\"en\":\"Hello\",\"fr\":\"Bonjour\"},\"afterWrite\":{\"de\":\"Hallo\"},\"fallbacks\":[\"undefined\",\"undefined\",\"Hallo\"],\"read\":{\"de\":\"Hallo\"},\"readFr\":\"undefined\"}",
+    stored: [{ name: "the stored translations", expression: "$DB.getCollection('loc__products').find({ _id: 'wild' }).toArray().map((r) => r._internal.data.name)", expected: "[{\"de\":\"Hallo\"}]" }],
+  }),
   "localize-wildcard": scenario({ title: "the wildcard key reads and writes every translation at once", body: WILDCARD, printed: "{\"all\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\"},\"replaced\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\",\"de\":\"Premium-Kopfhoerer\"},\"german\":\"Premium-Kopfhoerer\",\"stored\":[\"Bonjour\",\"Hello\",{\"en\":\"Hello\",\"fr\":\"Bonjour\"}]}" }),
   "localized-storage": scenario({
     title: "a localized field is stored as one value per locale",

@@ -10,7 +10,7 @@ const HASH_HELPERS = `
   const scryptString = (value, ln, r, p, saltBytes = 16, keyBytes = 32) => { const salt = Buffer.alloc(saltBytes, 7); return "$" + "scrypt" + "$ln=" + ln + ",r=" + r + ",p=" + p + "$" + b64(salt) + "$" + b64(scryptOf(value, salt, keyBytes, ln, r, p)); };
   const digest = (algorithm, salt, value) => crypto.createHash(algorithm).update(salt).update(JSON.stringify(value)).digest("base64");
   class Account extends d.Table.with(d.HashModifier) {}
-  decorate(Account, { name: [d.Field("string")], password: [d.Hashed(), d.Field("string")], pin: [d.Hashed({ algorithm: "sha256" }), d.Field("string")], token: [d.Hashed({ algorithm: "sha256" }), d.Field("string")], long: [d.Hashed({ algorithm: "sha512" }), d.Field("string")], legacy: [d.Hashed({ algorithm: "md5" }), d.Field("string")] });
+  decorate(Account, { name: [d.Field("string")], password: [d.Hashed(), d.Field("string")], pin: [d.Hashed({ algorithm: "sha256" }), d.Field("string")], token: [d.Hashed({ algorithm: "sha256" }), d.Field("string")], long: [d.Hashed({ algorithm: "sha512" }), d.Field("string")], legacy: [d.Hashed({ algorithm: "md5" }), d.Field("string")], one: [d.Hashed({ algorithm: "sha1" }), d.Field("string")], mid: [d.Hashed({ algorithm: "sha384" }), d.Field("string")] });
   d.RegisterTable("accounts", "hash")(Account);
   await d.RegisterSchema("hash");
   const Model = d.BasicDataModel(Account);
@@ -106,9 +106,10 @@ const UPGRADE = `${HASH_HELPERS}
 `;
 
 const DIGEST = `${HASH_HELPERS}
-  const [id] = await accounts.insert({ name: "Ann", pin: "1234", token: "abc", long: "abc", legacy: "abc" });
+  const [id] = await accounts.insert({ name: "Ann", pin: "1234", token: "abc", long: "abc", legacy: "abc", one: "abc", mid: "abc" });
   const raw = await rawRow(id);
   const salt = raw._internal.meta.HashModifier.salt;
+  const others = [raw._internal.data.one === digest("sha1", salt, "abc"), raw._internal.data.mid === digest("sha384", salt, "abc")];
   const algorithms = [raw._internal.data.long === digest("sha512", salt, "abc"), raw._internal.data.legacy === digest("md5", salt, "abc"), raw._internal.data.long === digest("sha256", salt, "abc"), raw._internal.data.long.length, raw._internal.data.legacy.length];
   const checked = await accounts.get(id);
   const algorithmTests = [checked.testHash("long", "abc"), checked.testHash("legacy", "abc"), checked.testHash("long", "abd")];
@@ -123,7 +124,7 @@ const DIGEST = `${HASH_HELPERS}
   const holdsScrypt = Model.fromDatabase({ _id: "h", name: "h", _internal: { meta: { HashModifier: { salt } }, data: { pin: scryptString("1234", 10, 8, 1) } } });
   const sha512 = Model.fromDatabase({ _id: "s", name: "s", _internal: { meta: { HashModifier: { salt } }, data: { pin: crypto.createHash("sha512").update(salt).update(JSON.stringify("1234")).digest("base64") } } });
   return {
-    algorithms, algorithmTests, wrongDigest,
+    algorithms, others, algorithmTests, wrongDigest,
     storedDigest: raw._internal.data.pin === digest("sha256", salt, "1234"),
     sharedSalt: raw._internal.data.token === digest("sha256", salt, "abc"),
     saltIsText: typeof salt === "string" && salt.length > 0,
@@ -246,5 +247,5 @@ export const HASH_JOURNEYS = {
   "hash-memory": scenario({ title: "a stored scrypt string verifies up to 128 MiB of memory (128 x N x r) and is refused above it", body: MEMORY, printed: "{\"exactR64\":[true,false],\"overR65\":[false,false],\"exactR2\":[true,false],\"underR3\":[true,false],\"overR5\":[false,false],\"overR9\":[false,false]}" }),
   "hash-sync-async": scenario({ title: "testHash answers exactly what testHashAsync answers, for every kind of stored value", body: SYNC_ASYNC, printed: "{\"fresh:password\":[[true,true,true],[false,false,true],[false,false,true]],\"fresh:pin\":[[true,true,true],[false,false,true],[false,false,true]],\"legacy:password\":[[true,true,true],[false,false,true],[false,false,true]],\"lowcost:password\":[[true,true,true],[false,false,true],[false,false,true]],\"junk:password\":[[false,false,true],[false,false,true],[false,false,true]],\"empty:password\":[[false,false,true],[false,false,true],[false,false,true]],\"digest:pin\":[[true,true,true],[false,false,true],[false,false,true]],\"scryptOnDigest:pin\":[[true,true,true],[false,false,true],[false,false,true]]}" }),
   "hash-outdated": scenario({ title: "isHashOutdated flags any scrypt string whose ln, r or p differs from the current cost", body: OUTDATED, printed: "{\"fresh\":[true,false],\"sameCost\":[true,false],\"lowerP\":[true,true],\"higherR\":[true,true],\"lowerLn\":[true,true],\"notScrypt\":[false,true]}" }),
-  "hash-digest": scenario({ title: "a field with an algorithm stores a salted digest with the row's shared salt", body: DIGEST, printed: "{\"algorithms\":[true,true,false,88,24],\"algorithmTests\":[true,true,false],\"wrongDigest\":false,\"storedDigest\":true,\"sharedSalt\":true,\"saltIsText\":true,\"freshSaltPerRow\":true,\"saltReusedOnLaterWrite\":[true,true],\"testDigest\":[true,false,true],\"digestNeverOutdated\":false,\"scryptOnDigestField\":[true,false],\"otherDigestRefused\":false}" }),
+  "hash-digest": scenario({ title: "a field with an algorithm stores a salted digest with the row's shared salt", body: DIGEST, printed: "{\"algorithms\":[true,true,false,88,24],\"others\":[true,true],\"algorithmTests\":[true,true,false],\"wrongDigest\":false,\"storedDigest\":true,\"sharedSalt\":true,\"saltIsText\":true,\"freshSaltPerRow\":true,\"saltReusedOnLaterWrite\":[true,true],\"testDigest\":[true,false,true],\"digestNeverOutdated\":false,\"scryptOnDigestField\":[true,false],\"otherDigestRefused\":false}" }),
 } satisfies { [id: string]: Journey };

@@ -7,6 +7,7 @@ journeys:
   - localize
   - localized-query
   - localize-wildcard
+  - localize-wildcard-replace
   - localized-storage
 ---
 
@@ -18,6 +19,7 @@ journeys:
 
 - `localize`: switching locale, fallback, restricting fields.
 - `localized-query`: `unlockrequest` with a fallback locale.
+- `localize-wildcard-replace`: a wildcard write replaces what was stored.
 - `localize-wildcard`: the `"*"` key.
 - `localized-storage`: one value per locale in MongoDB.
 
