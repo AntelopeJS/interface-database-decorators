@@ -10,6 +10,7 @@ journeys:
   - group-flags
   - field-types
   - relation-metadata
+  - forward-relation
   - inheritance
   - table-with
   - table-with-subclass
@@ -27,6 +28,7 @@ A table class with `Field`, `Index`, `Relation`, subclasses and `Table.with`.
 - `index-options`: plain, compound, cross-instance and unique indexes reach the provider and MongoDB.
 - `group-flags`: `unique` and `crossInstance` on one field apply to the whole group.
 - `field-types`: every field type goes through unchanged, in either decorator order.
+- `forward-relation`: the thunk allows forward references.
 - `relation-metadata`: `Relation` records links and enforces none.
 - `inheritance`: a subclass copies its parent and never writes into it.
 - `combine-modifiers`: three modifiers on one table.

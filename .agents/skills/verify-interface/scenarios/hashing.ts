@@ -214,6 +214,32 @@ const SYNC_ASYNC = `${HASH_HELPERS}
   return matrix;
 `;
 
+const COST = `${HASH_HELPERS}
+  const seedRow = async (id, data, meta = {}) => rawTable("hash", "accounts").insert({ _id: id, name: id, _internal: { meta, data } }).run();
+  await seedRow("junk", { password: "plain text" });
+  await seedRow("empty", {});
+  await seedRow("digest", { pin: digest("sha256", "pin-salt", "hunter2") }, { HashModifier: { salt: "pin-salt" } });
+  const [fresh] = await accounts.insert({ name: "fresh", password: "hunter2" });
+  const median = (list) => [...list].sort((a, b) => a - b)[Math.floor(list.length / 2)];
+  const timed = async (id, field) => { const row = await accounts.get(id); const runs = []; for (let i = 0; i < 3; i += 1) { const start = process.hrtime.bigint(); await row.testHashAsync(field, "wrong"); runs.push(Number(process.hrtime.bigint() - start) / 1e6); } return median(runs); };
+  const measure = async () => {
+    const hashed = await timed(fresh, "password");
+    const empty = await timed("empty", "password");
+    const junk = await timed("junk", "password");
+    const digest = await timed("digest", "pin");
+    return { emptyVsHashed: empty / hashed >= 0.5, junkVsHashed: junk / hashed >= 0.5, digestCheaper: digest / hashed < 0.5 };
+  };
+  let cost = await measure();
+  for (let attempt = 0; attempt < 2 && !Object.values(cost).every(Boolean); attempt += 1) cost = await measure();
+  const row = await accounts.get(fresh);
+  const loopTicks = async (work) => { let ticks = 0; const timer = setInterval(() => { ticks += 1; }, 1); try { await work(); } finally { clearInterval(timer); } return ticks; };
+  let asyncTicks = 0;
+  for (let attempt = 0; attempt < 3 && asyncTicks <= 2; attempt += 1) asyncTicks = await loopTicks(() => row.testHashAsync("password", "hunter2"));
+  let syncTicks = -1;
+  { let ticks = 0; const timer = setInterval(() => { ticks += 1; }, 1); row.testHash("password", "hunter2"); syncTicks = ticks; clearInterval(timer); }
+  return { ...cost, asyncKeepsLoopRunning: asyncTicks > 2, syncBlocksLoop: syncTicks === 0 };
+`;
+
 const OUTDATED = `${HASH_HELPERS}
   const seed = async (id, password) => rawTable("hash", "accounts").insert({ _id: id, name: id, _internal: { meta: {}, data: { password } } }).run();
   const probe = async (id, stored) => { await seed(id, stored); const row = await accounts.get(id); return [await row.testHashAsync("password", "pw"), row.isHashOutdated("password")]; };
@@ -246,6 +272,7 @@ export const HASH_JOURNEYS = {
   "hash-bounds": scenario({ title: "a stored scrypt string verifies at each edge of the documented ranges and is refused just outside", body: BOUNDS, printed: "{\"r1\":[true,false],\"r10\":[true,false],\"r99\":[true,false],\"r100\":[false,false],\"r0\":[false,false],\"ln0\":[false,false],\"p0\":[false,false],\"p99\":[false,false],\"ln16r1\":[false,false],\"salt65\":[false,false],\"ln1\":[true,false],\"ln2\":[true,false],\"ln99\":[false,false],\"ln100\":[false,false],\"p1\":[true,false],\"p16\":[true,false],\"salt16\":[true,false],\"salt64\":[true,false],\"salt80\":[false,false],\"salt15\":[false,false],\"key16\":[true,false],\"key64\":[true,false],\"key15\":[false,false],\"key65\":[false,false]}" }),
   "hash-memory": scenario({ title: "a stored scrypt string verifies up to 128 MiB of memory (128 x N x r) and is refused above it", body: MEMORY, printed: "{\"exactR64\":[true,false],\"overR65\":[false,false],\"exactR2\":[true,false],\"underR3\":[true,false],\"overR5\":[false,false],\"overR9\":[false,false]}" }),
   "hash-sync-async": scenario({ title: "testHash answers exactly what testHashAsync answers, for every kind of stored value", body: SYNC_ASYNC, printed: "{\"fresh:password\":[[true,true,true],[false,false,true],[false,false,true]],\"fresh:pin\":[[true,true,true],[false,false,true],[false,false,true]],\"legacy:password\":[[true,true,true],[false,false,true],[false,false,true]],\"lowcost:password\":[[true,true,true],[false,false,true],[false,false,true]],\"junk:password\":[[false,false,true],[false,false,true],[false,false,true]],\"empty:password\":[[false,false,true],[false,false,true],[false,false,true]],\"digest:pin\":[[true,true,true],[false,false,true],[false,false,true]],\"scryptOnDigest:pin\":[[true,true,true],[false,false,true],[false,false,true]]}" }),
+  "hash-cost": scenario({ title: "a test spends one scrypt run whatever the row holds, a digest field spends none, testHashAsync leaves the event loop running and testHash blocks it", body: COST, printed: "{\"emptyVsHashed\":true,\"junkVsHashed\":true,\"digestCheaper\":true,\"asyncKeepsLoopRunning\":true,\"syncBlocksLoop\":true}" }),
   "hash-outdated": scenario({ title: "isHashOutdated flags any scrypt string whose ln, r or p differs from the current cost", body: OUTDATED, printed: "{\"fresh\":[true,false],\"sameCost\":[true,false],\"lowerP\":[true,true],\"higherR\":[true,true],\"lowerLn\":[true,true],\"notScrypt\":[false,true]}" }),
   "hash-digest": scenario({ title: "a field with an algorithm stores a salted digest with the row's shared salt", body: DIGEST, printed: "{\"algorithms\":[true,true,false,88,24],\"others\":[true,true],\"algorithmTests\":[true,true,false],\"wrongDigest\":false,\"storedDigest\":true,\"sharedSalt\":true,\"saltIsText\":true,\"freshSaltPerRow\":true,\"saltReusedOnLaterWrite\":[true,true],\"testDigest\":[true,false,true],\"digestNeverOutdated\":false,\"scryptOnDigestField\":[true,false],\"otherDigestRefused\":false}" }),
 } satisfies { [id: string]: Journey };

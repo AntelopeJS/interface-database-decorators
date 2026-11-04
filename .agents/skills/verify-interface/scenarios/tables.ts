@@ -67,6 +67,8 @@ const FIELD_TYPES = `
     address: [d.Field({ street: "string", geo: { lat: "number", lng: "number" } })],
     total: [d.Field(codec), d.Index()],
     lateIndex: [d.Index(), d.Field("number")],
+    slugOnly: [d.Index()],
+    stamped: [d.CreationTime()],
     plain: [],
   });
   d.RegisterTable("orders", "fld")(Order);
@@ -80,7 +82,16 @@ const FIELD_TYPES = `
     codecIsTheSameObject: fields.total === codec,
     lateIndexType: fields.lateIndex,
     indexes: Object.keys(iface.Schema.get("fld").definition.orders.indexes),
+    leftOut: ["slugOnly", "stamped", "plain"].map((name) => name in fields),
   };
+`;
+
+const FORWARD_RELATION = `
+  class Early extends d.Table {}
+  decorate(Early, { laterId: [d.Field("string"), d.Relation({ to: () => Later })] });
+  class Later extends d.Table {}
+  const relation = d.getMetadata(Early, d.RelationStaticMetadata).relations.laterId;
+  return { resolves: relation.to() === Later, toField: relation.toField ?? "undefined" };
 `;
 
 const RELATION = `
@@ -252,7 +263,8 @@ export const TABLE_JOURNEYS = {
     stored: [{ name: "the indexes of the users collection", expression: "$DB.getCollection('idx__users').getIndexes().map((i) => [i.name, i.unique === true]).sort()", expected: "[[\"_id_\",false],[\"age__i\",false],[\"email__i\",true],[\"name\",false],[\"name__i\",false]]" }],
   }),
   "group-flags": scenario({ title: "unique and crossInstance on any field of a group apply to the whole group", body: GROUP_FLAGS, printed: "{\"indexes\":{\"ab\":{\"fields\":[\"a\",\"b\"],\"unique\":true},\"cd\":{\"fields\":[\"c\",\"e\"],\"crossInstance\":true},\"ef\":{\"fields\":[\"f\",\"g\",\"h\"],\"crossInstance\":true},\"ij\":{\"fields\":[\"i\",\"j\"],\"unique\":true},\"plain\":{\"fields\":[\"k\",\"l\"]}},\"sameKey\":{\"name\":\"DuplicateKeyError\",\"message\":\"Duplicate key on index \\\"ab\\\" (a, b)\"},\"otherSecond\":1}" }),
-  "field-types": scenario({ title: "Field hands every type to the database unchanged and combines with Index in either order", body: FIELD_TYPES, printed: "{\"names\":[\"id\",\"tags\",\"address\",\"total\",\"lateIndex\"],\"id\":\"string\",\"tags\":[\"string\"],\"address\":{\"street\":\"string\",\"geo\":{\"lat\":\"number\",\"lng\":\"number\"}},\"codecIsTheSameObject\":true,\"lateIndexType\":\"number\",\"indexes\":[\"total\",\"lateIndex\"]}" }),
+  "forward-relation": scenario({ title: "a Relation thunk is not called while the decorator runs, so it can name a class declared later", body: FORWARD_RELATION, printed: "{\"resolves\":true,\"toField\":\"undefined\"}" }),
+  "field-types": scenario({ title: "Field hands every type to the database unchanged and combines with Index in either order", body: FIELD_TYPES, printed: "{\"names\":[\"id\",\"tags\",\"address\",\"total\",\"lateIndex\"],\"id\":\"string\",\"tags\":[\"string\"],\"address\":{\"street\":\"string\",\"geo\":{\"lat\":\"number\",\"lng\":\"number\"}},\"codecIsTheSameObject\":true,\"lateIndexType\":\"number\",\"indexes\":[\"total\",\"lateIndex\",\"slugOnly\"],\"leftOut\":[false,false,false]}" }),
   "relation-metadata": scenario({ title: "Relation records links without enforcing them", body: RELATION, printed: "{\"relationFields\":[\"authorId\",\"tagIds\"],\"authorTarget\":true,\"authorToField\":null,\"tagMany\":true,\"tagToField\":\"name\",\"dangling\":[\"nobody\",[\"ghost\"]],\"fieldsKept\":[\"authorId\",\"tagIds\",\"title\"],\"childRelations\":[\"authorId\",\"tagIds\",\"editorId\"],\"parentRelations\":[\"authorId\",\"tagIds\"]}" }),
   inheritance: scenario({ title: "a table subclass starts with a copy of its parent and never changes it", body: INHERITANCE, printed: "{\"late\":[true,true,\"crosses\"],\"built\":[{\"fields\":[\"a\",\"b\"],\"crossInstance\":true,\"unique\":true},{\"fields\":[\"a\",\"b\"],\"crossInstance\":true,\"unique\":true}],\"base\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\"],\"indexes\":[],\"unique\":[],\"cross\":[]},\"person\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\"],\"indexes\":[\"email\"],\"unique\":[\"email\"],\"cross\":[]},\"employee\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"email\",\"badge\"],\"indexes\":[\"email\",\"badge\"],\"unique\":[\"email\"],\"cross\":[]},\"contractor\":{\"table\":\"people\",\"schema\":\"inh\",\"fields\":[\"createdAt\",\"rate\"],\"indexes\":[],\"unique\":[],\"cross\":[]},\"cross\":{\"table\":\"crosses\",\"schema\":\"inh\",\"fields\":[\"a\",\"b\",\"c\"],\"indexes\":[\"ab\",\"c\"],\"unique\":[\"ab\"],\"cross\":[\"ab\"]},\"sub\":{\"table\":\"subs\",\"schema\":\"inh\",\"fields\":[\"a\",\"b\",\"c\",\"extra\"],\"indexes\":[\"ab\",\"c\"],\"unique\":[\"ab\"],\"cross\":[\"ab\"]}}" }),
   "combine-modifiers": scenario({ title: "Table.with combines the encryption, hashing and localization modifiers on one table", body: COMBINE, printed: "{\"stored\":[\"bio\",\"password\",\"privateInfo\"],\"privateInfo\":{\"address\":\"1 Main St\",\"phoneNumber\":\"555\"},\"password\":[true,false],\"bio\":[\"Bonjour\",\"Hello\"],\"mixins\":[\"function\",\"function\"]}" }),
