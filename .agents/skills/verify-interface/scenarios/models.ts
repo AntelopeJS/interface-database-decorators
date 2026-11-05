@@ -82,7 +82,7 @@ const VALIDATION = `
   await d.RegisterSchema("val");
   const Model = d.BasicDataModel(Person);
   const people = d.GetModel(Model);
-  const errorOf = async (promise) => { try { await promise; return null; } catch (error) { return { message: error.message, errors: error.errors }; } };
+  const errorOf = async (promise) => { try { await promise; return null; } catch (error) { return { isError: error instanceof Error, message: error.message, errors: error.errors }; } };
   const valid = Model.validate({ name: "Alice", age: 30 });
   const invalid = Model.validate({ name: 42, age: "old" });
   const notAnObject = Model.validate(null);
@@ -219,6 +219,24 @@ const COMPOUND = `
   return { exact: await titles("talk", "mon", "A"), other: await titles("talk", "mon", "B"), none: await titles("talk", "tue", "B"), order: await titles("mon", "talk", "A") };
 `;
 
+const GET_BY_KEYS = `
+  class Player extends d.Table {}
+  decorate(Player, { name: [d.Field("string"), d.Index()], rank: [d.Field("number"), d.Index()], active: [d.Field("boolean"), d.Index()] });
+  d.RegisterTable("players", "keys")(Player);
+  await d.RegisterSchema("keys");
+  const model = d.GetModel(d.BasicDataModel(Player));
+  await model.insert([{ name: "Ann", rank: 2, active: true }, { name: "Bob", rank: 12, active: false }, { name: "Cid", rank: 2, active: false }]);
+  await untilIndexed("keys__players", ["name", "rank", "active"]);
+  const names = async (index, ...keys) => (await model.getBy(index, ...keys)).map((row) => [row instanceof Player, row.name]).sort();
+  return {
+    number: await names("rank", 2),
+    numberIsNotText: await names("rank", "2"),
+    boolean: await names("active", false),
+    proxy: await names("name", iface.ValueProxy.constant("Bob")),
+    numberProxy: await names("rank", iface.ValueProxy.constant(12)),
+  };
+`;
+
 const PARTIAL = `
   const secretKey = "${KEY}";
   class UserProfile extends d.Table.with(d.EncryptionModifier, d.HashModifier, d.LocalizationModifier) {}
@@ -304,7 +322,7 @@ export const MODEL_JOURNEYS = {
   validation: scenario({
     title: "validate checks the io-ts codecs, and insert and update refuse invalid input only when asked",
     body: VALIDATION,
-    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1,\"oddMessages\":{\"ok\":false,\"errors\":[{\"field\":\"a\",\"message\":\"after a hole\"},{\"field\":\"b\",\"message\":\"invalid b\"}]},\"missingRequired\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingInArray\":{\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingStored\":[42,\"Bob\"],\"afterInsert\":\"  padded  \",\"storedLabels\":[\"  again  \",\" a \",\" b \",43],\"presentUndefined\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"absentAge\":{\"ok\":true}}",
+    printed: "{\"valid\":{\"ok\":true},\"invalid\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"notAnObject\":{\"ok\":false,\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"partialOk\":{\"ok\":true},\"partialEmpty\":{\"ok\":true},\"partialBad\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"tokenSkipped\":{\"ok\":true},\"optIn\":1,\"refused\":{\"isError\":true,\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"batchRefused\":{\"isError\":true,\"message\":\"validation failed: name (expected a string), age (invalid age)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"},{\"field\":\"age\",\"message\":\"invalid age\"}]},\"patched\":1,\"patchRefused\":{\"isError\":true,\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"objectPatchRefused\":{\"isError\":true,\"message\":\"validation failed: name (expected a string)\",\"errors\":[{\"field\":\"name\",\"message\":\"expected a string\"}]},\"unvalidatedPatch\":1,\"oddMessages\":{\"ok\":false,\"errors\":[{\"field\":\"a\",\"message\":\"after a hole\"},{\"field\":\"b\",\"message\":\"invalid b\"}]},\"missingRequired\":{\"isError\":true,\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingInArray\":{\"isError\":true,\"message\":\"validation failed: age (invalid age)\",\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"missingStored\":[42,\"Bob\"],\"afterInsert\":\"  padded  \",\"storedLabels\":[\"  again  \",\" a \",\" b \",43],\"presentUndefined\":{\"ok\":false,\"errors\":[{\"field\":\"age\",\"message\":\"invalid age\"}]},\"absentAge\":{\"ok\":true}}",
     stored: [{ name: "the people", expression: "$DB.getCollection('val__people').find().sort({ name: 1 }).toArray().map((r) => [r.name, r.age])", expected: "[[42,\"anything\"],[\"Bob\",\"old\"]]" }],
   }),
   "get-model": scenario({
@@ -315,6 +333,7 @@ export const MODEL_JOURNEYS = {
   }),
   "plain-data": scenario({ title: "toPlainData gives unlocked values without _internal, and leaves a still-locked field undefined", body: PLAIN_DATA, printed: "{\"pathResults\":[[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"],[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"],[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"]],\"keys\":[\"_id\",\"name\",\"password\",\"secret\",\"title\"],\"noInternal\":true,\"name\":\"Ann\",\"secret\":{\"token\":\"t\"},\"passwordIsHash\":true,\"lockedTitle\":\"undefined\",\"unlockedTitle\":\"Hello\",\"json\":{\"token\":\"t\"},\"stillLocked\":[\"password\",\"secret\",\"title\"],\"notAnInstance\":true}" }),
   "compound-get-by": scenario({ title: "getBy matches a compound index of three fields by its keys in field order", body: COMPOUND, printed: "{\"exact\":[\"one\"],\"other\":[\"two\"],\"none\":[],\"order\":[]}" }),
+  "get-by-keys": scenario({ title: "getBy matches a number, a boolean and a value proxy key as the index holds it, and a text key does not match a number", body: GET_BY_KEYS, printed: "{\"number\":[[true,\"Ann\"],[true,\"Cid\"]],\"numberIsNotText\":[],\"boolean\":[[true,\"Bob\"],[true,\"Cid\"]],\"proxy\":[[true,\"Bob\"]],\"numberProxy\":[[true,\"Bob\"]]}" }),
   "partial-update-keeps-modified-fields": scenario({
     title: "KNOWN FINDING AntelopeJS/interface-database-decorators#80, fails until fixed: update with one field keeps the row's other encrypted, hashed and localized fields",
     body: PARTIAL,

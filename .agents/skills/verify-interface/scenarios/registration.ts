@@ -12,6 +12,8 @@ const REGISTER = `
   class Box extends d.Table {}
   decorate(Box, { label: [d.Field("string")] });
   d.RegisterTable("boxes", "reg")(Box);
+  class Bare extends d.Table {}
+  d.RegisterTable("bare", "reg")(Bare);
   class Early extends d.Table {}
   d.RegisterTable("early", "preexisting")(Early);
   const noTables = await rejection(d.RegisterSchema("nothing-registered"));
@@ -24,12 +26,15 @@ const REGISTER = `
   const viaSchemaName = d.GetModel(d.BasicDataModel(Early)) !== undefined;
   await d.GetModel(d.BasicDataModel(Item)).insert({ name: "one" });
   await d.GetModel(d.BasicDataModel(Box)).insert({ label: "red" });
+  const [bareId] = await d.GetModel(d.BasicDataModel(Bare)).insert({});
   return {
     noTables: noTables && noTables.message,
     beforeBinding,
     returned: returned ?? "undefined",
     again: again ?? "undefined",
     tables: Object.keys(schema.definition),
+    bareDefinition: schema.definition.bare,
+    bareRow: (await d.GetModel(d.BasicDataModel(Bare)).get(bareId)) instanceof Bare,
     afterBinding,
     viaSchemaName,
     tableNameIsNotASchema: iface.Schema.get("items") === undefined,
@@ -207,10 +212,10 @@ const FIXTURE_NOT_EMPTY = `
 
 export const REGISTRATION_JOURNEYS = {
   "register-schema": scenario({
-    title: "RegisterSchema provisions the registered tables, binds the classes and refuses an unknown schema",
+    title: "RegisterSchema provisions the registered tables, one without any @Field included, binds the classes and refuses an unknown schema",
     body: REGISTER,
-    printed: "{\"noTables\":\"No tables registered for schema 'nothing-registered'\",\"beforeBinding\":\"Item is not bound to a schema: call RegisterSchema(\\\"reg\\\") in the module that declares it\",\"returned\":\"undefined\",\"again\":\"undefined\",\"tables\":[\"items\",\"boxes\"],\"afterBinding\":true,\"viaSchemaName\":true,\"tableNameIsNotASchema\":true}",
-    stored: [{ name: "the collections of the schema", expression: "$DB.getCollectionNames().filter((n) => n.startsWith('reg__')).sort()", expected: "[\"reg__boxes\",\"reg__items\"]" }],
+    printed: "{\"noTables\":\"No tables registered for schema 'nothing-registered'\",\"beforeBinding\":\"Item is not bound to a schema: call RegisterSchema(\\\"reg\\\") in the module that declares it\",\"returned\":\"undefined\",\"again\":\"undefined\",\"tables\":[\"items\",\"boxes\",\"bare\"],\"bareDefinition\":{\"fields\":{},\"indexes\":{}},\"bareRow\":true,\"afterBinding\":true,\"viaSchemaName\":true,\"tableNameIsNotASchema\":true}",
+    stored: [{ name: "the collections of the schema", expression: "$DB.getCollectionNames().filter((n) => n.startsWith('reg__')).sort()", expected: "[\"reg__bare\",\"reg__boxes\",\"reg__items\"]" }],
   }),
   fixtures: scenario({
     title: "fixtures fill an empty table once, with generated ids and the same conversion as an insert",

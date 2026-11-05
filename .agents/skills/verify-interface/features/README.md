@@ -24,8 +24,8 @@ Every journey runs a scenario inside `ajs module test` with `@antelopejs/mongodb
 |---|---|
 | The minor-bump rule of the interface kind | Fails at the current head, not at a change: `campaign/integration` exports more than the published 0.1.12 and `package.json` is still 0.1.12. Add it to `smoke` in the PR that bumps the version. |
 | A model "stays on the declaring module's database even when another module calls `GetModel`" (docs/4, GetModel) | Needs two modules with two databases behind one provider; one container serves one database here. |
-| `testHash` and `testHashAsync` spend one scrypt run whatever the row holds, and the time of a refusal does not tell the row's format (docs/3, HashModifier) | A timing claim; a journey comparing wall-clock times would be flaky on a shared machine. |
-| A digest field's test spends no scrypt run (docs/3) | Same: a timing claim. |
+| `testHash` and `testHashAsync` spend one scrypt run whatever the row holds, and the time of a refusal does not tell the row's format (docs/3, HashModifier) | Driven (`hashing/hash-cost`) by ratios against one async run, retried up to three times, not by absolute times. |
+| A digest field's test spends no scrypt run (docs/3) | Driven (`hashing/hash-cost`), by the same ratios. |
 | A stored scrypt string with `ln` of at least 16 × `r` refuses every candidate (docs/3) | Node's own scrypt cannot compute such a hash, so no correct candidate exists to refuse; the boundary just below it is driven. |
 | Encrypted fields keep whole-second dates only (docs/3) | Driven (`encryption-dates`). |
 | `Fixture` generator for a class that does not extend the decorated one throws "does not extend" | Not reachable through the public API; the generator is wrapped by the decorator. |

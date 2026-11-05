@@ -24,6 +24,12 @@ type _Update = Assert<Identical<Awaited<ReturnType<Instance["update"]>>, number>
 type _FromDatabase = Assert<Identical<ReturnType<typeof Model.fromDatabase>, User | undefined>>;
 type _ToDatabase = Assert<Identical<ReturnType<typeof Model.toDatabase>, Api.StoredRow<User>>>;
 type _Validate = Assert<Identical<ReturnType<typeof Model.validate>, Api.ValidationResult>>;
+type _ValidationResultShape = Assert<Identical<Api.ValidationResult, { ok: true } | { ok: false; errors: { field: string; message: string }[] }>>;
+type _PlainRowShape = Assert<Identical<Api.PlainRow<User>, { _id?: string; name?: string }>>;
+type _StoredRowField = Assert<Identical<Api.StoredRow<User>["name"], string | undefined>>;
+type _StoredRowId = Assert<Identical<Api.StoredRow<User>["_id"], string | undefined>>;
+type _StoredRowInternal = Assert<Identical<"_internal" extends keyof Api.StoredRow<User> ? true : false, true>>;
+type _StoredRowLocked = Assert<Identical<keyof NonNullable<Api.StoredRow<User>["_internal"]>, "meta" | "data">>;
 type _Register = Assert<Identical<typeof Api.RegisterSchema, (schemaId: string) => Promise<void>>>;
 type _Fixture = Assert<Identical<Api.DatumGeneratorOutput<{ a: 1 }>, { a: 1 } | { a: 1 }[] | undefined>>;
 type _PrimaryKey = Assert<Identical<User["_id"], string>>;
