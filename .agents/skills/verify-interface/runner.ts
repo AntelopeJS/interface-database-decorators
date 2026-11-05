@@ -66,7 +66,7 @@ const modules = {
 };
 if (process.env.VERIFY_API_PORT) {
   modules.api = {
-    source: { type: "package", package: "@antelopejs/api", version: "1.3.0" },
+    source: { type: "package", package: "@antelopejs/api", version: "1.6.0" },
     config: { servers: [{ protocol: "http", host: "127.0.0.1", port: Number(process.env.VERIFY_API_PORT) }], publicBaseUrl: "http://127.0.0.1:" + process.env.VERIFY_API_PORT },
   };
 }

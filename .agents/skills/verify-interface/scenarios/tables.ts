@@ -51,10 +51,10 @@ const GROUP_FLAGS = `
   d.RegisterTable("pairs", "grp")(Pair);
   await d.RegisterSchema("grp");
   const model = d.GetModel(d.BasicDataModel(Pair));
-  await model.insert({ a: "1", b: "x", c: "p", e: "q" });
-  const refusedKey = await refusedDuplicate(model, (attempt) => ({ a: "1", b: "x", c: "r" + attempt, e: "s" }));
+  await model.insert({ a: "1", b: "x", c: "p", e: "q", i: "first" });
+  const refusedKey = await refusedDuplicate(model, (attempt) => ({ a: "1", b: "x", c: "r" + attempt, e: "s", i: "refused" + attempt }));
   const sameKey = refusedKey && { name: refusedKey.name, message: refusedKey.message };
-  const otherSecond = await model.insert({ a: "1", b: "y", c: "p", e: "q" });
+  const otherSecond = await model.insert({ a: "1", b: "y", c: "p", e: "q", i: "other" });
   return { indexes: iface.Schema.get("grp").definition.pairs.indexes, sameKey, otherSecond: otherSecond.length };
 `;
 
