@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, symlinkSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { equal } from "@antelopejs/tooling-configs/verify";
@@ -29,6 +29,16 @@ type _Update = Assert<Identical<Awaited<ReturnType<Instance["update"]>>, number>
 type _FromDatabase = Assert<Identical<ReturnType<typeof Model.fromDatabase>, User | undefined>>;
 type _ToDatabase = Assert<Identical<ReturnType<typeof Model.toDatabase>, Api.StoredRow<User>>>;
 type _Validate = Assert<Identical<ReturnType<typeof Model.validate>, Api.ValidationResult>>;
+type _ModelWithoutInstance = Assert<CanCall<typeof Api.Model, [typeof Model]>>;
+Api.Fixture(async () => [{ _id: "a" }])(User);
+Api.Fixture(async () => ({ _id: "b" }))(User);
+class Greeter extends Api.Table { declare name: string; greet(): string { return this.name; } }
+const GreeterModel = Api.BasicDataModel(Greeter, "greeters");
+const greeterRow = GreeterModel.toDatabase({ name: "plain data" });
+type _ToDatabasePlain = Assert<Identical<typeof greeterRow, Api.StoredRow<Greeter>>>;
+class Admin extends Greeter.with(Api.HashModifier) {}
+type _WithKeepsFields = Assert<Identical<Admin["name"], string>>;
+type _WithKeepsMethods = Assert<Identical<ReturnType<Admin["greet"]>, string>>;
 type _ValidationResultShape = Assert<Identical<Api.ValidationResult, { ok: true } | { ok: false; errors: { field: string; message: string }[] }>>;
 type _PlainRowShape = Assert<Identical<Api.PlainRow<User>, { _id?: string; name?: string }>>;
 type _StoredRowField = Assert<Identical<Api.StoredRow<User>["name"], string | undefined>>;
@@ -299,7 +309,51 @@ const packedSubpaths: Journey = {
   },
 };
 
+/** Every complete TypeScript example of the docs and README, as a reader copies it; `fragment` blocks are partial by design and skipped. */
+function docExamples(repo: string): { name: string; source: string }[] {
+  const pages = [...readdirSync(join(repo, "docs")).filter((page) => page.endsWith(".md")).sort().map((page) => join("docs", page)), "README.md"];
+  const examples: { name: string; source: string }[] = [];
+  for (const page of pages) {
+    const text = readFileSync(join(repo, page), "utf8");
+    for (const match of text.matchAll(/^```(?:typescript|ts)([^\n]*)\n([\s\S]*?)^```/gm)) {
+      if (match[1].includes("fragment")) continue;
+      const line = text.slice(0, match.index).split("\n").length;
+      examples.push({ name: `${page.replace(/[/.]/g, "_")}_L${line}`, source: `${match[2]}\nexport {};\n` });
+    }
+  }
+  return examples;
+}
+
+const docsExamples: Journey = {
+  title: "every complete TypeScript example in the docs and README compiles against the packed declarations",
+  entryPoint: "a TypeScript consumer pasting each documented example into a module that depends on the packed package",
+  async run(context) {
+    const pack = packedPackage(context.work);
+    const folder = join(context.work, "examples");
+    mkdirSync(folder, { recursive: true });
+    symlinkSync(join(context.repo, "node_modules"), join(folder, "node_modules"), "dir");
+    const examples = docExamples(context.repo);
+    for (const example of examples) context.edit(`write ${example.name}`, join(folder, `${example.name}.ts`), example.source);
+    const tsconfig = {
+      compilerOptions: {
+        strict: true, noImplicitAny: false, skipLibCheck: true, experimentalDecorators: true, noEmit: true,
+        target: "es2022", module: "esnext", moduleResolution: "bundler", types: ["node"],
+        paths: { "@antelopejs/interface-database-decorators": [`${pack}/dist/index`], "@antelopejs/interface-database-decorators/*": [`${pack}/dist/*`] },
+      },
+      files: examples.map((example) => `${example.name}.ts`),
+    };
+    context.edit("write the consumer tsconfig", join(folder, "tsconfig.json"), `${JSON.stringify(tsconfig, null, 2)}\n`);
+    const compiled = await context.command("compile every documented example", "node", [`${context.repo}/node_modules/typescript/bin/tsc`, "-p", folder], { cwd: folder });
+    const failing = [...new Set([...compiled.stdout.matchAll(/^([\w.-]+)\.ts\(/gm)].map((match) => match[1]))];
+    context.expect(compiled.folder, [
+      { name: "the docs hold complete examples to compile", pass: examples.length >= 20, detail: examples.map((example) => example.name).join(" ") },
+      { name: "every documented example compiles", pass: compiled.exitCode === 0 && failing.length === 0, detail: `${failing.join(" ")}\n${compiled.stdout.slice(0, 1500)}` },
+    ]);
+  },
+};
+
 export const DECLARATION_JOURNEYS = {
+  "docs-examples": docsExamples,
   "model-signatures": declared("the model methods and RegisterSchema declare the return types the docs table lists", MODEL_SIGNATURES),
   "packed-subpaths": packedSubpaths,
   "rejected-calls": rejected("calls with a wrong parameter type or a missing key are refused by the declarations", REJECTED),

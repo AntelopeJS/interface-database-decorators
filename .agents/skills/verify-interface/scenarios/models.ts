@@ -46,6 +46,7 @@ const CONVERSION = `
   const sameInstance = Model.fromPlainData(fromPlain) === fromPlain;
   const stored = Model.toDatabase(fromPlain);
   const fromPlainDirect = Model.toDatabase({ _id: "a2", name: "Bea" });
+  const plainWithSecret = Model.toDatabase({ _id: "a4", name: "Eve", secret: "plain" });
   const record = { _id: "a3", name: "Cy" };
   const copy = Model.fromDatabase(record);
   const empty = Model.fromDatabase({});
@@ -57,6 +58,7 @@ const CONVERSION = `
   const viaGetAll = await model.getAll();
   const viaGetBy = await model.getBy("name", "Dee");
   return {
+    plainLocked: [plainWithSecret.secret === undefined, Object.keys(plainWithSecret._internal?.data ?? {})],
     fromPlain: [fromPlain instanceof Account, fromPlain.secret, fromPlain.name],
     sameInstance,
     storedShape: [stored instanceof Account, Object.keys(stored).sort(), stored._internal.data.secret.length, stored.secret === undefined],
@@ -331,7 +333,7 @@ export const MODEL_JOURNEYS = {
   conversion: scenario({
     title: "fromPlainData, fromDatabase and toDatabase convert without saving, and reads convert their rows",
     body: CONVERSION,
-    printed: "{\"fromPlain\":[true,\"s3cret\",\"Ann\"],\"sameInstance\":true,\"storedShape\":[false,[\"_id\",\"_internal\",\"name\"],3,true],\"plainDataShape\":[false,[\"_id\",\"name\"]],\"nullIsUndefined\":[true,true],\"emptyObjectIsAnInstance\":true,\"copyNotSame\":[true,true,false,\"Cy\"],\"afterConversions\":0,\"read\":[true,\"hidden\"],\"direct\":[false,\"Dee\",true],\"getAllConverted\":true,\"getByConverted\":[1,true,\"hidden\",\"hidden\",\"hidden\"]}",
+    printed: "{\"plainLocked\":[true,[\"secret\"]],\"fromPlain\":[true,\"s3cret\",\"Ann\"],\"sameInstance\":true,\"storedShape\":[false,[\"_id\",\"_internal\",\"name\"],3,true],\"plainDataShape\":[false,[\"_id\",\"name\"]],\"nullIsUndefined\":[true,true],\"emptyObjectIsAnInstance\":true,\"copyNotSame\":[true,true,false,\"Cy\"],\"afterConversions\":0,\"read\":[true,\"hidden\"],\"direct\":[false,\"Dee\",true],\"getAllConverted\":true,\"getByConverted\":[1,true,\"hidden\",\"hidden\",\"hidden\"]}",
     stored: [{ name: "the one saved account", expression: "$DB.getCollection('cnv__accounts').find().toArray().map((r) => [r.name, Object.keys(r._internal.data), r._internal.data.secret.length])", expected: "[[\"Dee\",[\"secret\"],3]]" }],
   }),
   validation: scenario({
