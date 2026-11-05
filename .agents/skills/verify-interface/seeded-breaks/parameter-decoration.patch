@@ -1,0 +1,13 @@
+diff --git a/src/model.ts b/src/model.ts
+index 3f26f32..41aa96d 100644
+--- a/src/model.ts
++++ b/src/model.ts
+@@ -419,7 +419,7 @@ export const Model = MakeParameterAndPropertyDecorator(
+   ) => {
+     if (isInstanceIdProvider(instanceIdOrCallback)) {
+       SetParameterProvider(target, key, index, (ctx: RequestContext) => {
+-        return GetModel(cl, instanceIdOrCallback(ctx));
++        return GetModel(cl);
+       });
+     } else {
+       SetParameterProvider(target, key, index, () =>

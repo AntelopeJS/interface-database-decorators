@@ -1,0 +1,204 @@
+import type { Journey } from "@antelopejs/tooling-configs/verify";
+
+import { scenario } from "../runner.ts";
+
+const PRODUCT = `
+  class Product extends d.Table.with(d.LocalizationModifier) {}
+  decorate(Product, {
+    price: [d.Field("number")],
+    name: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
+    description: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
+    bare: [d.Localized(), d.Field("string")],
+    summary: [d.Localized({ fallbackLocale: "en" }), d.Field("string")],
+  });
+  d.RegisterTable("products", "loc")(Product);
+  await d.RegisterSchema("loc");
+`;
+
+const LOCALIZE = `${PRODUCT}
+  const product = new Product();
+  product._id = "prod-123";
+  product.price = 99.99;
+  product.localize("en").name = "Premium Headphones";
+  product.localize("fr").name = "Casque Premium";
+  product.localize("es").name = "Auriculares Premium";
+  const spanish = product.localize("es");
+  const spanishNow = spanish.name;
+  const german = product.localize("de");
+  const germanNow = german.name;
+  const sameObject = [spanish === product, german === product, spanish === german];
+  const readNow = spanish.name;
+  product.localize("en").description = "Loud";
+  product.localize("fr").description = "";
+  const frenchEmpty = product.localize("fr").description;
+  product.localize("fr").bare = "sans repli";
+  const noFallback = [product.localize("fr").bare, product.localize("de").bare ?? "undefined"];
+  product.localize("en").summary = "short";
+  product.localize("fr").summary = "court";
+  const restricted = product.localize("en").localize("fr", ["name"]);
+  const restrictedReads = [restricted.name, restricted.summary];
+  const untouched = product.localize("en").localize("fr", []);
+  const emptyListReads = [untouched.name, untouched.summary];
+  return {
+    emptyListReads,
+    spanish: spanishNow,
+    germanFallsBack: germanNow,
+    sameObject,
+    readNow,
+    frenchEmpty,
+    noFallback,
+    restrictedReads,
+    fallbackLocaleOf: [d.LocalizationModifier.fallbackLocaleOf(Product, "name"), d.LocalizationModifier.fallbackLocaleOf(Product, "bare") ?? "undefined", d.LocalizationModifier.fallbackLocaleOf(Product, "price") ?? "undefined", d.LocalizationModifier.fallbackLocaleOf(Product, "missing") ?? "undefined"],
+  };
+`;
+
+const WILDCARD = `${PRODUCT}
+  const product = new Product();
+  product.localize("en").name = "Premium Headphones";
+  product.localize("fr").name = "Casque Premium";
+  const all = product.localize("*").name;
+  Object.assign(product.localize("*"), { name: { en: "Premium Headphones", fr: "Casque Premium", de: "Premium-Kopfhoerer", es: "" } });
+  const replaced = product.localize("*").name;
+  const german = product.localize("de").name;
+  const model = d.GetModel(d.BasicDataModel(Product));
+  const written = new Product();
+  written.localize("en").name = "Hello";
+  written.localize("fr").name = "Bonjour";
+  const [id] = await model.insert(written);
+  const loaded = await model.get(id);
+  return { all, replaced, german, stored: [loaded.localize("fr").name, loaded.localize("it").name, loaded.localize("*").name] };
+`;
+
+const WILDCARD_REPLACE = `${PRODUCT}
+  const model = d.GetModel(d.BasicDataModel(Product));
+  const product = new Product();
+  product._id = "wild";
+  product.price = 3;
+  product.localize("en").name = "Hello";
+  product.localize("fr").name = "Bonjour";
+  const before = product.localize("*").name;
+  Object.assign(product.localize("*"), { name: { de: "Hallo" } });
+  const afterWrite = product.localize("*").name;
+  const fallbacks = [product.localize("fr").name ?? "undefined", product.localize("en").name ?? "undefined", product.localize("de").name];
+  await model.insert(product);
+  const loaded = await model.get("wild");
+  return { before, afterWrite, fallbacks, read: loaded.localize("*").name, readFr: loaded.localize("fr").name ?? "undefined" };
+`;
+
+const STORED = `${PRODUCT}
+  const model = d.GetModel(d.BasicDataModel(Product));
+  const first = new Product();
+  first.price = 5;
+  first.localize("en").name = "Hello";
+  first.localize("fr").name = "Bonjour";
+  first.localize("de").name = "";
+  const [id] = await model.insert(first);
+  const alone = new Product();
+  alone.price = 6;
+  alone.localize("fr").name = "Seulement";
+  const [second] = await model.insert(alone);
+  const only = await model.get(second);
+  const raw = await rawTable("loc", "products").get(id);
+  await rawTable("loc", "products").insert({ _id: "raw-empty", price: 7, _internal: { meta: {}, data: { name: { en: "Hello", fr: "" }, bare: { fr: "" } } } }).run();
+  const rawRow = await model.get("raw-empty");
+  const fromRaw = [rawRow.localize("fr").name, rawRow.localize("fr").bare ?? "undefined", rawRow.localize("en").name];
+  return { fromRaw, rawKeys: Object.keys(raw._internal.data).sort(), raw: raw._internal.data.name, onlyFrench: [only.localize("fr").name, only.localize("en").name ?? "undefined"] };
+`;
+
+const AUTO = `
+  class Article extends d.Table {}
+  decorate(Article, { title: [d.Field("string")], creationDate: [d.CreationTime(), d.Field("date")], updateDate: [d.UpdateTime(), d.Field("date")], born: [d.CreationTime(), d.Field("date")], touched: [d.UpdateTime(), d.Field("date")] });
+  d.RegisterTable("articles", "auto")(Article);
+  await d.RegisterSchema("auto");
+  const model = d.GetModel(d.BasicDataModel(Article));
+  const before = Date.now();
+  const [id] = await model.insert({ title: "One", creationDate: new Date(0), updateDate: new Date(0) });
+  const inserted = await rawTable("auto", "articles").get(id);
+  await sleep(60);
+  await model.update(id, { title: "Two", creationDate: new Date(0) });
+  const updated = await rawTable("auto", "articles").get(id);
+  const batch = await model.insert([{ title: "B1", creationDate: new Date(0) }, { title: "B2" }, { title: "B3", updateDate: new Date(0) }]);
+  const batchRows = await Promise.all(batch.map((batchId) => rawTable("auto", "articles").get(batchId)));
+  const after = Date.now();
+  const stamp = (value) => new Date(value).getTime();
+  return {
+    batchStamped: batchRows.map((row) => [row.title, stamp(row.creationDate) >= before, stamp(row.updateDate) >= before, stamp(row.born) >= before, stamp(row.touched) >= before]),
+    insertSetsBoth: [stamp(inserted.creationDate) >= before, stamp(inserted.updateDate) >= before, stamp(inserted.creationDate) <= after],
+    creationKeptOnUpdate: stamp(updated.creationDate) === stamp(inserted.creationDate),
+    updateRefreshed: stamp(updated.updateDate) >= stamp(inserted.updateDate) + 50,
+    secondFieldsToo: [stamp(inserted.born) >= before, stamp(inserted.touched) >= before, stamp(updated.born) === stamp(inserted.born), stamp(updated.touched) >= stamp(inserted.touched) + 50],
+    noMixinNeeded: Object.getPrototypeOf(Article.prototype) === d.Table.prototype,
+  };
+`;
+
+const QUERY = `${PRODUCT}
+  const seed = (id, name, bare) => rawTable("loc", "products").insert({ _id: id, price: 1, _internal: { meta: {}, data: bare ? { name, bare } : { name } } }).run();
+  await seed("only-en", { en: "Hello" }, { en: "Hello" });
+  await seed("has-de", { en: "Hi", de: "Hallo" }, { en: "Hi", de: "Hallo" });
+  const written = new Product();
+  written._id = "empty-de";
+  written.localize("en").name = "Hello";
+  written.localize("de").name = "";
+  await d.GetModel(d.BasicDataModel(Product)).insert(written);
+  await seed("none", { fr: "Salut" });
+  const table = rawTable("loc", "products");
+  const askedFor = async (locale, text) => (await table.filter((row) => d.unlockrequest(Product, row, "name", [{ modifier: d.LocalizationModifier, args: [locale] }]).eq(text))).map((row) => row._id).sort();
+  const noFallback = async (locale, text) => (await table.filter((row) => d.unlockrequest(Product, row, "bare", [{ modifier: d.LocalizationModifier, args: [locale] }]).eq(text))).map((row) => row._id).sort();
+  return {
+    germanHello: await askedFor("de", "Hello"),
+    germanHallo: await askedFor("de", "Hallo"),
+    englishHello: await askedFor("en", "Hello"),
+    frenchSalut: await askedFor("fr", "Salut"),
+    frenchHello: await askedFor("fr", "Hello"),
+    noFallbackGerman: await noFallback("de", "Hello"),
+    noFallbackEnglish: await noFallback("en", "Hello"),
+    noFallbackOwnText: await noFallback("de", "Hallo"),
+  };
+`;
+
+const AUTO_OBJECT = `
+  class Article extends d.Table {}
+  decorate(Article, { title: [d.Field("string")], creationDate: [d.CreationTime(), d.Field("date")], updateDate: [d.UpdateTime(), d.Field("date")] });
+  d.RegisterTable("articles", "autoobj")(Article);
+  await d.RegisterSchema("autoobj");
+  const model = d.GetModel(d.BasicDataModel(Article));
+  const [id] = await model.insert({ title: "One" });
+  const inserted = await rawTable("autoobj", "articles").get(id);
+  await sleep(60);
+  await model.update({ _id: id, title: "Two", creationDate: new Date(0) });
+  const updated = await rawTable("autoobj", "articles").get(id);
+  const stamp = (value) => new Date(value).getTime();
+  return {
+    title: updated.title,
+    updateRefreshed: stamp(updated.updateDate) >= stamp(inserted.updateDate) + 50,
+    creationKept: stamp(updated.creationDate) === stamp(inserted.creationDate),
+  };
+`;
+
+export const LOCALIZATION_JOURNEYS = {
+  localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"emptyListReads\":[\"Premium Headphones\",\"short\"],\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"short\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
+  "localized-query": scenario({ title: "a query through unlockrequest answers the requested locale and falls back to the fallback locale, an empty text included", body: QUERY, printed: "{\"germanHello\":[\"empty-de\",\"only-en\"],\"germanHallo\":[\"has-de\"],\"englishHello\":[\"empty-de\",\"only-en\"],\"frenchSalut\":[\"none\"],\"frenchHello\":[\"empty-de\",\"only-en\"],\"noFallbackGerman\":[],\"noFallbackEnglish\":[\"only-en\"],\"noFallbackOwnText\":[\"has-de\"]}" }),
+  "localize-wildcard-replace": scenario({
+    title: "a wildcard write replaces every stored translation",
+    body: WILDCARD_REPLACE,
+    printed: "{\"before\":{\"en\":\"Hello\",\"fr\":\"Bonjour\"},\"afterWrite\":{\"de\":\"Hallo\"},\"fallbacks\":[\"undefined\",\"undefined\",\"Hallo\"],\"read\":{\"de\":\"Hallo\"},\"readFr\":\"undefined\"}",
+    stored: [{ name: "the stored translations", expression: "$DB.getCollection('loc__products').find({ _id: 'wild' }).toArray().map((r) => r._internal.data.name)", expected: "[{\"de\":\"Hallo\"}]" }],
+  }),
+  "localize-wildcard": scenario({ title: "the wildcard key reads and writes every translation at once", body: WILDCARD, printed: "{\"all\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\"},\"replaced\":{\"en\":\"Premium Headphones\",\"fr\":\"Casque Premium\",\"de\":\"Premium-Kopfhoerer\"},\"german\":\"Premium-Kopfhoerer\",\"stored\":[\"Bonjour\",\"Hello\",{\"en\":\"Hello\",\"fr\":\"Bonjour\"}]}" }),
+  "localized-storage": scenario({
+    title: "a localized field is stored as one value per locale",
+    body: STORED,
+    printed: "{\"fromRaw\":[\"Hello\",\"undefined\",\"Hello\"],\"rawKeys\":[\"name\"],\"raw\":{\"en\":\"Hello\",\"fr\":\"Bonjour\"},\"onlyFrench\":[\"Seulement\",\"undefined\"]}",
+    stored: [{ name: "the stored translations", expression: "$DB.getCollection('loc__products').find().sort({ price: 1 }).toArray().map((r) => r._internal.data.name)", expected: "[{\"en\":\"Hello\",\"fr\":\"Bonjour\"},{\"fr\":\"Seulement\"},{\"en\":\"Hello\",\"fr\":\"\"}]" }],
+  }),
+} satisfies { [id: string]: Journey };
+
+export const AUTODATE_JOURNEYS = {
+  "autodate-object-update": scenario({ title: "update with the primary key inside the object refreshes UpdateTime and keeps CreationTime", body: AUTO_OBJECT, printed: "{\"title\":\"Two\",\"updateRefreshed\":true,\"creationKept\":true}" }),
+  autodate: scenario({
+    title: "CreationTime is set on insert and kept on update, UpdateTime is set on insert and refreshed on update",
+    body: AUTO,
+    printed: "{\"batchStamped\":[[\"B1\",true,true,true,true],[\"B2\",true,true,true,true],[\"B3\",true,true,true,true]],\"insertSetsBoth\":[true,true,true],\"creationKeptOnUpdate\":true,\"updateRefreshed\":true,\"secondFieldsToo\":[true,true,true,true],\"noMixinNeeded\":true}",
+    stored: [{ name: "the article dates", expression: "$DB.getCollection('auto__articles').find().sort({ title: 1 }).toArray().map((r) => [r.title, r.creationDate instanceof Date, r.updateDate instanceof Date, r.born instanceof Date, r.touched instanceof Date])", expected: "[[\"B1\",true,true,true,true],[\"B2\",true,true,true,true],[\"B3\",true,true,true,true],[\"Two\",true,true,true,true]]" }],
+  }),
+} satisfies { [id: string]: Journey };

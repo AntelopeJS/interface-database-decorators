@@ -1,0 +1,12 @@
+diff --git a/src/common.ts b/src/common.ts
+index 2cdd7a1..d097554 100644
+--- a/src/common.ts
++++ b/src/common.ts
+@@ -40,7 +40,6 @@ export type PlainData<T> = {
+  */
+ export type DatumGeneratorOutput<Row extends object = object> =
+   | Row
+-  | Row[]
+   | undefined;
+ /**
+  * A fixture generator of a table class, called with the class registered into

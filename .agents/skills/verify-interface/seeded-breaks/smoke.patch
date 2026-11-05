@@ -1,0 +1,13 @@
+diff --git a/src/model.ts b/src/model.ts
+index 3f26f32..2b6395b 100644
+--- a/src/model.ts
++++ b/src/model.ts
+@@ -298,7 +298,7 @@ export function BasicDataModel<T extends object>(
+      * @returns Delete result
+      */
+     public delete(id: string) {
+-      return this.table.get(id).delete().run();
++      return this.table.get(id).run();
+     }
+   };
+   return Model;

@@ -1,0 +1,13 @@
+diff --git a/src/modifiers/localization.ts b/src/modifiers/localization.ts
+index c672436..b4d4ec0 100644
+--- a/src/modifiers/localization.ts
++++ b/src/modifiers/localization.ts
+@@ -24,7 +24,7 @@ const EMPTY_TEXT = "";
+ 
+ function withoutEmptyTexts<V>(values: Record<string, V>): Record<string, V> {
+   return Object.fromEntries(
+-    Object.entries(values).filter(([, value]) => value !== EMPTY_TEXT),
++    Object.entries(values).filter(([, value]) => value !== undefined),
+   );
+ }
+ 
