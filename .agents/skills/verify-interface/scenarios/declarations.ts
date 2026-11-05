@@ -18,6 +18,11 @@ type Instance = InstanceType<typeof Model>;
 type _Get = Assert<Identical<ReturnType<Instance["get"]>, PromiseLike<User | undefined>>>;
 type _GetBy = Assert<Identical<ReturnType<Instance["getBy"]>, PromiseLike<User[]>>>;
 type _GetAll = Assert<Identical<ReturnType<Instance["getAll"]>, PromiseLike<User[]>>>;
+type _GetByNumberKey = Assert<CanCall<Instance["getBy"], ["name", number]>>;
+type _GetByBooleanKey = Assert<CanCall<Instance["getBy"], ["name", boolean]>>;
+type _GetByCompoundKeys = Assert<CanCall<Instance["getBy"], ["name", string, number, boolean]>>;
+type _GetByProxyKey = Assert<CanCall<Instance["getBy"], ["name", Db.ValueProxy<string | number | boolean>]>>;
+type _IndexKeyIsGetAllKey = Assert<Identical<Api.IndexKey, Exclude<Parameters<Db.Table<object>["getAll"]>[0], unknown[]>>>;
 type _Insert = Assert<Identical<ReturnType<Instance["insert"]>, Promise<string[]>>>;
 type _Delete = Assert<Identical<ReturnType<Instance["delete"]>, Promise<number>>>;
 type _Update = Assert<Identical<Awaited<ReturnType<Instance["update"]>>, number>>;
@@ -195,7 +200,7 @@ function declared(title: string, probe: string): Journey {
     entryPoint: "a TypeScript consumer compiling against the packed declarations",
     async run(context) {
       const file = `${context.work}/probe.ts`;
-      context.edit("write the signature probe", file, `import * as Api from "${context.repo}/dist/index";\n${PROBE_HEADER}\n${probe}`);
+      context.edit("write the signature probe", file, `import * as Api from "${context.repo}/dist/index";\nimport type * as Db from "${context.repo}/node_modules/@antelopejs/interface-database";\n${PROBE_HEADER}\n${probe}`);
       const compiled = await context.command("compile the signature probe", "node", [
         `${context.repo}/node_modules/typescript/bin/tsc`,
         "--noEmit",

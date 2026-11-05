@@ -206,7 +206,17 @@ const COMPOUND = `
     title: [d.Field("string")],
   });
   d.RegisterTable("events", "tri")(Event);
+  class Seat extends d.Table {}
+  decorate(Seat, {
+    row: [d.Field("number"), d.Index({ group: "spot" })],
+    col: [d.Field("number"), d.Index({ group: "spot" })],
+    open: [d.Field("boolean"), d.Index({ group: "spot" })],
+    label: [d.Field("string")],
+  });
+  d.RegisterTable("seats", "tri")(Seat);
   await d.RegisterSchema("tri");
+  const seats = d.GetModel(d.BasicDataModel(Seat));
+  await seats.insert([{ row: 1, col: 2, open: true, label: "1-2" }, { row: 2, col: 1, open: true, label: "2-1" }, { row: 1, col: 2, open: false, label: "1-2 shut" }]);
   const model = d.GetModel(d.BasicDataModel(Event));
   await model.insert([
     { kind: "talk", day: "mon", room: "A", title: "one" },
@@ -216,7 +226,12 @@ const COMPOUND = `
   ]);
   await sleep(2500);
   const titles = async (...keys) => (await model.getBy("triple", ...keys)).map((row) => row.title).sort();
-  return { exact: await titles("talk", "mon", "A"), other: await titles("talk", "mon", "B"), none: await titles("talk", "tue", "B"), order: await titles("mon", "talk", "A") };
+  const labels = async (...keys) => (await seats.getBy("spot", ...keys)).map((row) => row.label).sort();
+  const constant = (value) => iface.ValueProxy.constant(value);
+  return {
+    exact: await titles("talk", "mon", "A"), other: await titles("talk", "mon", "B"), none: await titles("talk", "tue", "B"), order: await titles("mon", "talk", "A"),
+    numbers: await labels(1, 2, true), numbersAsText: await labels("1", "2", true), shut: await labels(1, 2, false), proxies: await labels(constant(2), constant(1), constant(true)),
+  };
 `;
 
 const GET_BY_KEYS = `
@@ -332,7 +347,7 @@ export const MODEL_JOURNEYS = {
     stored: [{ name: "the rows by instance", expression: "$DB.getCollection('gm__items').find().sort({ name: 1 }).toArray().map((r) => [r.name, r._instance])", expected: "[[\"default\",null],[\"tenant one\",\"t1\"],[\"tenant two\",\"t2\"]]" }],
   }),
   "plain-data": scenario({ title: "toPlainData gives unlocked values without _internal, and leaves a still-locked field undefined", body: PLAIN_DATA, printed: "{\"pathResults\":[[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"],[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"],[true,\"Ann\",{\"token\":\"t\"},true,\"Hello\"]],\"keys\":[\"_id\",\"name\",\"password\",\"secret\",\"title\"],\"noInternal\":true,\"name\":\"Ann\",\"secret\":{\"token\":\"t\"},\"passwordIsHash\":true,\"lockedTitle\":\"undefined\",\"unlockedTitle\":\"Hello\",\"json\":{\"token\":\"t\"},\"stillLocked\":[\"password\",\"secret\",\"title\"],\"notAnInstance\":true}" }),
-  "compound-get-by": scenario({ title: "getBy matches a compound index of three fields by its keys in field order", body: COMPOUND, printed: "{\"exact\":[\"one\"],\"other\":[\"two\"],\"none\":[],\"order\":[]}" }),
+  "compound-get-by": scenario({ title: "getBy matches a compound index of three fields by its keys in field order, with text, number, boolean and value proxy keys", body: COMPOUND, printed: "{\"exact\":[\"one\"],\"other\":[\"two\"],\"none\":[],\"order\":[],\"numbers\":[\"1-2\"],\"numbersAsText\":[],\"shut\":[\"1-2 shut\"],\"proxies\":[\"2-1\"]}" }),
   "get-by-keys": scenario({ title: "getBy matches a number, a boolean and a value proxy key as the index holds it, and a text key does not match a number", body: GET_BY_KEYS, printed: "{\"number\":[[true,\"Ann\"],[true,\"Cid\"]],\"numberIsNotText\":[],\"boolean\":[[true,\"Bob\"],[true,\"Cid\"]],\"proxy\":[[true,\"Bob\"]],\"numberProxy\":[[true,\"Bob\"]]}" }),
   "partial-update-keeps-modified-fields": scenario({
     title: "KNOWN FINDING AntelopeJS/interface-database-decorators#80, fails until fixed: update with one field keeps the row's other encrypted, hashed and localized fields",

@@ -30,7 +30,7 @@ journeys:
 - `get-model`: one cached model per class and instance id; instances stay apart.
 - `autodate-object-update`: the update form that carries the primary key, as in [autodate](autodate.md).
 - `plain-data`: `toPlainData` output.
-- `compound-get-by`: a three-field compound index.
+- `compound-get-by`: a three-field compound index, with text keys and with number, boolean and value proxy keys.
 - `get-by-keys`: a number, a boolean and a value proxy key, as `Table.getAll` takes them.
 - `partial-update-keeps-modified-fields`: known finding #80, fails until fixed.
 - `model-factory`: the table name comes from the argument or `RegisterTable`.

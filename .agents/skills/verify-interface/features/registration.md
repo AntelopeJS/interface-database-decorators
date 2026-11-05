@@ -27,7 +27,7 @@ journeys:
 ## Sub-features
 
 - `register-schema`: provisioning, a table without any `@Field` included, binding and the unknown-schema error.
-- `fixtures`: fixtures fill an empty table once, with generated ids and the insert conversion.
+- `fixtures`: fixtures fill an empty table once, a table without any `@Field` included, with generated ids and the insert conversion.
 - `fixture-race`: two starts write each row once; a subclass gets its parent's fixture.
 - `fixture-once`: the generator runs once over several `RegisterSchema` calls.
 - `fixture-mixed-tables`: only the empty table of a schema gets its fixture.

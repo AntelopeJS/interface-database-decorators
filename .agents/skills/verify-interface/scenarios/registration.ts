@@ -58,6 +58,9 @@ const FIXTURES = `
   class Nothing extends d.Table {}
   d.Fixture(() => undefined)(Nothing);
   d.RegisterTable("nothing", "fx")(Nothing);
+  class Marker extends d.Table {}
+  d.Fixture(() => [{ _id: "marker-a" }, { _id: "marker-b" }])(Marker);
+  d.RegisterTable("markers", "fx")(Marker);
   class Loose extends d.Table {}
   decorate(Loose, { name: [d.Field("string")] });
   d.Fixture(() => [{ _id: "loose", name: "never inserted" }])(Loose);
@@ -67,7 +70,7 @@ const FIXTURES = `
   d.RegisterTable("stamped", "fx")(Stamped);
   await d.RegisterSchema("fx");
   const count = (name) => rawTable("fx", name).count();
-  const first = { roles: await count("roles"), settings: await count("settings"), plans: await count("plans"), nothing: await count("nothing") };
+  const first = { roles: await count("roles"), settings: await count("settings"), plans: await count("plans"), nothing: await count("nothing"), markers: await count("markers") };
   await rawTable("fx", "roles").get("user").delete();
   await d.RegisterSchema("fx");
   const afterSecondStart = await count("roles");
@@ -220,7 +223,7 @@ export const REGISTRATION_JOURNEYS = {
   fixtures: scenario({
     title: "fixtures fill an empty table once, with generated ids and the same conversion as an insert",
     body: FIXTURES,
-    printed: "{\"first\":{\"roles\":2,\"settings\":1,\"plans\":3,\"nothing\":0},\"afterSecondStart\":1,\"plans\":[\"plans:fixture:0\",\"plans:fixture:1\",\"plans:fixture:2\"],\"unregisteredClassProvisioned\":false,\"hashedAtInsert\":[true,true],\"insertEventFired\":true}",
+    printed: "{\"first\":{\"roles\":2,\"settings\":1,\"plans\":3,\"nothing\":0,\"markers\":2},\"afterSecondStart\":1,\"plans\":[\"plans:fixture:0\",\"plans:fixture:1\",\"plans:fixture:2\"],\"unregisteredClassProvisioned\":false,\"hashedAtInsert\":[true,true],\"insertEventFired\":true}",
     stored: [
       { name: "the plan rows", expression: "$DB.getCollection('fx__plans').find({}, { name: 0 }).sort({ _id: 1 }).toArray().map((r) => [r._id, r.label])", expected: "[[\"plans:fixture:0\",\"free\"],[\"plans:fixture:1\",\"pro\"],[\"plans:fixture:2\",\"team\"]]" },
       { name: "the stamped row", expression: "$DB.getCollection('fx__stamped').find().sort({ _id: 1 }).toArray().map((r) => [r._id, r._internal.data.secret.startsWith('$' + 'scrypt' + '$ln=15,r=8,p=3$'), r._internal.data.secret.includes('hunter'), r.created !== undefined])", expected: "[[\"s1\",true,false,true],[\"s2\",true,false,true]]" },
