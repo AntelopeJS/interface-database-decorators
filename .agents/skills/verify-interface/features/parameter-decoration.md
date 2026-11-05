@@ -9,6 +9,7 @@ journeys:
   - custom-parameter-provider
   - property-decoration
   - crud-controller
+  - decorated-before-binding
 ---
 
 # Parameter decoration
@@ -22,6 +23,7 @@ journeys:
 - `custom-parameter-provider`: the docs' custom decorator example.
 - `property-decoration`: a property is set while a request is handled.
 - `crud-controller`: `@Model` beside `@Parameter` and `@RawBody` in a CRUD controller.
+- `decorated-before-binding`: a controller decorated before `RegisterSchema` runs, as a module declares it at import.
 
 ## How to get to it (user POV)
 

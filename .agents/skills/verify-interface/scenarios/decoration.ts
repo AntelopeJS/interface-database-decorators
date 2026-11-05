@@ -82,7 +82,37 @@ const CUSTOM_PROVIDER = `${HTTP}
   return { x: await call("/custom/x"), y: await call("/custom/y") };
 `;
 
+const EARLY = `
+  const api = require(require.resolve("@antelopejs/interface-api", { paths: [dist] }));
+  const base = "http://127.0.0.1:" + process.env.VERIFY_API_PORT;
+  const route = (Controller, method, verb, path, handler, params) => {
+    Controller.prototype[method] = handler;
+    params.forEach((apply, index) => apply(Controller.prototype, method, index));
+    api[verb](path)(Controller.prototype, method, Object.getOwnPropertyDescriptor(Controller.prototype, method));
+  };
+  const call = async (path, init) => { const response = await fetch(base + path, init); const text = await response.text(); return { status: response.status, body: text }; };
+  class Note extends d.Table {}
+  decorate(Note, { title: [d.Field("string")] });
+  d.RegisterTable("notes", "early")(Note);
+  const NoteModel = d.BasicDataModel(Note);
+  class Early extends api.Controller("/early") {}
+  const decorated = caught(() => route(Early, "list", "Get", "/", async (model) => (await model.getAll()).map((row) => row.title), [d.Model(NoteModel, "main")]));
+  class Props extends api.Controller("/early-props") {}
+  const decoratedProperty = caught(() => d.Model(NoteModel)(Props.prototype, "notes"));
+  route(Props, "list", "Get", "/", async function () { return (await this.notes.getAll()).map((row) => row.title); }, []);
+  await d.RegisterSchema("early");
+  await d.GetModel(NoteModel, "main").insert({ title: "after binding" });
+  await d.GetModel(NoteModel).insert({ title: "default after binding" });
+  return { decorated, decoratedProperty, list: await call("/early"), props: await call("/early-props") };
+`;
+
 export const DECORATION_JOURNEYS = {
+  "decorated-before-binding": scenario({
+    title: "@Model on a controller declared before RegisterSchema binds the table resolves the model per request, not when the decorator runs",
+    body: EARLY,
+    printed: "{\"decorated\":null,\"decoratedProperty\":null,\"list\":{\"status\":200,\"body\":\"[\\\"after binding\\\"]\"},\"props\":{\"status\":200,\"body\":\"[\\\"default after binding\\\"]\"}}",
+    api: true,
+  }),
   "fixed-instance": scenario({
     title: "@Model with an instance id injects the cached model of that instance into a controller method",
     body: FIXED,

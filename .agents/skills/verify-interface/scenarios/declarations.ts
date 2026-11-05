@@ -76,6 +76,21 @@ class Options extends Api.Table.with(Api.EncryptionModifier, Api.HashModifier, A
   @Api.Localized({ fallbackLocale: "en" }) @Api.Field("string") declare e: string;
 }
 type _Table = Assert<Identical<Parameters<typeof User.table>[0], Api.TableTarget | undefined>>;
+class Custom {
+  static readonly schemaName = "manual";
+  readonly table: Db.Table<object>;
+  constructor(readonly database: Db.SchemaInstance<any>) {
+    this.table = database.table("things");
+  }
+  static fromDatabase(obj: any): object | undefined {
+    return obj ? obj : undefined;
+  }
+  static fromPlainData(obj: object): object {
+    return obj;
+  }
+}
+const custom = Api.GetModel(Custom);
+type _CustomModel = Assert<Identical<typeof custom, Custom>>;
 `;
 
 const MODIFIER_SIGNATURES = `
@@ -142,6 +157,7 @@ const REJECTED = [
   "Api.Encrypted({ secretKey: 5 });",
   'Api.Encrypted({ secretKey: "k", algorithm: 5 });',
   "Api.Relation({ to: User });",
+  "Api.Relation({ to: () => Date });",
   "Api.Localized({ fallbackLocale: true });",
   "Api.Hashed({ algorithm: true });",
   "Api.Model(Model, 5);",

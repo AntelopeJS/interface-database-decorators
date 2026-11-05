@@ -37,7 +37,10 @@ const LOCALIZE = `${PRODUCT}
   product.localize("fr").summary = "court";
   const restricted = product.localize("en").localize("fr", ["name"]);
   const restrictedReads = [restricted.name, restricted.summary];
+  const untouched = product.localize("en").localize("fr", []);
+  const emptyListReads = [untouched.name, untouched.summary];
   return {
+    emptyListReads,
     spanish: spanishNow,
     germanFallsBack: germanNow,
     sameObject,
@@ -173,7 +176,7 @@ const AUTO_OBJECT = `
 `;
 
 export const LOCALIZATION_JOURNEYS = {
-  localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"short\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
+  localize: scenario({ title: "localize switches the locale of an instance and falls back when a translation is missing or empty", body: LOCALIZE, printed: "{\"emptyListReads\":[\"Premium Headphones\",\"short\"],\"spanish\":\"Auriculares Premium\",\"germanFallsBack\":\"Premium Headphones\",\"sameObject\":[true,true,true],\"readNow\":\"Premium Headphones\",\"frenchEmpty\":\"Loud\",\"noFallback\":[\"sans repli\",\"undefined\"],\"restrictedReads\":[\"Casque Premium\",\"short\"],\"fallbackLocaleOf\":[\"en\",\"undefined\",\"undefined\",\"undefined\"]}" }),
   "localized-query": scenario({ title: "a query through unlockrequest answers the requested locale and falls back to the fallback locale, an empty text included", body: QUERY, printed: "{\"germanHello\":[\"empty-de\",\"only-en\"],\"germanHallo\":[\"has-de\"],\"englishHello\":[\"empty-de\",\"only-en\"],\"frenchSalut\":[\"none\"],\"frenchHello\":[\"empty-de\",\"only-en\"],\"noFallbackGerman\":[],\"noFallbackEnglish\":[\"only-en\"],\"noFallbackOwnText\":[\"has-de\"]}" }),
   "localize-wildcard-replace": scenario({
     title: "a wildcard write replaces every stored translation",

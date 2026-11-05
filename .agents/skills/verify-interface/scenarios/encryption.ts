@@ -61,7 +61,13 @@ const DATES = `${DECRYPT}
   const [id] = await model.insert({ when: moment, plainObject: { type: "Date", value: "not a date", extra: 1 } });
   const read = await model.get(id);
   const raw = await rawTable("encdate", "events").get(id);
+  const [taggedId] = await model.insert({ when: moment, plainObject: { type: "Date", value: moment.toUTCString(), extra: 1 } });
+  const tagged = (await model.get(taggedId)).plainObject;
+  const [twoKeyId] = await model.insert({ when: moment, plainObject: { type: "Date", value: "x" } });
+  const twoKey = (await model.get(twoKeyId)).plainObject;
   return {
+    taggedKept: [tagged instanceof Date, tagged],
+    twoKeyKept: [twoKey instanceof Date, twoKey],
     isDate: read.when instanceof Date,
     iso: read.when.toISOString(),
     storedText: JSON.parse(decrypt(raw._internal.data.when)),
@@ -104,6 +110,6 @@ export const ENCRYPTION_JOURNEYS = {
       },
     ],
   }),
-  "encryption-dates": scenario({ title: "an encrypted Date comes back as a Date with whole-second precision", body: DATES, printed: "{\"isDate\":true,\"iso\":\"2026-01-02T03:04:05.000Z\",\"storedText\":{\"value\":\"Fri, 02 Jan 2026 03:04:05 GMT\",\"type\":\"Date\"},\"lookalikeKept\":{\"type\":\"Date\",\"value\":\"not a date\",\"extra\":1},\"nested\":[true,\"2026-01-02T03:04:05.000Z\",true,\"text\",true,\"2026-01-02T03:04:05.000Z\"]}" }),
+  "encryption-dates": scenario({ title: "an encrypted Date comes back as a Date with whole-second precision", body: DATES, printed: "{\"taggedKept\":[false,{\"type\":\"Date\",\"value\":\"Fri, 02 Jan 2026 03:04:05 GMT\",\"extra\":1}],\"twoKeyKept\":[false,{\"type\":\"Date\",\"value\":\"x\"}],\"isDate\":true,\"iso\":\"2026-01-02T03:04:05.000Z\",\"storedText\":{\"value\":\"Fri, 02 Jan 2026 03:04:05 GMT\",\"type\":\"Date\"},\"lookalikeKept\":{\"type\":\"Date\",\"value\":\"not a date\",\"extra\":1},\"nested\":[true,\"2026-01-02T03:04:05.000Z\",true,\"text\",true,\"2026-01-02T03:04:05.000Z\"]}" }),
   "encryption-keys": scenario({ title: "the key goes to the cipher as a UTF-8 string, so a hex-encoded key is refused", body: KEYS, printed: "{\"hexKeyBytes\":64,\"hexRefused\":{\"name\":\"RangeError\",\"message\":\"Invalid key length\"},\"goodStored\":\"kept\",\"hexStored\":0}" }),
 } satisfies { [id: string]: Journey };
