@@ -9,6 +9,8 @@
 
 Database tables and data models as TypeScript classes, on top of [`@antelopejs/interface-database`](https://github.com/AntelopeJS/interface-database). Declare fields and indexes with decorators, then read and write rows through a typed model.
 
+Part of [AntelopeJS](https://github.com/AntelopeJS/antelopejs). Used by [AntelopeJS DMS](https://github.com/AntelopeJS/dms), the open-source back office for your PostgreSQL, MongoDB or RethinkDB database.
+
 ## What it offers
 
 - `Table`, `@RegisterTable`, `@Field`, `@Index` and `@Fixture` declare tables, indexes and seed rows; `RegisterSchema` provisions them.
@@ -92,11 +94,11 @@ The package declares these `@antelopejs/*` peer dependencies:
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                          | Supported         | Tested with                                                    |
-| -------------------------------- | ----------------- | -------------------------------------------------------------- |
-| `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` | `0.0.15`                                                       |
-| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz`     |
-| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `file:.campaign/tgz/antelopejs-interface-database-724ff72.tgz` |
+| Package                          | Supported         | Tested with |
+| -------------------------------- | ----------------- | ----------- |
+| `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` | `0.0.15`    |
+| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `0.4.0`     |
+| `@antelopejs/interface-database` | `>=0.1.11 <1.0.0` | `0.3.0`     |
 
 <!-- antelopejs-docs-compat:end -->
 
