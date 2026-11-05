@@ -23,19 +23,16 @@ const config: VerifyConfig = {
     data: {
       globs: ["src/model.ts", "src/database.ts"],
       funnels: [],
-      containments: ["models/crud"],
       why: "model.insert, update and delete and RegisterSchema's fixtures write and remove rows in the consumer's database",
     },
     format: {
       globs: ["src/modifiers/encryption.ts", "src/modifiers/hash.ts", "src/modifiers/localization.ts", "src/modifiers/internal/records.ts"],
       funnels: [],
-      containments: ["encryption/encryption-at-rest", "hashing/hash-storage"],
       why: "the encrypted [ciphertext, iv, authTag] triple, the scrypt string with its ln, r and p cost, salt and key, the digest and salt and the per-locale record are what rows persist as",
     },
     contract: {
       globs: ["src/index.ts", "package.json"],
       funnels: [],
-      containments: [],
       why: "the exports and subpaths are what every module declaring tables imports",
     },
     outbound: null,
@@ -43,7 +40,6 @@ const config: VerifyConfig = {
     publish: {
       globs: ["package.json", ".release-it.json", "changelogen.config.json", ".github/workflows/release.yml"],
       funnels: [],
-      containments: [],
       why: "the package name and release workflow claim @antelopejs/interface-database-decorators on npm",
     },
   },
