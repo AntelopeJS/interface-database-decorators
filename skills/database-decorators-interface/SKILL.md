@@ -144,7 +144,7 @@ class Chef extends Table.with(
   to the whole group.
 - `@Fixture` data is only inserted by `RegisterSchema` when the table is empty (count === 0).
 - `GetModel` caches by model class + instanceId; the same pair always returns the same instance.
-- `RegisterSchema` binds each registered table class to the `Schema` it builds; call it in the module that declares the tables. `User.table()`, `User.table(instanceId)` and `User.table(db)` then return the class's AQL table, and `GetModel` builds `BasicDataModel` models on that same schema, even when another module (bound to another database) calls them. An unbound class throws rather than looking a schema up by id.
+- `RegisterSchema` binds each registered table class to the `Schema` it builds; call it in the module that declares the tables. `User.table()`, `User.table(instanceId)` and `User.table(db)` then return the class's AQL table, and `GetModel` builds `BasicDataModel` models on that same schema, even when another module (bound to another database) calls them. An unbound class whose schema name has a schema uses that schema; one whose schema name has none throws `<Class> is not bound to a schema`.
 - Serialization of modified instances to plain JSON goes through `toPlainData` (auto-attached as `toJSON`).
 
 Deeper reference: this package's `docs/` chapters — Introduction, Table Definitions, Table Modifiers,
