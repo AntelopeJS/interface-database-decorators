@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.2.1
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.2.0...v0.2.1)
+
+### 🚀 Enhancements
+
+- **skills:** Add the verify-interface verification skill ([#79](https://github.com/AntelopeJS/interface-database-decorators/pull/79))
+
+### 🏡 Chore
+
+- **verify:** Remove seeded runs from the verification skill ([#90](https://github.com/AntelopeJS/interface-database-decorators/pull/90))
+- **ci:** Remove the weekly mutation caller ([#91](https://github.com/AntelopeJS/interface-database-decorators/pull/91))
+
+### 🤖 CI
+
+- Call ci-node.yml@v1 ([#92](https://github.com/AntelopeJS/interface-database-decorators/pull/92))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.2.0
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.1.12...v0.2.0)
