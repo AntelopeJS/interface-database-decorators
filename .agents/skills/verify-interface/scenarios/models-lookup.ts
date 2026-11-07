@@ -100,12 +100,12 @@ export const COMPOUND = `
     { kind: "talk", day: "tue", room: "A", title: "three" },
     { kind: "demo", day: "mon", room: "A", title: "four" },
   ]);
-  await sleep(2500);
+  const built = [await untilIndexed("tri__events", ["triple__i"]), await untilIndexed("tri__seats", ["spot__i"])];
   const titles = async (...keys) => (await model.getBy("triple", ...keys)).map((row) => row.title).sort();
   const labels = async (...keys) => (await seats.getBy("spot", ...keys)).map((row) => row.label).sort();
   const constant = (value) => iface.ValueProxy.constant(value);
   return {
-    exact: await titles("talk", "mon", "A"), other: await titles("talk", "mon", "B"), none: await titles("talk", "tue", "B"), order: await titles("mon", "talk", "A"),
+    indexed: built.every((names) => names !== null), exact: await titles("talk", "mon", "A"), other: await titles("talk", "mon", "B"), none: await titles("talk", "tue", "B"), order: await titles("mon", "talk", "A"),
     numbers: await labels(1, 2, true), numbersAsText: await labels("1", "2", true), shut: await labels(1, 2, false), proxies: await labels(constant(2), constant(1), constant(true)),
   };
 `;
@@ -117,9 +117,10 @@ export const GET_BY_KEYS = `
   await d.RegisterSchema("keys");
   const model = d.GetModel(d.BasicDataModel(Player));
   await model.insert([{ name: "Ann", rank: 2, active: true }, { name: "Bob", rank: 12, active: false }, { name: "Cid", rank: 2, active: false }]);
-  await untilIndexed("keys__players", ["name", "rank", "active"]);
+  const built = await untilIndexed("keys__players", ["name__i", "rank__i", "active__i"]);
   const names = async (index, ...keys) => (await model.getBy(index, ...keys)).map((row) => [row instanceof Player, row.name]).sort();
   return {
+    indexed: built !== null,
     number: await names("rank", 2),
     numberIsNotText: await names("rank", "2"),
     boolean: await names("active", false),
