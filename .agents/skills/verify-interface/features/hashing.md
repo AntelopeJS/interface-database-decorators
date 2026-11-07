@@ -1,6 +1,19 @@
 ---
 covers:
   - src/modifiers/hash.ts
+  - .agents/skills/verify-interface/scenarios/hashing*.ts
+  - package.json
+  - pnpm-lock.yaml
+  - tsconfig.json
+  - src/index.ts
+  - src/common.ts
+  - src/modifiers/common.ts
+  - src/modifiers/internal/**
+  - src/internal/**
+  - .agents/skills/verify-interface/runner.ts
+  - .agents/skills/verify-interface/verify.config.ts
+  - .agents/skills/verify-interface/package.json
+  - .agents/skills/verify-interface/tsconfig.json
 docs:
   - docs/3.table-modifiers.md
 journeys:

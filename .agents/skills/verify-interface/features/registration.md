@@ -4,6 +4,20 @@ covers:
   - src/schema.ts
   - src/internal/bound-schema.ts
   - src/table.ts
+  - .agents/skills/verify-interface/scenarios/registration.ts
+  - docs/1.introduction.md
+  - package.json
+  - pnpm-lock.yaml
+  - tsconfig.json
+  - src/index.ts
+  - src/common.ts
+  - src/modifiers/common.ts
+  - src/modifiers/internal/**
+  - src/internal/**
+  - .agents/skills/verify-interface/runner.ts
+  - .agents/skills/verify-interface/verify.config.ts
+  - .agents/skills/verify-interface/package.json
+  - .agents/skills/verify-interface/tsconfig.json
 docs:
   - docs/2.table-definitions.md
   - docs/1.introduction.md
