@@ -11,6 +11,8 @@ import { REGISTRATION_JOURNEYS } from "./scenarios/registration.ts";
 import { TABLE_JOURNEYS } from "./scenarios/tables.ts";
 
 const config: VerifyConfig = {
+  /** `pnpm pack` builds through `prepack`, so a separate setup build would run `tsc` a second time. */
+  setup: [],
   services: {
     mongo: {
       image: "mongo:7",
