@@ -1,6 +1,20 @@
 ---
 covers:
   - src/model.ts
+  - .agents/skills/verify-interface/scenarios/models*.ts
+  - .agents/skills/verify-interface/scenarios/localization.ts
+  - package.json
+  - pnpm-lock.yaml
+  - tsconfig.json
+  - src/index.ts
+  - src/common.ts
+  - src/modifiers/common.ts
+  - src/modifiers/internal/**
+  - src/internal/**
+  - .agents/skills/verify-interface/runner.ts
+  - .agents/skills/verify-interface/verify.config.ts
+  - .agents/skills/verify-interface/package.json
+  - .agents/skills/verify-interface/tsconfig.json
 docs:
   - docs/4.data-models.md
   - docs/1.introduction.md

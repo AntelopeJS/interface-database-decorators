@@ -8,6 +8,20 @@ covers:
   - src/database.ts
   - src/schema.ts
   - src/modifiers/*.ts
+  - .agents/skills/verify-interface/scenarios/declarations*.ts
+  - docs/**
+  - skills/**
+  - README.md
+  - package.json
+  - pnpm-lock.yaml
+  - tsconfig.json
+  - src/modifiers/common.ts
+  - src/modifiers/internal/**
+  - src/internal/**
+  - .agents/skills/verify-interface/runner.ts
+  - .agents/skills/verify-interface/verify.config.ts
+  - .agents/skills/verify-interface/package.json
+  - .agents/skills/verify-interface/tsconfig.json
 docs:
   - docs/4.data-models.md
 journeys:

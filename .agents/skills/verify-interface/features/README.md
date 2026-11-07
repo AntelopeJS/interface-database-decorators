@@ -2,6 +2,8 @@
 
 One file per feature. `covers:` lists the source globs it owns, `docs:` the pages a verdict judges, and `journeys:` the journeys it runs. `pnpm exec antelopejs-verify map` checks that every user-facing file is covered.
 
+Every feature also covers the files all journeys depend on: `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.ts`, the shared modules (`src/common.ts`, `src/modifiers/common.ts`, `src/modifiers/internal/**`, `src/internal/**`) and this skill's `runner.ts`, `verify.config.ts`, `package.json` and `tsconfig.json`. A change to one of them runs every feature. A feature covers the scenario files that define its journeys too.
+
 Every journey runs a scenario inside `ajs module test` with `@antelopejs/mongodb` against a MongoDB container, then reads the database back with `mongosh`. The scenarios live in `scenarios/`, the runner in `runner.ts`.
 
 | Feature | What the user does | Journeys |
