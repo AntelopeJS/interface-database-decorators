@@ -59,13 +59,15 @@ scryptSuite("Integration - upgrade of stored hashes", () => {
     return account;
   }
 
+  /** Starts both async tests before the sync ones, so their scrypt runs overlap. */
   async function expectVerifies(account: Account) {
+    const pending = Promise.all([
+      account.testHashAsync("password", PASSWORD),
+      account.testHashAsync("password", WRONG_PASSWORD),
+    ]);
     expect(account.testHash("password", PASSWORD)).to.equal(true);
-    expect(await account.testHashAsync("password", PASSWORD)).to.equal(true);
     expect(account.testHash("password", WRONG_PASSWORD)).to.equal(false);
-    expect(await account.testHashAsync("password", WRONG_PASSWORD)).to.equal(
-      false,
-    );
+    expect(await pending).to.deep.equal([true, false]);
   }
 
   it("verifies, flags, re-hashes and saves a row written by 0.1.11", async () => {

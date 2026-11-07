@@ -72,14 +72,23 @@ function scryptRow(ln: number, password = PASSWORD) {
   return `$scrypt$ln=${ln},r=8,p=1$${encoded[0]}$${encoded[1]}`;
 }
 
+/** Starts the async test before the sync one, so their scrypt runs overlap. */
+async function expectTests(
+  account: Account,
+  password: string,
+  expected: boolean,
+) {
+  const pending = account.testHashAsync("password", password);
+  expect(account.testHash("password", password)).to.equal(expected);
+  expect(await pending).to.equal(expected);
+}
+
 async function expectVerifies(account: Account, password = PASSWORD) {
-  expect(account.testHash("password", password)).to.equal(true);
-  expect(await account.testHashAsync("password", password)).to.equal(true);
+  await expectTests(account, password, true);
 }
 
 async function expectRefuses(account: Account, password = WRONG_PASSWORD) {
-  expect(account.testHash("password", password)).to.equal(false);
-  expect(await account.testHashAsync("password", password)).to.equal(false);
+  await expectTests(account, password, false);
 }
 
 function fastestMs(work: () => void) {
