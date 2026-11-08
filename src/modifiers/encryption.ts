@@ -57,8 +57,42 @@ function dateOfMarker(candidate: StoredValue): Date | undefined {
   ) {
     return undefined;
   }
-  const date = new Date(candidate.value);
+  const date = parseUTCString(candidate.value);
   return date.toUTCString() === candidate.value ? date : undefined;
+}
+
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+const UTC_STRING =
+  /^\w{3}, (\d{2}) (\w{3}) (-?\d{4,6}) (\d{2}):(\d{2}):(\d{2}) GMT$/;
+
+/**
+ * The instant a `toUTCString` text names, for every year it writes. `Date.parse`
+ * reads a year from 0 to 99 as 19xx or 20xx and rejects a negative year.
+ */
+function parseUTCString(text: string): Date {
+  const date = new Date(Number.NaN);
+  const fields = UTC_STRING.exec(text);
+  if (fields === null) {
+    return date;
+  }
+  const [, day, month, year, hours, minutes, seconds] = fields;
+  date.setTime(0);
+  date.setUTCFullYear(Number(year), MONTHS.indexOf(month), Number(day));
+  date.setUTCHours(Number(hours), Number(minutes), Number(seconds));
+  return date;
 }
 
 function date_decoder(_key: string, value: StoredValue) {
