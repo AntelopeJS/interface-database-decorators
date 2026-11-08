@@ -109,6 +109,17 @@ describe("Modifiers - localization", () => {
     expect(cleared).to.deep.equal({ en: "Hello" });
     expect(everyLanguage).to.deep.equal({ en: "Hello" });
   });
+  it("answers the fallback locale when no locale is given", async () => {
+    const modifier = new TestableLocalizationModifier();
+    modifier.setOptions({ fallbackLocale: "en" });
+
+    const locked = modifier.lock({ en: "Hello" }, "Ignored", undefined);
+
+    expect(locked).to.deep.equal({ en: "Hello" });
+    expect(
+      modifier.unlock({ en: "Hello", undefined: "x" }, undefined),
+    ).to.equal("Hello");
+  });
   it("handles missing locale gracefully", async () => {
     const modifier = new TestableLocalizationModifier();
     modifier.setOptions({});
