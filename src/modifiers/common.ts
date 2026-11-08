@@ -10,6 +10,7 @@ import {
   ignoredEventNames,
   isEventHandler,
   isLocking,
+  isRecord,
   isOnlyEvents,
   isTwoWay,
   isWriteOnly,
@@ -103,6 +104,14 @@ export class ContainerModifier<
   Meta,
   Options
 > {
+  /**
+   * Stores `value` under `key`. The wildcard key `"*"` replaces the whole
+   * container, so it takes a record of values by key; `undefined` or `null`
+   * clears it.
+   *
+   * @throws TypeError when `key` is `"*"` and `value` is neither a record,
+   * `undefined` nor `null`
+   */
   public override lock(
     // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
     locked_value: Record<string, unknown> | undefined,
@@ -111,9 +120,13 @@ export class ContainerModifier<
     key: string,
   ) {
     if (key === "*") {
-      // SAFETY: the "*" key addresses the whole container, which the table class declares as the record of values per key; a non-record value is stored as given.
-      // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
-      return value as Record<string, unknown>;
+      if (value === undefined || value === null) {
+        return {};
+      }
+      if (!isRecord(value)) {
+        throw new TypeError('The "*" key takes a record of values by key');
+      }
+      return value;
     }
     return locked_value
       ? {
