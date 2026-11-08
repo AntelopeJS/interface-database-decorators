@@ -204,8 +204,10 @@ export class ModifiersDynamicMetadata {
 
   constructor(target: any) {
     this.staticMeta = getMetadata(target.constructor, ModifiersStaticMetadata);
-    for (const field of Object.keys(this.staticMeta.fields)) {
-      this.fields[field] = {};
+    const byKey: { [field: PropertyKey]: Record<string, unknown[]> } =
+      this.fields;
+    for (const field of Reflect.ownKeys(this.staticMeta.fields)) {
+      byKey[field] = {};
     }
   }
 
@@ -309,8 +311,8 @@ export class ModifiersDynamicMetadata {
 /** The names of the modified fields of a table instance. */
 function fieldNamesOf<T extends { constructor: any }>(object: T) {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
-  // SAFETY: the names attachModifier recorded are keys of the table class of object, so keys of T; Object.keys types them string.
-  return Object.keys(metaTable.fields) as Array<keyof T>;
+  // SAFETY: the names attachModifier recorded are keys of the table class of object, so keys of T; Reflect.ownKeys types them string | symbol.
+  return Reflect.ownKeys(metaTable.fields) as Array<keyof T>;
 }
 
 /**

@@ -179,7 +179,10 @@ export function copyModifierLists(
   copy: ModifiersStaticMetadata,
   parent: ModifiersStaticMetadata,
 ): ModifiersStaticMetadata {
-  copy.fields = Object.fromEntries(listsCopied(Object.entries(parent.fields)));
+  const fields = fieldsByKey(parent);
+  copy.fields = Object.fromEntries(
+    listsCopied(Reflect.ownKeys(fields).map((field) => [field, fields[field]])),
+  );
   copy.events = new Map(listsCopied(parent.events));
   return copy;
 }
