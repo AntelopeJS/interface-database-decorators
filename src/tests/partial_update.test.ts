@@ -108,4 +108,13 @@ describe("Integration - partial update", () => {
     expect(account.testHash("token", "abc")).to.equal(true);
     expect(getInternal(account).meta).to.deep.equal(getInternal(before).meta);
   });
+
+  it("updates no row for an id the table does not hold", async () => {
+    const model = new AccountModel(await schemaInstance());
+
+    const count = await model.update("missing-account", { pin: "9999" });
+
+    expect(count).to.equal(0);
+    expect(await model.get("missing-account")).to.equal(undefined);
+  });
 });

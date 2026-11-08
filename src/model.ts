@@ -22,8 +22,10 @@ import {
 import { isRecord } from "./modifiers/internal/kinds";
 import { boundSchema } from "./internal/bound-schema";
 import {
+  fieldsByKey,
   type InternalRecord,
   isEmptyInternal,
+  locksPlainData,
 } from "./modifiers/internal/records";
 import {
   type Constructible,
@@ -332,11 +334,14 @@ async function storedInternal<T extends object>(
   id: string,
   data: DeepPartial<T>,
 ) {
-  const modified = getMetadata(dataType, ModifiersStaticMetadata).fields;
+  const modified = fieldsByKey(getMetadata(dataType, ModifiersStaticMetadata));
   if (
     data instanceof dataType ||
     Object.hasOwn(data, "_internal") ||
-    !Object.keys(data).some((field) => Object.hasOwn(modified, field))
+    !Object.keys(data).some(
+      (field) =>
+        Object.hasOwn(modified, field) && locksPlainData(modified[field]),
+    )
   ) {
     return undefined;
   }
