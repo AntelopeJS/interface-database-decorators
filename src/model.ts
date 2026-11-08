@@ -14,6 +14,7 @@ import {
 import {
   fromDatabase,
   fromPlainData,
+  ModifiersStaticMetadata,
   type StoredRow,
   toDatabase,
   triggerEvent,
@@ -273,18 +274,20 @@ export function BasicDataModel<T extends object>(
         const result = Model.validate(parsed.data, { partial: true });
         if (!result.ok) throw makeValidationError(result.errors);
       }
-      if (parsed.id !== undefined) {
-        const instance = Model.fromPlainData(parsed.data);
-        triggerEvent(instance, "update");
-        return this.table
-          .get(parsed.id)
-          .update(withoutEmptyInternal(toDatabase(instance)))
-          .run();
-      }
-      const instance = Model.fromPlainData(parsed.data);
-      triggerEvent(instance, "update");
-      const id = parsed.data[primaryKey];
+      const id = parsed.id ?? parsed.data[primaryKey];
       assert(id !== undefined, "Missing primary key in object update.");
+      const stored = await storedInternal(
+        dataType,
+        this.table,
+        id,
+        parsed.data,
+      );
+      const instance = Model.fromPlainData(
+        stored
+          ? Object.assign({ _internal: stored }, parsed.data)
+          : parsed.data,
+      );
+      triggerEvent(instance, "update");
       return this.table
         .get(id)
         .update(withoutEmptyInternal(toDatabase(instance)))
@@ -317,6 +320,29 @@ function cacheKeyOf(instanceId: InstanceId | undefined): string | symbol {
 }
 
 export type ValidateOptions = { validate?: boolean };
+
+/**
+ * A copy of the modifier state the row stores, for a patch that sets a modified
+ * field and brings none of its own: the patch locks onto it, so the row keeps
+ * its other locked values and its modifier state, such as a salt.
+ */
+async function storedInternal<T extends object>(
+  dataType: Constructible<T>,
+  table: DatabaseDev.Table<T>,
+  id: string,
+  data: DeepPartial<T>,
+) {
+  const modified = getMetadata(dataType, ModifiersStaticMetadata).fields;
+  if (
+    data instanceof dataType ||
+    Object.hasOwn(data, "_internal") ||
+    !Object.keys(data).some((field) => Object.hasOwn(modified, field))
+  ) {
+    return undefined;
+  }
+  const row: StoredRow<T> | null = await table.get(id).run();
+  return row?._internal && structuredClone(row._internal);
+}
 
 /** The part of a row an update without an id finds the row by. */
 type KeyedRow = Record<DatumStaticMetadata["primary"], string>;
