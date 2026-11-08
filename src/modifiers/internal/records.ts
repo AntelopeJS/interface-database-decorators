@@ -83,7 +83,7 @@ export function locksPlainData(list: ModifiedFieldList): boolean {
   return list.every(
     ({ modifier }) =>
       !("lock" in modifier) ||
-      ("autolock" in modifier && modifier.autolock === true),
+      ("autolock" in modifier && Boolean(modifier.autolock)),
   );
 }
 
