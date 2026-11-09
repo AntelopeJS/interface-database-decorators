@@ -9,7 +9,6 @@ import {
   ModifiersStaticMetadata,
   unlock,
 } from "./common";
-import { isRecord } from "./internal/kinds";
 
 type Options = {
   /**
@@ -72,11 +71,6 @@ export class LocalizationModifier extends ContainerModifier<
     value: unknown,
     key: string,
   ) {
-    if (key === "*") {
-      return isRecord(value)
-        ? withoutEmptyTexts(value)
-        : super.lock(locked_value, value, key);
-    }
     return withoutEmptyTexts(super.lock(locked_value, value, key));
   }
 

@@ -1,5 +1,11 @@
 import { expect } from "chai";
 import { Field, Table } from "../../table";
+import {
+  fromDatabase,
+  fromPlainData,
+  lock,
+  toDatabase,
+} from "../../modifiers/common";
 import { LocalizationModifier, Localized } from "../../modifiers/localization";
 
 describe("Modifiers - localization", () => {
@@ -195,6 +201,39 @@ describe("Modifiers - localization", () => {
     expect(instance.title).to.equal("French Title");
     expect(instance.content).to.equal("French Content");
     expect(instance.description).to.equal("English Description");
+  });
+  it("refuses a text assigned to every locale at once", async () => {
+    class Page extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+    }
+    const page = fromPlainData({}, Page).localize("en");
+    page.title = "Hello";
+
+    expect(() => {
+      page.localize("*").title = "Bonjour";
+    }).to.throw(TypeError);
+    const stored = fromDatabase(toDatabase(page), Page);
+    expect(stored.localize("en").title).to.equal("Hello");
+    expect(stored.localize("0").title).to.equal("Hello");
+  });
+  it("clears every locale when no value is assigned to all of them", async () => {
+    class Page extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title?: string;
+    }
+    const unset = fromPlainData({}, Page);
+    const page = fromPlainData({}, Page).localize("en");
+    page.title = "Hello";
+
+    lock(unset, LocalizationModifier, undefined, "*");
+    page.localize("*").title = undefined;
+
+    expect(toDatabase(unset)._internal?.data.title).to.deep.equal({});
+    expect(page.localize("en").title).to.equal(undefined);
+    expect(toDatabase(page)._internal?.data.title).to.deep.equal({});
   });
   it("maintains data structure integrity", async () => {
     const modifier = new TestableLocalizationModifier();
