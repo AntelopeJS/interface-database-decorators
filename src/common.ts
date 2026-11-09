@@ -161,13 +161,16 @@ export function getMetadata<TMetadata, TTarget extends object>(
     return upgraded ?? existingMetadata;
   }
 
-  const prototype: unknown = Object.getPrototypeOf(target);
-  const inheritedMetadata =
-    inherit &&
-    isObjectLike(prototype) &&
-    Reflect.hasOwnMetadata(metadataClass.key, prototype)
-      ? getMetadata(prototype, metadataClass, false)
-      : undefined;
+  let ancestor: unknown = inherit ? Object.getPrototypeOf(target) : undefined;
+  while (
+    isObjectLike(ancestor) &&
+    !Reflect.hasOwnMetadata(metadataClass.key, ancestor)
+  ) {
+    ancestor = Object.getPrototypeOf(ancestor);
+  }
+  const inheritedMetadata = isObjectLike(ancestor)
+    ? getMetadata(ancestor, metadataClass, false)
+    : undefined;
   const metadata =
     inheritedMetadata && metadataClass.inherit
       ? metadataClass.inherit(inheritedMetadata)

@@ -209,3 +209,65 @@ describe("Metadata - subclasses of a table with fixtures, modifiers and relation
     expect(fieldsOf(Child)).to.deep.equal(["createdBy"]);
   });
 });
+
+describe("Metadata - subclasses of an undecorated subclass of a table", () => {
+  it("keeps the fields of the grandparent table", async () => {
+    class Base extends Table {
+      @Field("string")
+      declare a: string;
+    }
+
+    class Mid extends Base {}
+
+    class Leaf extends Mid {
+      @Field("string")
+      declare b: string;
+    }
+
+    expect(fieldsOf(Leaf)).to.deep.equal(["a", "b"]);
+    expect(fieldsOf(Mid)).to.deep.equal(["a"]);
+    expect(fieldsOf(Base)).to.deep.equal(["a"]);
+  });
+
+  it("keeps the modified fields of a table extended through with", async () => {
+    class Base extends Table.with(HashModifier) {
+      @Hashed()
+      declare token: string;
+    }
+
+    class Leaf extends Base.with() {
+      @Hashed()
+      declare password: string;
+    }
+
+    expect(getModifiedFields(new Leaf(), HashModifier)).to.deep.equal([
+      "token",
+      "password",
+    ]);
+    expect(getModifiedFields(new Base(), HashModifier)).to.deep.equal([
+      "token",
+    ]);
+  });
+
+  it("keeps the relations of the grandparent table", async () => {
+    class Target extends Table {}
+
+    class Base extends Table {
+      @Relation({ to: () => Target })
+      declare owner: string;
+    }
+
+    class Mid extends Base {}
+
+    class Leaf extends Mid {
+      @Relation({ to: () => Target })
+      declare team: string;
+    }
+
+    const relationsOf = (tableClass: typeof Table) =>
+      Object.keys(getMetadata(tableClass, RelationStaticMetadata).relations);
+
+    expect(relationsOf(Leaf)).to.deep.equal(["owner", "team"]);
+    expect(relationsOf(Base)).to.deep.equal(["owner"]);
+  });
+});
