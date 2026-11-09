@@ -464,7 +464,7 @@ export function attachModifier<M extends Constructible<Modifier>>(
 function fieldsModifiedBy<T extends { constructor: any }>(
   object: T,
   modifierClass: Constructible<Modifier>,
-  fields?: Array<keyof T>,
+  fields?: ReadonlyArray<keyof T>,
 ): Array<keyof T> {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
   return (fields ?? fieldNamesOf(object)).filter((field) =>
@@ -485,7 +485,7 @@ export function unlock<
 >(
   object: T,
   Modifier: M,
-  fields: Array<keyof T> | undefined,
+  fields: ReadonlyArray<keyof T> | undefined,
   ...args: ExtractModifierArgs<InstanceType<M>>
 ) {
   const usedFields = fieldsModifiedBy(object, Modifier, fields);
@@ -537,7 +537,7 @@ export function lock<
 >(
   object: T,
   Modifier: M,
-  fields: Array<keyof T> | undefined,
+  fields: ReadonlyArray<keyof T> | undefined,
   ...args: ExtractModifierArgs<InstanceType<M>> | []
 ) {
   const usedFields = fieldsModifiedBy(object, Modifier, fields);

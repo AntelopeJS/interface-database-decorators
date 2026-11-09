@@ -18,6 +18,26 @@ type Options = {
   fallbackLocale?: string;
 };
 
+/** The keys of the methods of `This`. */
+type MethodKey<This> = {
+  [P in keyof This]-?: This[P] extends (...args: never[]) => void ? P : never;
+}[keyof This];
+
+/**
+ * A row read through `localize("*", fields)`: each listed field `K` holds its
+ * values by locale, and every other field keeps its type. A listed method
+ * stays callable. Its `localize` selects a locale again and gives back the
+ * row type.
+ */
+export type LocalizedRecords<This, K extends keyof This> = Omit<
+  This,
+  K | "localize"
+> & {
+  [P in Exclude<K, "localize">]: Record<string, Exclude<This[P], undefined>>;
+} & Pick<This, Extract<Exclude<K, "localize">, MethodKey<This>>> & {
+    localize(locale: string, fields?: ReadonlyArray<keyof This>): This;
+  };
+
 /** A text left empty in one language counts as no text in that language. */
 const EMPTY_TEXT = "";
 
@@ -99,6 +119,19 @@ export class LocalizationModifier extends ContainerModifier<
 
   [MixinSymbol] = class {
     /**
+     * Read or write every locale of the listed localized fields at once.
+     *
+     * @param locale - The wildcard key `"*"`.
+     * @param fields - Localized field names to unlock. Picks from the fields of the object this function is mixed into.
+     *
+     * @returns `this`, typed with each listed field as its values by locale
+     */
+    localize<This extends { constructor: any }, K extends keyof This>(
+      this: This,
+      locale: "*",
+      fields: readonly K[],
+    ): LocalizedRecords<This, K>;
+    /**
      * Specify which locale to use for accessing some or all localized fields.
      *
      * @param locale - Locale to use to unlock the field(s).
@@ -109,7 +142,12 @@ export class LocalizationModifier extends ContainerModifier<
     localize<This extends { constructor: any }>(
       this: This,
       locale: string,
-      fields?: Array<keyof This>,
+      fields?: ReadonlyArray<keyof This>,
+    ): This;
+    localize<This extends { constructor: any }>(
+      this: This,
+      locale: string,
+      fields?: ReadonlyArray<keyof This>,
     ): This {
       unlock(this, LocalizationModifier, fields, locale);
       return this;
