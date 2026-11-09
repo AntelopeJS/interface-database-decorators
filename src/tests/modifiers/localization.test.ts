@@ -6,6 +6,7 @@ import {
   lock,
   toDatabase,
 } from "../../modifiers/common";
+import { HashModifier, Hashed } from "../../modifiers/hash";
 import { LocalizationModifier, Localized } from "../../modifiers/localization";
 
 describe("Modifiers - localization", () => {
@@ -266,6 +267,101 @@ describe("Modifiers - localization", () => {
       title: "French Title",
       content: "French Content",
     });
+  });
+});
+
+describe("Modifiers - localization wildcard key", () => {
+  it("reads the listed fields under the wildcard key as texts by locale", async () => {
+    class TestTable extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+
+      @Field("string")
+      declare code: string;
+    }
+
+    const LISTED = ["title"] as const;
+    const instance = new TestTable();
+    instance.code = "P-1";
+    instance.localize("en").title = "Title";
+    instance.localize("fr").title = "Titre";
+
+    const texts = instance.localize("*", LISTED);
+    const titles: Record<string, string> = texts.title;
+    const code: string = texts.code;
+
+    expect(titles).to.deep.equal({ en: "Title", fr: "Titre" });
+    expect(code).to.equal("P-1");
+  });
+  it("reads one locale again after the wildcard key", async () => {
+    class TestTable extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare subtitle?: string;
+    }
+
+    const instance = new TestTable();
+    instance.localize("en").title = "Title";
+
+    const texts = instance.localize("*", ["title", "subtitle"]);
+    const subtitles: Record<string, string> | undefined = texts.subtitle;
+    const title: string = texts.localize("en").title;
+
+    expect(subtitles).to.equal(undefined);
+    expect(title).to.equal("Title");
+  });
+  it("keeps the methods callable under the wildcard key for a list of any keys", async () => {
+    class TestTable extends Table.with(LocalizationModifier, HashModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+
+      @Hashed({ algorithm: "sha256" })
+      @Field("string")
+      declare fingerprint: string;
+    }
+
+    const anyKeys: Array<keyof TestTable> = ["title", "isHashOutdated"];
+    const instance = new TestTable();
+    instance.localize("en").title = "Title";
+    instance.fingerprint = "print";
+
+    const texts = instance.localize("*", anyKeys);
+    const titles = { ...texts.title };
+    const outdated: boolean = texts.isHashOutdated("fingerprint");
+    const row: TestTable = texts.localize("en");
+
+    expect(titles).to.deep.equal({ en: "Title" });
+    expect(outdated).to.equal(false);
+    expect(row.title).to.equal("Title");
+  });
+  it("reads the wildcard key as texts by locale through a generic row", async () => {
+    class TestTable extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string;
+
+      titles() {
+        return this.localize("*", ["title"]).title;
+      }
+    }
+    function withTitles<R extends TestTable>(
+      row: R,
+    ): [R, Record<string, string>] {
+      return [row, row.localize("*", ["title"]).title];
+    }
+
+    const instance = new TestTable();
+    instance.localize("en").title = "Title";
+    const own: Record<string, string> = instance.titles();
+
+    expect(own).to.deep.equal({ en: "Title" });
+    expect(withTitles(instance)[1]).to.deep.equal({ en: "Title" });
   });
 });
 
