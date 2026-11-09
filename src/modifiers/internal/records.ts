@@ -74,6 +74,19 @@ export function fieldsByKey(meta: ModifiersStaticMetadata): {
   return meta.fields;
 }
 
+/**
+ * Whether a value assigned from plain data to a field with these modifiers is
+ * locked: every modifier that locks does so without arguments. Otherwise the
+ * value stays floating until `localize()` or `unlock()` gives them.
+ */
+export function locksPlainData(list: ModifiedFieldList): boolean {
+  return list.every(
+    ({ modifier }) =>
+      !("lock" in modifier) ||
+      ("autolock" in modifier && Boolean(modifier.autolock)),
+  );
+}
+
 export function eventsByKey(
   meta: ModifiersStaticMetadata,
 ): Map<
