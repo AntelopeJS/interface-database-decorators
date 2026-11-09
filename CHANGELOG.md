@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.2.2
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.2.1...v0.2.2)
+
+### 🚀 Enhancements
+
+- **modifiers:** Declare the ContainerModifier key as string or undefined ([#101](https://github.com/AntelopeJS/interface-database-decorators/pull/101))
+- **localization:** Type localize("*") fields as records by locale ([#102](https://github.com/AntelopeJS/interface-database-decorators/pull/102))
+
+### 🔥 Performance
+
+- **verify:** Wait for the index names @antelopejs/mongodb creates ([#94](https://github.com/AntelopeJS/interface-database-decorators/pull/94))
+- **test:** Overlap the sync and async scrypt runs of each hash check ([#96](https://github.com/AntelopeJS/interface-database-decorators/pull/96))
+
+### 🩹 Fixes
+
+- **verify:** Run every feature when a shared file changes ([#95](https://github.com/AntelopeJS/interface-database-decorators/pull/95))
+- **encryption:** Revive an encrypted Date of any year toUTCString writes ([#99](https://github.com/AntelopeJS/interface-database-decorators/pull/99))
+- **modifiers:** List symbol-named modified fields ([#97](https://github.com/AntelopeJS/interface-database-decorators/pull/97))
+- **localization:** Refuse a non-record value under the "*" key ([#100](https://github.com/AntelopeJS/interface-database-decorators/pull/100))
+- **metadata:** Inherit the metadata of the nearest decorated ancestor ([#104](https://github.com/AntelopeJS/interface-database-decorators/pull/104))
+- **hash:** Declare testHash as returning a boolean ([#98](https://github.com/AntelopeJS/interface-database-decorators/pull/98))
+- **model:** Keep a row's other modified fields and salt on a partial update ([#103](https://github.com/AntelopeJS/interface-database-decorators/pull/103))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs packages to the 2026-11-06 releases ([#93](https://github.com/AntelopeJS/interface-database-decorators/pull/93))
+- **deps:** Bump @antelopejs/tooling-configs to 0.4.0 ([#105](https://github.com/AntelopeJS/interface-database-decorators/pull/105))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.2.1
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.2.0...v0.2.1)
