@@ -46,6 +46,29 @@ describe("Modifiers - encryption - Date marker", () => {
     expect(read).to.deep.equal(date);
   });
 
+  it("returns a Date of any year toUTCString writes as that Date", async () => {
+    const years = [
+      ...Array.from({ length: 400 }, (_, i) => i - 300),
+      100,
+      275760,
+    ];
+    const dates = years.map((year) => {
+      const date = new Date(Date.UTC(2000, 6, 15, 10, 20, 30));
+      date.setUTCFullYear(year);
+      return date;
+    });
+    dates.push(new Date(-8.64e15), new Date(8.64e15));
+
+    const unread = dates.filter((date) => {
+      const dated = new DatedCard();
+      dated.payload = { at: date };
+      const read: unknown = dated.payload.at;
+      return !(read instanceof Date) || read.getTime() !== date.getTime();
+    });
+
+    expect(unread.map((date) => date.toUTCString())).to.deep.equal([]);
+  });
+
   it("returns an invalid Date as an invalid Date", async () => {
     const dated = new DatedCard();
     dated.payload = { at: new Date(Number.NaN) };
@@ -61,6 +84,8 @@ describe("Modifiers - encryption - Date marker", () => {
     { type: "Date", value: null },
     { type: "Date", value: ["Thu, 01 Dec 2022 10:20:30 GMT"] },
     { type: "Date", value: { year: 2022 } },
+    { type: "Date", value: "Fri, 01 Dec 2022 10:20:30 GMT" },
+    { type: "Date", value: "Thu, 01 Dec 0099 10:20:30 UTC" },
   ]) {
     it(`returns ${JSON.stringify(stored)} as stored`, async () => {
       expect(roundTrip(stored)).to.deep.equal(stored);
