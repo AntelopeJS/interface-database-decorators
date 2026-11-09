@@ -15,7 +15,6 @@ import {
   MixinSymbol,
   ModifiersStaticMetadata,
   OneWayModifier,
-  testValue,
 } from "./common";
 import {
   dataByKey,
@@ -278,13 +277,17 @@ export class HashModifier extends OneWayModifier<
      * @param value - Value to hash and test.
      *
      * @returns Whether the new value is identical to the original or not.
+     *
+     * @throws Error when `field` has no {@link Hashed} decorator.
      */
     testHash<This extends {}, F extends keyof This>(
       this: This,
       field: F,
       value: This[F],
-    ) {
-      return testValue(this, field, value);
+    ): boolean {
+      return withHashedField(this, field, (modifier, stored) =>
+        modifier.test(stored, value),
+      );
     }
 
     /**

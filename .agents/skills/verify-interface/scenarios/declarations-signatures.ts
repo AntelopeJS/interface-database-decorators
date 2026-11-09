@@ -104,7 +104,7 @@ declare const hashed: Hashed;
 const tested = hashed.testHash("password", "x");
 const testedAsync = hashed.testHashAsync("password", "x");
 const outdated = hashed.isHashOutdated("password");
-type _TestHash = Assert<Identical<typeof tested, unknown>>;
+type _TestHash = Assert<Identical<typeof tested, boolean>>;
 type _TestHashAsync = Assert<Identical<typeof testedAsync, Promise<boolean>>>;
 type _Outdated = Assert<Identical<typeof outdated, boolean>>;
 declare const localized: Localized;

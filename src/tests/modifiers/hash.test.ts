@@ -79,7 +79,8 @@ async function expectTests(
   expected: boolean,
 ) {
   const pending = account.testHashAsync("password", password);
-  expect(account.testHash("password", password)).to.equal(expected);
+  const matches: boolean = account.testHash("password", password);
+  expect(matches).to.equal(expected);
   expect(await pending).to.equal(expected);
 }
 
@@ -248,6 +249,7 @@ scryptSuite("Modifiers - hash, default scrypt format", () => {
   it("throws when asked about a field that is not hashed", async () => {
     const account = newAccount();
     expect(() => account.isHashOutdated("email")).to.throw("email");
+    expect(() => account.testHash("email", PASSWORD)).to.throw("email");
     let failure: unknown;
     await account.testHashAsync("email", PASSWORD).catch((error: unknown) => {
       failure = error;

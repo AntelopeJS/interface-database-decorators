@@ -47,6 +47,8 @@ export const VERIFY = `${HASH_HELPERS}
   const syncRight = row.testHash("password", "secret");
   const syncWrong = row.testHash("password", "nope");
   const notHashedAsync = await rejection(row.testHashAsync("name", "Ann"));
+  let notHashedSync = null;
+  try { row.testHash("name", "Ann"); } catch (error) { notHashedSync = error.message; }
   let notHashedOutdated = null;
   try { row.isHashOutdated("name"); } catch (error) { notHashedOutdated = error.message; }
   const [bare] = await accounts.insert({ name: "Nobody" });
@@ -55,6 +57,7 @@ export const VERIFY = `${HASH_HELPERS}
     asyncRight, asyncWrong, syncRight: [typeof syncRight, syncRight], syncWrong,
     fresh: row.isHashOutdated("password"),
     notHashedAsync: notHashedAsync && notHashedAsync.message,
+    notHashedSync,
     notHashedOutdated,
     nothingStored: [bareRow.isHashOutdated("password"), await bareRow.testHashAsync("password", "x")],
   };
