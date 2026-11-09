@@ -68,6 +68,13 @@ describe("Modifiers - common", () => {
     const result = mod.unlock(data2, "key1");
     expect(result).to.equal("val");
   });
+  it("stores nothing and finds nothing under no key", async () => {
+    const mod = new ContainerModifier();
+
+    expect(mod.lock(undefined, "v", undefined)).to.deep.equal({});
+    expect(mod.lock({ en: "x" }, "v", undefined)).to.deep.equal({ en: "x" });
+    expect(mod.unlock({ undefined: "v" }, undefined)).to.equal(undefined);
+  });
   it("passes options to modifier via attachModifier()", async () => {
     interface Opts {
       suffix: string;

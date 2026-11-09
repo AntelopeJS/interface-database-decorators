@@ -69,13 +69,16 @@ export class LocalizationModifier extends ContainerModifier<
     locked_value: Record<string, unknown> | undefined,
     // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides ContainerModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
     value: unknown,
-    key: string,
+    key: string | undefined,
   ) {
     return withoutEmptyTexts(super.lock(locked_value, value, key));
   }
 
-  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
-  public override unlock(locked_value: Record<string, unknown>, key: string) {
+  public override unlock(
+    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
+    locked_value: Record<string, unknown>,
+    key: string | undefined,
+  ) {
     const unlocked = super.unlock(locked_value, key);
     if (unlocked !== undefined && unlocked !== EMPTY_TEXT) {
       return unlocked;
@@ -88,13 +91,14 @@ export class LocalizationModifier extends ContainerModifier<
   public override unlockrequest(
     // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
     data: DatabaseDev.ValueProxy<Record<string, unknown>>,
-    _meta: DatabaseDev.ValueProxy<Record<string, never>>,
-    key: DatabaseDev.ValueProxyOrValue<string>,
+    meta: DatabaseDev.ValueProxy<Record<string, never>>,
+    key: DatabaseDev.ValueProxyOrValue<string | undefined>,
   ): DatabaseDev.ValueProxy<unknown> {
-    if (this.options.fallbackLocale) {
-      return data.key(key).default(data.key(this.options.fallbackLocale));
-    }
-    return data.key(key);
+    const unlocked = super.unlockrequest(data, meta, key);
+    const { fallbackLocale } = this.options;
+    return fallbackLocale
+      ? unlocked.default(data.key(fallbackLocale))
+      : unlocked;
   }
 
   [MixinSymbol] = class {
