@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.3.0
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.2.2...v0.3.0)
+
+### 🚀 Enhancements
+
+- **hash:** Add setHashAsync to hash a field off the event loop ([#110](https://github.com/AntelopeJS/interface-database-decorators/pull/110))
+
+### 📖 Documentation
+
+- **verify:** Retire the fixed #80 and #81 known findings and the 0.1.12 minor-bump note ([#107](https://github.com/AntelopeJS/interface-database-decorators/pull/107), [#80](https://github.com/AntelopeJS/interface-database-decorators/issues/80), [#81](https://github.com/AntelopeJS/interface-database-decorators/issues/81))
+- **modifiers:** Document attachModifier and unlockrequest ([#108](https://github.com/AntelopeJS/interface-database-decorators/pull/108))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs/tooling-configs to 0.5.0 ([#106](https://github.com/AntelopeJS/interface-database-decorators/pull/106))
+- **deps:** Bump @antelopejs/tooling-configs to 0.5.1 ([#109](https://github.com/AntelopeJS/interface-database-decorators/pull/109))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.2.2
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.2.1...v0.2.2)
