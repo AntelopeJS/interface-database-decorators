@@ -110,7 +110,7 @@ class Chef extends Table.with(
   EncryptionModifier,
   LocalizationModifier,
 ) {
-  @Hashed() declare passphrase: string; // one-way scrypt; test via await instance.testHashAsync("passphrase", value)
+  @Hashed() declare passphrase: string; // one-way scrypt; set via await instance.setHashAsync("passphrase", value), test via await instance.testHashAsync("passphrase", value)
   @Encrypted({ secretKey }) declare supplierCode: string; // transparent encrypt/decrypt (autolock + autounlock)
   @Localized() declare motto: string; // read AND write via instance.localize("en", ["motto"])
   @CreationTime() declare hiredAt: Date; // set on insert, stripped from updates
@@ -125,7 +125,8 @@ class Chef extends Table.with(
 - `Hashed`, `Encrypted`, and `Localized` require the matching modifier class in `Table.with(...)`; `CreationTime`/`UpdateTime` are event-only and need no mixin.
 - Modifier ordering matters: `attachModifier` throws if you stack a modifier after a one-way modifier (e.g. anything after `@Hashed` on the same field).
 - Hashed fields cannot be read back or queried directly — only equality-tested with `testHashAsync`, or `testHash`, which blocks the event loop for one scrypt run.
-- A row can hold an older hash that still verifies. After a successful test, when `instance.isHashOutdated(field)` is true, assign the tested value and save the row.
+- On a server, write a scrypt field with `await instance.setHashAsync(field, value)`, then insert or update the instance. Assigning the field, or passing it in plain data to `insert` or `update`, blocks the event loop for one scrypt run (about 150 ms).
+- A row can hold an older hash that still verifies. After a successful test, when `instance.isHashOutdated(field)` is true, `await instance.setHashAsync(field, value)` with the tested value and save the row.
 - `@Hashed({ algorithm })` stores a fast digest instead of scrypt: use it only for non-secret fingerprints, never for credentials.
 - Localized fields must be written through a localized instance (`instance.localize(locale).field = ...`);
   values assigned before `localize()` are held in floating state and silently dropped on insert/update.

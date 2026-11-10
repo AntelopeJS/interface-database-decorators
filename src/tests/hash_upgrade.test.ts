@@ -85,6 +85,30 @@ scryptSuite("Integration - upgrade of stored hashes", () => {
     expect(after.isHashOutdated("password")).to.equal(false);
   });
 
+  it("re-hashes with setHashAsync and saves it through a whole-row update", async () => {
+    const id = await storedRowFrom0_1_11();
+    const before = await reload(id);
+
+    await before.setHashAsync("password", PASSWORD);
+    await model.update(before);
+
+    const after = await reload(id);
+    expect(after.password).to.match(/^\$scrypt\$ln=15,r=8,p=3\$/);
+    await expectVerifies(after);
+    expect(after.isHashOutdated("password")).to.equal(false);
+  });
+
+  it("inserts a row whose hash setHashAsync wrote", async () => {
+    const account = new Account();
+    account.name = "Async";
+    await account.setHashAsync("password", PASSWORD);
+    const [id] = await model.insert(account);
+
+    const after = await reload(id);
+    expect(after.password).to.equal(account.password);
+    await expectVerifies(after);
+  });
+
   it("re-hashes through a partial update of the hashed field", async () => {
     const id = await storedRowFrom0_1_11();
 

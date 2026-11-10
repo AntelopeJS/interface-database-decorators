@@ -16,6 +16,7 @@ Part of [AntelopeJS](https://github.com/AntelopeJS/antelopejs). Used by [Antelop
 - `Table`, `@RegisterTable`, `@Field`, `@Index` and `@Fixture` declare tables, indexes and seed rows; `RegisterSchema` provisions them.
 - `BasicDataModel` and `GetModel` give each table typed CRUD methods with optional validation.
 - `@Encrypted`, `@Hashed`, `@Localized`, `@CreationTime` and `@UpdateTime` transform field values on write and read.
+- `await row.setHashAsync(field, value)` and `await row.testHashAsync(field, value)` hash a password off the event loop. Use them on a server: assigning a `@Hashed` field blocks the event loop for about 150 ms. See [Table modifiers](./docs/3.table-modifiers.md#mixin-methods).
 - `@Model` injects a model into an [`@antelopejs/interface-api`](https://github.com/AntelopeJS/interface-api) controller.
 
 ## Implementations
