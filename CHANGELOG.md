@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.1
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.3.0...v0.3.1)
+
+### 🩹 Fixes
+
+- **localized:** Read an unset field of a request without a locale as null ([#111](https://github.com/AntelopeJS/interface-database-decorators/pull/111))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.3.0
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.2.2...v0.3.0)
