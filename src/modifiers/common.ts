@@ -287,6 +287,32 @@ type ExtractModifierOptions<T> =
 type ExtractModifierArgs<T> =
   T extends OneWayModifier<any, infer Args> ? Args : [];
 
+/**
+ * Attaches a modifier to a field of a table class. A property decorator calls
+ * it with what it holds: `attachModifier(target.constructor, Modifier,
+ * propertyKey, options)`.
+ *
+ * At compile time, `options` must match the options type of `Modifier`.
+ * `TableClass` is any function and `field` any property key: nothing checks
+ * that `field` names a member of the class.
+ *
+ * At run time, a modifier with `lock` replaces the field with an accessor on
+ * `TableClass.prototype` that routes reads and writes through the field's
+ * modifiers. A modifier without `lock` only handles events, and the field
+ * keeps its plain value. Each method of the modifier other than `lock` and
+ * `unlock` becomes a handler for the event of the same name.
+ *
+ * @param TableClass The table class, `target.constructor` in a property
+ * decorator.
+ * @param Modifier The modifier class. The engine creates one instance per
+ * attachment and identifies it by its class name.
+ * @param field The field to modify, `propertyKey` in a property decorator.
+ * @param options The modifier's options, read through `this.options`.
+ * @throws Error when a modifier with `lock` is attached to `constructor` or
+ * `__proto__`.
+ * @throws Error when a modifier with `lock` is attached to a field that
+ * already has a one-way modifier, one with `lock` and no `unlock`.
+ */
 export function attachModifier<M extends Constructible<Modifier>>(
   TableClass: Function,
   Modifier: M,
@@ -397,6 +423,25 @@ type ModifierWithProxyArgs = {
   args: unknown[];
 };
 
+/**
+ * Builds a query expression that reads a field unlocked, for use inside a
+ * database query. Each two-way modifier on the field passes the stored value
+ * through its own `unlockrequest`. The expression yields the stored value as
+ * it is when the field has only one-way modifiers, and the plain field when
+ * it has no modifier.
+ *
+ * At compile time, `field` must be a key of the row type. Nothing ties
+ * `table` to the row type, and nothing checks each entry's `args` against
+ * its modifier's arguments.
+ *
+ * @param table The table class. It is read only for its modifier metadata.
+ * @param object The row in the query.
+ * @param field The field to read.
+ * @param modifiers The arguments for each two-way modifier on the field,
+ * matched to it by class name.
+ * @throws TypeError when `modifiers` has no entry for a two-way modifier on
+ * the field.
+ */
 export function unlockrequest<T extends {}, K extends keyof T>(
   table: Constructible,
   object: DatabaseDev.ValueProxy<T>,
