@@ -65,7 +65,7 @@ export const MODEL_JOURNEYS = {
   "compound-get-by": scenario({ title: "getBy matches a compound index of three fields by its keys in field order, with text, number, boolean and value proxy keys", body: COMPOUND, printed: "{\"indexed\":true,\"exact\":[\"one\"],\"other\":[\"two\"],\"none\":[],\"order\":[],\"numbers\":[\"1-2\"],\"numbersAsText\":[],\"shut\":[\"1-2 shut\"],\"proxies\":[\"2-1\"]}" }),
   "get-by-keys": scenario({ title: "getBy matches a number, a boolean and a value proxy key as the index holds it, and a text key does not match a number", body: GET_BY_KEYS, printed: "{\"indexed\":true,\"number\":[[true,\"Ann\"],[true,\"Cid\"]],\"numberIsNotText\":[],\"boolean\":[[true,\"Bob\"],[true,\"Cid\"]],\"proxy\":[[true,\"Bob\"]],\"numberProxy\":[[true,\"Bob\"]]}" }),
   "partial-update-keeps-modified-fields": scenario({
-    title: "KNOWN FINDING AntelopeJS/interface-database-decorators#80, fails until fixed: update with one field keeps the row's other encrypted, hashed and localized fields",
+    title: "update with one field keeps the row's other encrypted, hashed and localized fields",
     body: PARTIAL,
     printed: "{\"before\":[\"bio\",\"password\",\"privateInfo\"],\"after\":[\"bio\",\"password\",\"privateInfo\"],\"passwordReplaced\":[true,false],\"privateInfo\":{\"address\":\"1 Main St\",\"phoneNumber\":\"555\"},\"bio\":\"Hello\"}",
   }),

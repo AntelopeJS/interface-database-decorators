@@ -46,7 +46,7 @@ journeys:
 - `plain-data`: `toPlainData` output.
 - `compound-get-by`: a three-field compound index, with text keys and with number, boolean and value proxy keys.
 - `get-by-keys`: a number, a boolean and a value proxy key, as `Table.getAll` takes them.
-- `partial-update-keeps-modified-fields`: known finding #80, fails until fixed.
+- `partial-update-keeps-modified-fields`: updating one field keeps the row's other encrypted, hashed and localized fields.
 - `model-factory`: the table name comes from the argument or `RegisterTable`.
 - `extend-model`: a model subclass adds query methods.
 

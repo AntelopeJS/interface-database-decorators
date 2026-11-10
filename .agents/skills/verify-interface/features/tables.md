@@ -45,7 +45,7 @@ A table class with `Field`, `Index`, `Relation`, subclasses and `Table.with`.
 - `inheritance`: a subclass copies its parent and never writes into it.
 - `combine-modifiers`: three modifiers on one table.
 - `table-with-subclass`: the result of `with` extends the class it was called on.
-- `table-with-keeps-fields`: known finding #81, fails until fixed.
+- `table-with-keeps-fields`: the class `with` returns keeps the fields and indexes decorated on the class it was called on.
 - `subclass-modifiers`: modifier and event lists are copied per subclass.
 - `table-with`: mixin methods reach the subclass only.
 
