@@ -93,6 +93,24 @@ function scryptAsync(...[password, salt, keylen, options]: ScryptArgs) {
   });
 }
 
+/** A new salt and the scrypt arguments that derive the current hash of `candidate` with it. */
+function currentScrypt(candidate: string) {
+  const salt = randomBytes(SALT_BYTES);
+  return {
+    salt,
+    run: scryptArgs(candidate, salt, KEY_BYTES, SCRYPT_COST),
+  };
+}
+
+function storedScrypt(salt: Buffer, key: Buffer) {
+  return `${CURRENT_PREFIX}${unpaddedBase64(salt)}$${unpaddedBase64(key)}`;
+}
+
+/** A stored hash derived ahead of the setter, which `lock` keeps as it is. */
+class PrecomputedHash {
+  public constructor(public readonly stored: string) {}
+}
+
 function parseScrypt(stored: string) {
   const match = STORED_SCRYPT.exec(stored);
   if (!match) return undefined;
@@ -171,12 +189,11 @@ function storedText(stored: string | undefined) {
 function withHashedField<R>(
   row: { constructor: any },
   field: PropertyKey,
-  use: (modifier: HashModifier, stored: string) => R,
+  use: (modifier: HashModifier, stored: string, alone: boolean) => R,
 ) {
   const metaTable = getMetadata(row.constructor, ModifiersStaticMetadata);
-  const entry = fieldsByKey(metaTable)[field]?.find(
-    ({ modifier }) => modifier instanceof HashModifier,
-  );
+  const list = fieldsByKey(metaTable)[field];
+  const entry = list?.find(({ modifier }) => modifier instanceof HashModifier);
   if (!entry || !(entry.modifier instanceof HashModifier)) {
     throw new Error(`Field ${String(field)} is not hashed`);
   }
@@ -187,7 +204,8 @@ function withHashedField<R>(
     entry.id,
     entry.modifier,
     entry.metaRef,
-    (modifier) => use(modifier, isString(stored) ? stored : ""),
+    (modifier) =>
+      use(modifier, isString(stored) ? stored : "", list.length === 1),
   );
 }
 
@@ -210,12 +228,16 @@ export class HashModifier extends OneWayModifier<
   /**
    * Hashes a new value. Assigning the stored hash back keeps it as it is.
    * Blocks the event loop for one scrypt run: a setter and the conversions
-   * behind `insert` and `update` are synchronous.
+   * behind `insert` and `update` are synchronous. `setHashAsync` runs it on
+   * the thread pool instead.
    */
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
   public override lock(locked_value: string | undefined, value: unknown) {
     if (value === undefined) {
       return value;
+    }
+    if (value instanceof PrecomputedHash) {
+      return value.stored;
     }
     if (value === locked_value) {
       return locked_value;
@@ -228,11 +250,27 @@ export class HashModifier extends OneWayModifier<
       }
       return digestOf(algorithm, this.meta.salt, candidate);
     }
-    const salt = randomBytes(SALT_BYTES);
-    const key = scryptSync(
-      ...scryptArgs(candidate, salt, KEY_BYTES, SCRYPT_COST),
-    );
-    return `${CURRENT_PREFIX}${unpaddedBase64(salt)}$${unpaddedBase64(key)}`;
+    const { salt, run } = currentScrypt(candidate);
+    return storedScrypt(salt, scryptSync(...run));
+  }
+
+  /**
+   * What to assign to the field so that its setter stores the hash of `value`
+   * without running scrypt: the scrypt run happens here, on the thread pool.
+   * A value the setter handles without scrypt comes back as it is: nothing,
+   * the stored hash itself (`locked_value`, empty when nothing is stored), or
+   * any value of a field with an `algorithm`.
+   */
+  private async lockAsync(locked_value: string, value: HashInput) {
+    if (
+      value === undefined ||
+      (locked_value !== "" && value === locked_value) ||
+      this.options.algorithm
+    ) {
+      return value;
+    }
+    const { salt, run } = currentScrypt(JSON.stringify(value));
+    return new PrecomputedHash(storedScrypt(salt, await scryptAsync(...run)));
   }
 
   public override test(locked_value: string | undefined, value: HashInput) {
@@ -306,6 +344,35 @@ export class HashModifier extends OneWayModifier<
       return withHashedField(this, field, (modifier, stored) =>
         modifier.testAsync(stored, value),
       );
+    }
+
+    /**
+     * Hash a value on the thread pool, then assign it to the field. The row
+     * stores what `this[field] = value` stores, in the same format, without
+     * blocking the event loop for the scrypt run. On a server, prefer it to
+     * assigning a hashed field. A field with another modifier beside
+     * {@link Hashed} is assigned at once, on the event loop. Calls on one row
+     * that overlap settle in the order their scrypt runs end: await each one.
+     *
+     * @param field - Name of the field to set.
+     * @param value - Value to hash and store.
+     *
+     * @returns Once the field holds the hash of `value`.
+     *
+     * @throws Error when `field` has no {@link Hashed} decorator.
+     */
+    async setHashAsync<This extends object, F extends keyof This>(
+      this: This,
+      field: F,
+      value: This[F],
+    ): Promise<void> {
+      const assigned = await withHashedField(
+        this,
+        field,
+        (modifier, stored, alone) =>
+          alone ? modifier.lockAsync(stored, value) : value,
+      );
+      Reflect.set(this, field, assigned);
     }
 
     /**
