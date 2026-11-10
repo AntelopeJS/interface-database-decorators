@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { Field, Table } from "../../table";
 import { fromDatabase, toDatabase } from "../../modifiers/common";
 import { Hashed, HashModifier } from "../../modifiers/hash";
+import { Localized, LocalizationModifier } from "../../modifiers/localization";
 import { PASSWORD, scryptSuite } from "../helpers/hash-rows";
 
 const WRONG_PASSWORD = "not the password";
@@ -57,17 +58,34 @@ async function longestStallMs(work: () => Promise<void>) {
 }
 
 scryptSuite("Modifiers - hash - setHashAsync", () => {
-  it("keeps timers running while it hashes, unlike an assignment", async () => {
-    const blocked = await longestStallMs(async () => {
-      new Account().password = PASSWORD;
-    });
-    const account = new Account();
-    const free = await longestStallMs(() =>
-      account.setHashAsync("password", PASSWORD),
-    );
+  for (const password of [PASSWORD, ""]) {
+    it(`keeps timers running while it hashes ${JSON.stringify(password)}, unlike an assignment`, async () => {
+      const blocked = await longestStallMs(async () => {
+        new Account().password = password;
+      });
+      const account = new Account();
+      const free = await longestStallMs(() =>
+        account.setHashAsync("password", password),
+      );
 
-    expect(storedPassword(account)).to.match(CURRENT_FORMAT);
-    expect(free).to.be.below(blocked / 2);
+      expect(storedPassword(account)).to.match(CURRENT_FORMAT);
+      expect(free).to.be.below(blocked / 2);
+    });
+  }
+
+  it("reads back what an assignment reads on a field another modifier holds floating", async () => {
+    class Content extends Table.with(HashModifier, LocalizationModifier) {
+      declare title: string;
+    }
+    Localized()(Content.prototype, "title");
+    Hashed()(Content.prototype, "title");
+    const assigned = new Content();
+    assigned.title = PASSWORD;
+    const awaited = new Content();
+    await awaited.setHashAsync("title", PASSWORD);
+
+    expect(awaited.title).to.equal(assigned.title);
+    expect(JSON.stringify(awaited)).to.equal(JSON.stringify(assigned));
   });
 
   it("stores a hash that verifies the same way as an assigned one", async () => {
