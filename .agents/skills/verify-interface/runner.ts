@@ -1,7 +1,7 @@
 import { mkdirSync, symlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { createServer } from "node:net";
+import { createServer, type AddressInfo } from "node:net";
 
 import { equal } from "@antelopejs/tooling-configs/verify";
 import type { Check, Journey, JourneyContext } from "@antelopejs/tooling-configs/verify";
@@ -82,6 +82,11 @@ const MODULE_MANIFEST = JSON.stringify({
 
 const MODULE_ENTRY = "exports.construct = () => {};\nexports.start = () => {};\nexports.stop = () => {};\nexports.destroy = () => {};\n";
 
+/** Whether a server address is a TCP endpoint rather than a pipe name or an unbound server. */
+function isTcpAddress(address: AddressInfo | string | null): address is AddressInfo {
+  return address !== null && typeof address !== "string";
+}
+
 /** Asks the kernel for a free loopback port. */
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -89,7 +94,7 @@ function freePort(): Promise<number> {
     server.on("error", reject);
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
-      const port = address instanceof Object && "port" in address ? address.port : 0;
+      const port = isTcpAddress(address) ? address.port : 0;
       server.close(() => resolve(port));
     });
   });
