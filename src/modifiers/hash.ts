@@ -261,7 +261,7 @@ export class HashModifier extends OneWayModifier<
    * the stored hash itself (`locked_value`, empty when nothing is stored), or
    * any value of a field with an `algorithm`.
    */
-  public async lockAsync(locked_value: string, value: HashInput) {
+  private async lockAsync(locked_value: string, value: HashInput) {
     if (
       value === undefined ||
       (locked_value !== "" && value === locked_value) ||
