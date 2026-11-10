@@ -136,10 +136,6 @@ export class ModifiersDynamicMetadata {
     );
   }
 
-  /**
-   * Reads a field through its modifiers. A modifier that unlocks the value to
-   * `null` ends the read: the modifiers after it do not unlock it.
-   */
   get(field: PropertyKey, internal: InternalRecord) {
     if (Object.hasOwn(this.floating, field)) {
       return floatingByKey(this)[field];
@@ -151,16 +147,14 @@ export class ModifiersDynamicMetadata {
     let value = dataByKey(internal)[field];
     for (const { id, modifier, metaRef } of list) {
       if (isTwoWay(modifier) && value !== undefined) {
-        const args =
-          unlockArgsOf(this, field)[id] ??
-          ("autounlock" in modifier && modifier.autounlock ? [] : undefined);
-        if (args) {
+        if (unlockArgsOf(this, field)[id]) {
           value = withRef(internal, id, modifier, metaRef, (modifier) =>
-            modifier.unlock(value, ...args),
+            modifier.unlock(value, ...unlockArgsOf(this, field)[id]),
           );
-          if (value === null) {
-            break;
-          }
+        } else if ("autounlock" in modifier && modifier.autounlock) {
+          value = withRef(internal, id, modifier, metaRef, (modifier) =>
+            modifier.unlock(value),
+          );
         }
       }
     }

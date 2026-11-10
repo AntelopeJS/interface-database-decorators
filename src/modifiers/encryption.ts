@@ -152,7 +152,15 @@ export class EncryptionModifier extends TwoWayModifier<
 
   readonly autounlock = true;
 
-  public override unlock([locked_value, iv_str, authTag]: LockedType) {
+  /**
+   * Decrypts a stored value. `null` is no value and stays `null`, as a
+   * localized field read with no locale gives it.
+   */
+  public override unlock(locked: LockedType | null) {
+    if (locked === null) {
+      return null;
+    }
+    const [locked_value, iv_str, authTag] = locked;
     const decipher = createDecipheriv(
       this.options.algorithm || "aes-256-gcm",
       this.options.secretKey,
