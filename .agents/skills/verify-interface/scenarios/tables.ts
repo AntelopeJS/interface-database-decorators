@@ -270,7 +270,7 @@ export const TABLE_JOURNEYS = {
   "combine-modifiers": scenario({ title: "Table.with combines the encryption, hashing and localization modifiers on one table", body: COMBINE, printed: "{\"stored\":[\"bio\",\"password\",\"privateInfo\"],\"privateInfo\":{\"address\":\"1 Main St\",\"phoneNumber\":\"555\"},\"password\":[true,false],\"bio\":[\"Bonjour\",\"Hello\"],\"mixins\":[\"function\",\"function\"]}" }),
   "table-with-subclass": scenario({ title: "X.with(...) returns a subclass of X that keeps X's fields and methods and gains the mixin's", body: WITH_SUBCLASS, printed: "{\"isUser\":[true,true,true],\"methods\":[\"hi Root\",\"function\",\"function\",\"function\",\"undefined\"],\"stored\":[\"hi Root\",true]}" }),
   "table-with-keeps-fields": scenario({
-    title: "KNOWN FINDING AntelopeJS/interface-database-decorators#81, fails until fixed: the subclass X.with(...) returns keeps the fields and indexes decorated on X",
+    title: "the subclass X.with(...) returns keeps the fields and indexes decorated on X",
     body: WITH_FIELDS,
     printed: "{\"fields\":[\"email\",\"name\",\"password\"],\"built\":[\"email\",\"name\",\"password\"],\"indexes\":[\"email\"]}",
   }),

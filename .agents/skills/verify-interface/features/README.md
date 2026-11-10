@@ -24,7 +24,7 @@ Every journey runs a scenario inside `ajs module test` with `@antelopejs/mongodb
 
 | Documented behaviour | Why no journey drives it |
 |---|---|
-| The minor-bump rule of the interface kind | Fails at the current head, not at a change: `campaign/integration` exports more than the published 0.1.12 and `package.json` is still 0.1.12. Add it to `smoke` in the PR that bumps the version. |
+| The minor-bump rule of the interface kind | Fails at the current head, not at a change: the pack names a `unique symbol` property key by the TypeScript checker's internal symbol id (`__@MixinSymbol@<id>`), and that id differs between the packed head and the published version. `[MixinSymbol]` on `EncryptionModifier`, `HashModifier` and `LocalizationModifier` then reads as removed and added, even though the head's `dist` matches the published 0.2.2 byte for byte. Add it to `smoke` once `@antelopejs/tooling-configs` names such keys stably. |
 | A model "stays on the declaring module's database even when another module calls `GetModel`" (docs/4, GetModel) | Needs two modules with two databases behind one provider; one container serves one database here. |
 | `testHash` and `testHashAsync` spend one scrypt run whatever the row holds, and the time of a refusal does not tell the row's format (docs/3, HashModifier) | Driven (`hashing/hash-cost`) by ratios against one async run, retried up to three times, not by absolute times. |
 | A digest field's test spends no scrypt run (docs/3) | Driven (`hashing/hash-cost`), by the same ratios. |
@@ -33,7 +33,6 @@ Every journey runs a scenario inside `ajs module test` with `@antelopejs/mongodb
 | `Fixture` generator for a class that does not extend the decorated one throws "does not extend" | Not reachable through the public API; the generator is wrapped by the decorator. |
 | Queries that read a modified field through `model.table` (`unlockrequest`, locale fallback in AQL) | The docs only say `model.table` returns AQL results; they describe no query behaviour of the modifiers. |
 | `@Model` on a method of a controller outside a request | Docs state the property is unset outside a request (driven in `property-decoration`); no other claim. |
-| Updating one modified field beside others keeps them (docs/3 salt reuse, docs/4 `_internal`) | Driven by `models/partial-update-keeps-modified-fields`, which FAILS on purpose: known finding AntelopeJS/interface-database-decorators#80. The verdict stays FAIL for `models` until #80 is fixed. |
 | `toDatabase` "has no prototype" (docs/4) | The result is a plain object with `Object.prototype`; the journey checks it is not an instance of the table class. The wording is loose, reported in the verifier's own reply. |
 | Database-driver behaviours: a driver that cannot enforce a unique secondary index refuses the schema (docs/2) | Belongs to the database module (rethinkdb); this repository only passes `unique` to the provider (driven through MongoDB in `index-options`). |
 | `CROSS_INSTANCE` indexes and `between()` on a real driver beyond the schema definition | The cross-instance index is checked in the definition and in MongoDB's index list; query speed is not observable. |
@@ -41,5 +40,4 @@ Every journey runs a scenario inside `ajs module test` with `@antelopejs/mongodb
 | Call `RegisterSchema` in the declaring module so the binding follows that module's database (docs/2) | Needs two modules on two databases; one container serves one database here. |
 | `unlockrequest` shows database expressions the encoded value of a custom two-way modifier (docs/3) | Needs an AQL expression over a modified field; the docs describe no result a journey could compare beyond the read-back it drives. |
 | The first codec message wording (docs/4 Validation) | Driven in `validation`: the first entry that has a message is used and `invalid <field>` otherwise. An entry without a message is read as reporting none, which matches the sentence. |
-| `X.with(...)` keeps the fields and indexes decorated on `X` (docs/2 Inheritance, applied to the class `with` returns) | Driven by `tables/table-with-keeps-fields`, which FAILS on purpose: known finding AntelopeJS/interface-database-decorators#81. The `tables` verdict stays FAIL until #81 is fixed. |
 | A raw stored empty text in the query path (`unlockrequest`) | The docs promise the fallback for texts the modifier wrote (an empty text is stored as no text); a hand-written `""` in the database is not described. Driven for the written case in `localized-query`. |
