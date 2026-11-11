@@ -4,7 +4,11 @@ import { Field, Table } from "../table";
 import {
   attachModifier,
   fromDatabase,
+  fromPlainData,
+  lock,
   MixinSymbol,
+  toDatabase,
+  toPlainData,
   TwoWayModifier,
   unlock,
 } from "../modifiers/common";
@@ -68,5 +72,42 @@ describe("Modified fields - a read that finds no value", () => {
     const page = new Page().localize("en");
 
     expect(page.summary).to.equal(undefined);
+  });
+
+  describe("written back", () => {
+    class Note extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "fr" })
+      @Field("string")
+      declare title?: string;
+    }
+
+    it("keeps the fallback after a read answer is saved again", () => {
+      const stored = {
+        _id: "note-1",
+        _internal: { meta: {}, data: { title: {} } },
+      };
+      const read = fromDatabase(stored, Note).localize("en");
+      const resent = fromPlainData(toPlainData(read), Note).localize("en");
+      lock(resent, LocalizationModifier, undefined, "en");
+      const saved = fromDatabase(toDatabase(resent), Note).localize("fr");
+      saved.title = "Salut";
+
+      expect(read.title).to.equal(null);
+      expect(saved.localize("en").title).to.equal("Salut");
+    });
+
+    it("stores no text when lock writes back a read with no text", () => {
+      const stored = {
+        _id: "page-2",
+        _internal: { meta: {}, data: { summary: { fr: "Salut" } } },
+      };
+      const page = fromDatabase(stored, Page);
+      unlock(page, LocalizationModifier, ["summary"], "en");
+      lock(page, LocalizationModifier, ["summary"], "en");
+
+      expect(toDatabase(page)._internal?.data.summary).to.deep.equal({
+        fr: "Salut",
+      });
+    });
   });
 });

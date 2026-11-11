@@ -70,14 +70,15 @@ describe("Localized fields - plain data with values by locale", () => {
     expect(getInternal(read).data.displayName).to.deep.equal({ en: "Members" });
   });
 
-  it("stores a null value under the locale it is read with", async () => {
+  it("stores a null value as no text under the locale it is read with", async () => {
     const read = await stored(
       RoleModel.fromPlainData({ displayName: wording, tooltip: null }).localize(
         "en",
       ),
     );
 
-    expect(getInternal(read).data.tooltip).to.deep.equal({ en: null });
+    expect(getInternal(read).data.tooltip).to.deep.equal({});
+    expect(read.localize("en").tooltip).to.equal(null);
   });
 
   it("stores no record for a field encrypted inside its locales", async () => {
