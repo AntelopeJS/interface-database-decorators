@@ -1,7 +1,11 @@
 import { expect } from "chai";
 import { Field, Table } from "../../table";
 import { Encrypted, EncryptionModifier } from "../../modifiers/encryption";
-import { attachModifier, fromDatabase } from "../../modifiers/common";
+import {
+  attachModifier,
+  fromDatabase,
+  testValue,
+} from "../../modifiers/common";
 
 describe("Modifiers - encryption", () => {
   it("creates encryption modifier", async () => {
@@ -188,6 +192,7 @@ describe("Modifiers - encryption", () => {
     const vault = fromDatabase(stored, Vault);
 
     expect(vault.secret).to.equal(null);
+    expect(testValue(vault, "secret", null)).to.equal(true);
     expect(JSON.parse(JSON.stringify(vault))).to.deep.include({
       secret: null,
     });

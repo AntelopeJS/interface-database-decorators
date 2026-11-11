@@ -74,6 +74,23 @@ describe("Modified fields - a read that finds no value", () => {
     expect(page.summary).to.equal(undefined);
   });
 
+  it("takes a new value on a stacked field that stores nothing or null", () => {
+    const fresh = new Page().localize("en");
+    const cleared = fromDatabase(
+      { _id: "page-3", _internal: { meta: {}, data: { title: null } } },
+      Page,
+    ).localize("en");
+
+    fresh.title = "Hello";
+    cleared.title = "Hello";
+
+    expect(fresh.title).to.equal("Hello");
+    expect(cleared.title).to.equal("Hello");
+    expect(toDatabase(cleared)._internal?.data.title).to.deep.equal({
+      en: ["Hello"],
+    });
+  });
+
   describe("written back", () => {
     class Note extends Table.with(LocalizationModifier) {
       @Localized({ fallbackLocale: "fr" })
