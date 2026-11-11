@@ -1,7 +1,8 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 
-import { type Constructible, getMetadata } from "../common";
+import { type Constructible, getMetadata, type PlainData } from "../common";
+import { isRecord } from "./internal/kinds";
 import {
   attachModifier,
   ContainerModifier,
@@ -45,6 +46,13 @@ function withoutEmptyTexts<V>(values: Record<string, V>): Record<string, V> {
   return Object.fromEntries(
     Object.entries(values).filter(([, value]) => value !== EMPTY_TEXT),
   );
+}
+
+/** Whether `value` is an object literal, not an array, a date or a class instance. */
+function isPlainObject(value: unknown): value is object {
+  if (!isRecord(value)) return false;
+  const prototype: unknown = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 /**
@@ -111,6 +119,28 @@ export class LocalizationModifier extends ContainerModifier<
       ? super.unlock(locked_value, this.options.fallbackLocale)
       : undefined;
     return key === undefined ? (fallback ?? null) : fallback;
+  }
+
+  /**
+   * Reads a field that plain data gives as a plain object as its values by
+   * locale, as `PlainData` types it, whatever locale the row is read with
+   * afterwards. A field with a modifier inside its locales, such as
+   * `@Localized() @Encrypted()`, keeps the value for the next locale selected:
+   * that modifier transforms the value before the locales are set.
+   */
+  public fromPlainData<T extends { constructor: any }>(
+    object: T,
+    field: Extract<keyof T, string>,
+    raw: PlainData<T>,
+  ) {
+    const modifiers = getMetadata(object.constructor, ModifiersStaticMetadata)
+      .fields[field];
+    if (
+      modifiers?.at(-1)?.id === LocalizationModifier.name &&
+      isPlainObject(raw[field])
+    ) {
+      unlock(object, LocalizationModifier, [field], "*");
+    }
   }
 
   public override unlockrequest(

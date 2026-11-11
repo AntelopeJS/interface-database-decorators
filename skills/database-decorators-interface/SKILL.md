@@ -130,6 +130,7 @@ class Chef extends Table.with(
 - `@Hashed({ algorithm })` stores a fast digest instead of scrypt: use it only for non-secret fingerprints, never for credentials.
 - Localized fields must be written through a localized instance (`instance.localize(locale).field = ...`);
   values assigned before `localize()` are held in floating state and silently dropped on insert/update.
+- In plain data, a plain object given for a localized field is its texts by locale: `fromPlainData` and `insert` store every locale, whatever `localize()` call follows, and `update` replaces the stored texts with that record. A single text still waits for a locale. A field with another modifier inside its locales, such as `@Localized() @Encrypted()`, does not read a record this way.
 - `instance.localize("*", ["motto"])` reads and writes every locale at once, typed `Record<string, string>` for each listed field (`LocalizedRecords<T, K>`); without a field list the field types stay unchanged.
 - Under `localize("*")` a localized field takes the record of texts by locale, and `undefined` or `null` clears every locale. A single text throws a `TypeError`, whether it is assigned or held from `fromPlainData` when `localize("*")` runs.
 - A localized value `""` is stored as no value: reads and queries in that locale get the `fallbackLocale` value.
