@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.2
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.3.1...v0.3.2)
+
+### 🩹 Fixes
+
+- **localized:** Read a record in plain data as its values by locale ([#112](https://github.com/AntelopeJS/interface-database-decorators/pull/112))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.3.1
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.3.0...v0.3.1)
