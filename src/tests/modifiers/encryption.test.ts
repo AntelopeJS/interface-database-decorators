@@ -1,6 +1,11 @@
 import { expect } from "chai";
 import { Field, Table } from "../../table";
 import { Encrypted, EncryptionModifier } from "../../modifiers/encryption";
+import {
+  attachModifier,
+  fromDatabase,
+  testValue,
+} from "../../modifiers/common";
 
 describe("Modifiers - encryption", () => {
   it("creates encryption modifier", async () => {
@@ -152,5 +157,44 @@ describe("Modifiers - encryption", () => {
     instance.payload = original;
     expect(instance.payload).to.deep.equal(original);
     expect(instance.payload.date).to.be.instanceOf(Date);
+  });
+  it("unlocks a stored value typed from unlock's parameter, which excludes null", () => {
+    class IvLength extends EncryptionModifier {
+      public override unlock(
+        stored: Parameters<EncryptionModifier["unlock"]>[0],
+      ) {
+        return Buffer.from(stored[1], "base64").length;
+      }
+    }
+    class Note extends Table.with(IvLength) {
+      @Field("string") declare body: number | string;
+    }
+    attachModifier(Note, IvLength, "body", {
+      secretKey: "12345678901234567890123456789012",
+    });
+
+    const note = new Note();
+    note.body = "hello";
+
+    expect(note.body).to.equal(16);
+  });
+  it("reads a stored null as null, without decrypting it", () => {
+    class Vault extends Table.with(EncryptionModifier) {
+      @Encrypted({ secretKey: "12345678901234567890123456789012" })
+      @Field("string")
+      declare secret?: string | null;
+    }
+    const stored = {
+      _id: "vault-1",
+      _internal: { meta: {}, data: { secret: null } },
+    };
+
+    const vault = fromDatabase(stored, Vault);
+
+    expect(vault.secret).to.equal(null);
+    expect(testValue(vault, "secret", null)).to.equal(true);
+    expect(JSON.parse(JSON.stringify(vault))).to.deep.include({
+      secret: null,
+    });
   });
 });

@@ -39,12 +39,15 @@ export type LocalizedRecords<This, K extends keyof This> = Omit<
     localize(locale: string, fields?: ReadonlyArray<keyof This>): This;
   };
 
-/** A text left empty in one language counts as no text in that language. */
-const EMPTY_TEXT = "";
+/**
+ * The values that count as no text in one language: an empty text, and the
+ * `null` a read with no text answers.
+ */
+const NO_TEXT = new Set<unknown>([undefined, null, ""]);
 
-function withoutEmptyTexts<V>(values: Record<string, V>): Record<string, V> {
+function withoutMissingTexts<V>(values: Record<string, V>): Record<string, V> {
   return Object.fromEntries(
-    Object.entries(values).filter(([, value]) => value !== EMPTY_TEXT),
+    Object.entries(values).filter(([, value]) => !NO_TEXT.has(value)),
   );
 }
 
@@ -89,8 +92,9 @@ export class LocalizationModifier extends ContainerModifier<
   }
 
   /**
-   * Stores an empty text as no text, so that the fallback locale answers for
-   * it in queries too (`unlockrequest`).
+   * Stores an empty text or `null` as no text, so that the fallback locale
+   * answers for it in queries too (`unlockrequest`). A read with no text
+   * answers `null`, so saving that answer again stores nothing.
    */
   public override lock(
     // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
@@ -99,26 +103,22 @@ export class LocalizationModifier extends ContainerModifier<
     value: unknown,
     key: string | undefined,
   ) {
-    return withoutEmptyTexts(super.lock(locked_value, value, key));
+    return withoutMissingTexts(super.lock(locked_value, value, key));
   }
 
-  /**
-   * The value under `key`, else under the fallback locale. With no `key`, a
-   * field without a fallback value reads `null`, as an unset field does.
-   */
+  /** The value under `key`, else under the fallback locale. */
   public override unlock(
     // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
     locked_value: Record<string, unknown>,
     key: string | undefined,
   ) {
     const unlocked = super.unlock(locked_value, key);
-    if (unlocked !== undefined && unlocked !== EMPTY_TEXT) {
+    if (!NO_TEXT.has(unlocked)) {
       return unlocked;
     }
-    const fallback = this.options.fallbackLocale
-      ? super.unlock(locked_value, this.options.fallbackLocale)
-      : undefined;
-    return key === undefined ? (fallback ?? null) : fallback;
+    if (this.options.fallbackLocale) {
+      return super.unlock(locked_value, this.options.fallbackLocale);
+    }
   }
 
   /**

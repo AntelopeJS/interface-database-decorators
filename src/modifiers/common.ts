@@ -64,6 +64,9 @@ export type ModifierEvent = (
   ...args: unknown[]
 ) => void;
 
+/** The stored values no modifier unlocks: a field holding one reads `null`. */
+const NO_VALUE = new Set<unknown>([undefined, null]);
+
 interface ModifiedField {
   id: string;
   modifier: Modifier;
@@ -136,6 +139,12 @@ export class ModifiersDynamicMetadata {
     );
   }
 
+  /**
+   * Reads a field through its modifiers. A field the row stores reads `null`
+   * when its modifiers find no value in it, as under a locale with no text,
+   * or when it stores `null`: no modifier unlocks `null`. A field the row
+   * does not store, or cannot read yet, reads `undefined`.
+   */
   get(field: PropertyKey, internal: InternalRecord) {
     if (Object.hasOwn(this.floating, field)) {
       return floatingByKey(this)[field];
@@ -144,9 +153,10 @@ export class ModifiersDynamicMetadata {
       return;
     }
     const list = fieldsByKey(this.staticMeta)[field];
-    let value = dataByKey(internal)[field];
+    const stored = dataByKey(internal)[field];
+    let value = stored;
     for (const { id, modifier, metaRef } of list) {
-      if (isTwoWay(modifier) && value !== undefined) {
+      if (isTwoWay(modifier) && !NO_VALUE.has(value)) {
         if (unlockArgsOf(this, field)[id]) {
           value = withRef(internal, id, modifier, metaRef, (modifier) =>
             modifier.unlock(value, ...unlockArgsOf(this, field)[id]),
@@ -158,7 +168,7 @@ export class ModifiersDynamicMetadata {
         }
       }
     }
-    return value;
+    return value === undefined && stored !== undefined ? null : value;
   }
 
   canSet(field: PropertyKey) {
@@ -190,11 +200,10 @@ export class ModifiersDynamicMetadata {
       const { id, modifier, metaRef } = list[i];
       prevlist[i] = { id, modifier, metaRef, prev };
       if (isTwoWay(modifier)) {
-        if (unlockArgsOf(this, field)[id]) {
-          prev = modifier.unlock(prev, ...unlockArgsOf(this, field)[id]);
-        } else {
-          prev = undefined;
-        }
+        prev =
+          unlockArgsOf(this, field)[id] && !NO_VALUE.has(prev)
+            ? modifier.unlock(prev, ...unlockArgsOf(this, field)[id])
+            : undefined;
       }
     }
     prevlist.push({
@@ -507,7 +516,7 @@ export function testValue<T extends { constructor: any }, K extends keyof T>(
         modifier.test(val, value, ...args),
       );
     }
-    if (isTwoWay(modifier) && val !== undefined) {
+    if (isTwoWay(modifier) && !NO_VALUE.has(val)) {
       return withRef(internal, id, modifier, metaRef, (modifier) =>
         modifier.unlock(val, ...args),
       );

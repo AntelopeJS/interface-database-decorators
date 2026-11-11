@@ -244,7 +244,7 @@ describe("Modifiers - localization", () => {
     page.localize("*").title = undefined;
 
     expect(toDatabase(unset)._internal?.data.title).to.deep.equal({});
-    expect(page.localize("en").title).to.equal(undefined);
+    expect(page.localize("en").title).to.equal(null);
     expect(toDatabase(page)._internal?.data.title).to.deep.equal({});
   });
   it("maintains data structure integrity", async () => {
