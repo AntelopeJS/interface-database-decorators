@@ -136,6 +136,11 @@ export class ModifiersDynamicMetadata {
     );
   }
 
+  /**
+   * Reads a field through its modifiers. A field the row stores reads `null`
+   * when its modifiers find no value in it, as under a locale with no text.
+   * A field the row does not store, or cannot read yet, reads `undefined`.
+   */
   get(field: PropertyKey, internal: InternalRecord) {
     if (Object.hasOwn(this.floating, field)) {
       return floatingByKey(this)[field];
@@ -144,7 +149,8 @@ export class ModifiersDynamicMetadata {
       return;
     }
     const list = fieldsByKey(this.staticMeta)[field];
-    let value = dataByKey(internal)[field];
+    const stored = dataByKey(internal)[field];
+    let value = stored;
     for (const { id, modifier, metaRef } of list) {
       if (isTwoWay(modifier) && value !== undefined) {
         if (unlockArgsOf(this, field)[id]) {
@@ -158,7 +164,7 @@ export class ModifiersDynamicMetadata {
         }
       }
     }
-    return value;
+    return value === undefined && stored !== undefined ? null : value;
   }
 
   canSet(field: PropertyKey) {

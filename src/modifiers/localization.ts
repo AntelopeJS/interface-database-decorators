@@ -102,10 +102,7 @@ export class LocalizationModifier extends ContainerModifier<
     return withoutEmptyTexts(super.lock(locked_value, value, key));
   }
 
-  /**
-   * The value under `key`, else under the fallback locale. With no `key`, a
-   * field without a fallback value reads `null`, as an unset field does.
-   */
+  /** The value under `key`, else under the fallback locale. */
   public override unlock(
     // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
     locked_value: Record<string, unknown>,
@@ -115,10 +112,9 @@ export class LocalizationModifier extends ContainerModifier<
     if (unlocked !== undefined && unlocked !== EMPTY_TEXT) {
       return unlocked;
     }
-    const fallback = this.options.fallbackLocale
-      ? super.unlock(locked_value, this.options.fallbackLocale)
-      : undefined;
-    return key === undefined ? (fallback ?? null) : fallback;
+    if (this.options.fallbackLocale) {
+      return super.unlock(locked_value, this.options.fallbackLocale);
+    }
   }
 
   /**

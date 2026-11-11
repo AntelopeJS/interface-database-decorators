@@ -135,6 +135,7 @@ class Chef extends Table.with(
 - Under `localize("*")` a localized field takes the record of texts by locale, and `undefined` or `null` clears every locale. A single text throws a `TypeError`, whether it is assigned or held from `fromPlainData` when `localize("*")` runs.
 - A localized value `""` is stored as no value: reads and queries in that locale get the `fallbackLocale` value.
 - A `ContainerModifier` key of `undefined` is no key: writes store nothing under it, and reads and queries get no value. A localized field reads the `fallbackLocale` value, or `null` when there is none.
+- A modified field the row stores reads `null` when its modifiers find no value, such as `localize("de")` with no German text and no `fallbackLocale`. A field the row does not store reads `undefined`. A custom `unlock` never receives `null` from the modifier above it.
 - `@Relation({ to: () => Target })` is declarative metadata only: no foreign-key enforcement, consumed by introspection tooling via `RelationStaticMetadata`.
 - `Model.validate` (and `{ validate: true }` on insert/update) only checks fields whose `@Field` type is an
   io-ts-style codec with `.decode`; plain string field tokens are skipped. Update validates with
