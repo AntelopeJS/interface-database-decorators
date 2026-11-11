@@ -138,8 +138,9 @@ export class ModifiersDynamicMetadata {
 
   /**
    * Reads a field through its modifiers. A field the row stores reads `null`
-   * when its modifiers find no value in it, as under a locale with no text.
-   * A field the row does not store, or cannot read yet, reads `undefined`.
+   * when its modifiers find no value in it, as under a locale with no text,
+   * or when it stores `null`: no modifier unlocks `null`. A field the row
+   * does not store, or cannot read yet, reads `undefined`.
    */
   get(field: PropertyKey, internal: InternalRecord) {
     if (Object.hasOwn(this.floating, field)) {
@@ -152,7 +153,7 @@ export class ModifiersDynamicMetadata {
     const stored = dataByKey(internal)[field];
     let value = stored;
     for (const { id, modifier, metaRef } of list) {
-      if (isTwoWay(modifier) && value !== undefined) {
+      if (isTwoWay(modifier) && value !== undefined && value !== null) {
         if (unlockArgsOf(this, field)[id]) {
           value = withRef(internal, id, modifier, metaRef, (modifier) =>
             modifier.unlock(value, ...unlockArgsOf(this, field)[id]),

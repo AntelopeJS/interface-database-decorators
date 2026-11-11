@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Field, Table } from "../../table";
 import { Encrypted, EncryptionModifier } from "../../modifiers/encryption";
-import { attachModifier } from "../../modifiers/common";
+import { attachModifier, fromDatabase } from "../../modifiers/common";
 
 describe("Modifiers - encryption", () => {
   it("creates encryption modifier", async () => {
@@ -173,5 +173,23 @@ describe("Modifiers - encryption", () => {
     note.body = "hello";
 
     expect(note.body).to.equal(16);
+  });
+  it("reads a stored null as null, without decrypting it", () => {
+    class Vault extends Table.with(EncryptionModifier) {
+      @Encrypted({ secretKey: "12345678901234567890123456789012" })
+      @Field("string")
+      declare secret?: string | null;
+    }
+    const stored = {
+      _id: "vault-1",
+      _internal: { meta: {}, data: { secret: null } },
+    };
+
+    const vault = fromDatabase(stored, Vault);
+
+    expect(vault.secret).to.equal(null);
+    expect(JSON.parse(JSON.stringify(vault))).to.deep.include({
+      secret: null,
+    });
   });
 });
