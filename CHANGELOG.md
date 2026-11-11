@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.4.0
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.3.2...v0.4.0)
+
+### 🩹 Fixes
+
+- **modifiers:** Read a stored field with no value as null at the end of the read ([#113](https://github.com/AntelopeJS/interface-database-decorators/pull/113))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.3.2
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.3.1...v0.3.2)
