@@ -20,7 +20,7 @@ import {
   triggerEvent,
 } from "./modifiers/common";
 import { isRecord } from "./modifiers/internal/kinds";
-import { boundSchema } from "./internal/bound-schema";
+import { boundSchema, tableOf } from "./internal/bound-schema";
 import {
   fieldsByKey,
   type InternalRecord,
@@ -118,8 +118,7 @@ export function BasicDataModel<T extends object>(
   const schemaName = metadata.schemaName;
   const primaryKey = metadata.primary;
   const toInstances = (dataR: T[]) =>
-    // SAFETY: Model.fromDatabase returns undefined only for a falsy row, and the rows a table read or an index lookup returns are stored records, never null or undefined; the cast removes that undefined from the element type.
-    dataR.map((row) => Model.fromDatabase(row)) as T[];
+    dataR.map((row) => fromDatabase(row, dataType));
   const Model = class Model {
     public static readonly schemaName: string | undefined = schemaName;
     /**
@@ -187,8 +186,7 @@ export function BasicDataModel<T extends object>(
     public readonly table: DatabaseDev.Table<T>;
 
     constructor(public readonly database: DatabaseDev.SchemaInstance<any>) {
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- database is a SchemaInstance<any>, so its table is a Table<any>; a schema instance covers every table of its schema, so no type parameter of it states that this class's table holds this class's rows
-      this.table = database.table(name);
+      this.table = tableOf(database, name);
     }
 
     /**
@@ -429,9 +427,8 @@ export function GetModel<M extends InstanceType<DataModel>>(
   assert(cache);
   const key = cacheKeyOf(instanceId);
   const cached = cache.get(key);
-  if (cached) {
-    // SAFETY: modelCache is private to this module, keyed by the class, and only this function fills it, with the `new cl(...)` result below, which is an M for that same cl.
-    return cached as M;
+  if (cached instanceof cl) {
+    return cached;
   }
   const model = new cl(schemaOf(cl).instance(instanceId));
   cache.set(key, model);

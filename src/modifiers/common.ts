@@ -10,6 +10,7 @@ import {
   ignoredEventNames,
   isEventHandler,
   isLocking,
+  isObjectLike,
   isOnlyEvents,
   isTwoWay,
   isWriteOnly,
@@ -239,12 +240,20 @@ export function fromPlainData<T extends object>(
   rawObject: PlainData<T>,
   TableClass: Constructible<T>,
 ): T {
-  const instance = {};
-  Object.setPrototypeOf(instance, prototypeOf(TableClass));
+  const instance = withPrototypeOf({}, TableClass);
   Object.assign(instance, Object.fromEntries(Object.entries(rawObject)));
   triggerEvent(instance, "fromPlainData", rawObject);
-  // SAFETY: instance gets the prototype of TableClass and the fields of rawObject, so it is a T, as fromPlainData returns; setPrototypeOf types no result.
-  return instance as T;
+  return instance;
+}
+
+/** `fields` turned into an instance of `TableClass` without running its constructor. */
+function withPrototypeOf<T extends Constructible>(
+  fields: Partial<InstanceType<T>>,
+  TableClass: T,
+): InstanceType<T> {
+  Object.setPrototypeOf(fields, prototypeOf(TableClass));
+  // SAFETY: fields now has the prototype of TableClass, so it has the methods and accessors of an InstanceType<T>, and every caller gives it the fields of a row of that class; setPrototypeOf types no result.
+  return fields as InstanceType<T>;
 }
 
 /**
@@ -271,11 +280,12 @@ export function fromDatabase<T extends Constructible>(
   rawObject: any,
   TableClass: T,
 ): InstanceType<T> {
-  // oxlint-disable-next-line typescript/no-unsafe-assignment -- rawObject is a stored row, typed any by the published fromDatabase signature; typing it T breaks consumers
-  const shallowCopy = { ...rawObject };
-  Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
+  const row: unknown = rawObject;
+  const shallowCopy = withPrototypeOf(
+    isObjectLike(row) ? { ...row } : {},
+    TableClass,
+  );
   triggerEvent(shallowCopy, "fromDatabase", rawObject);
-  // oxlint-disable-next-line typescript/no-unsafe-return -- shallowCopy is a copy of the any-typed rawObject
   return shallowCopy;
 }
 
