@@ -247,13 +247,15 @@ export function fromPlainData<T extends object>(
 }
 
 /** `fields` turned into an instance of `TableClass` without running its constructor. */
-function withPrototypeOf<T extends Constructible>(
-  fields: Partial<InstanceType<T>>,
-  TableClass: T,
-): InstanceType<T> {
+function withPrototypeOf<I extends object>(
+  fields: Partial<I>,
+  TableClass: Constructible<I>,
+): I {
   Object.setPrototypeOf(fields, prototypeOf(TableClass));
-  // SAFETY: fields now has the prototype of TableClass, so it has the methods and accessors of an InstanceType<T>; its own fields are the row's, copied before this call by fromDatabase or assigned after it by fromPlainData, and the constructor is skipped on purpose; setPrototypeOf types no result.
-  return fields as InstanceType<T>;
+  if (!(fields instanceof TableClass)) {
+    throw new TypeError(`${TableClass.name} does not recognize its instances`);
+  }
+  return fields;
 }
 
 /**
@@ -281,12 +283,12 @@ export function fromDatabase<T extends Constructible>(
   TableClass: T,
 ): InstanceType<T> {
   const row: unknown = rawObject;
-  const shallowCopy = withPrototypeOf(
-    isObjectLike(row) ? { ...row } : {},
-    TableClass,
-  );
-  triggerEvent(shallowCopy, "fromDatabase", rawObject);
-  return shallowCopy;
+  const shallowCopy = isObjectLike(row) ? { ...row } : {};
+  Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
+  // SAFETY: shallowCopy now has the prototype of TableClass and the fields of the stored row; the published signature takes TableClass as T extends Constructible, and instanceof on such a T narrows only to object, so nothing narrower than this assertion reaches InstanceType<T>.
+  const instance = shallowCopy as InstanceType<T>;
+  triggerEvent(instance, "fromDatabase", rawObject);
+  return instance;
 }
 
 /**
