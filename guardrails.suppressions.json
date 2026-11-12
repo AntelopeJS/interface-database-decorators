@@ -9,7 +9,7 @@
   },
   "tsExpectError": 0,
   "tsIgnore": 0,
-  "safety": 5,
+  "safety": 6,
   "config": {},
   "agentFiles": true
 }
