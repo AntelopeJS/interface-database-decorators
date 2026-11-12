@@ -252,7 +252,7 @@ function withPrototypeOf<T extends Constructible>(
   TableClass: T,
 ): InstanceType<T> {
   Object.setPrototypeOf(fields, prototypeOf(TableClass));
-  // SAFETY: fields now has the prototype of TableClass, so it has the methods and accessors of an InstanceType<T>, and every caller gives it the fields of a row of that class; setPrototypeOf types no result.
+  // SAFETY: fields now has the prototype of TableClass, so it has the methods and accessors of an InstanceType<T>; its own fields are the row's, copied before this call by fromDatabase or assigned after it by fromPlainData, and the constructor is skipped on purpose; setPrototypeOf types no result.
   return fields as InstanceType<T>;
 }
 

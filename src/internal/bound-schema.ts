@@ -16,7 +16,7 @@ export function tableOf<T>(
   instance: SchemaInstance<unknown>,
   tableName: string,
 ): Table<T> {
-  // SAFETY: a schema instance looks its tables up by a runtime name, so its type cannot tie a name to a row type; each caller passes the name its table class T is registered under, whose stored rows are that class's records.
+  // SAFETY: a schema instance looks its tables up by a runtime name, so its type cannot tie a name to a row type; the row type T is the claim of the caller, a table class or data model that names the table holding its rows, as the SchemaInstance<any> it receives already allowed.
   const rows = instance as SchemaInstance<{ [table: string]: T }>;
   return rows.table(tableName);
 }
