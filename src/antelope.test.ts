@@ -1,7 +1,9 @@
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import { defineConfig } from "@antelopejs/interface-core/config";
+import { ApiPort } from "./tests/helpers/api-port";
 
 let mongod: MongoMemoryServer;
+const apiPort = ApiPort();
 
 export default defineConfig({
   name: "interface-database-decorators-test",
@@ -24,8 +26,8 @@ export default defineConfig({
         version: "1.6.0",
       },
       config: {
-        servers: [{ protocol: "http", host: "127.0.0.1", port: 5010 }],
-        publicBaseUrl: "http://127.0.0.1:5010",
+        servers: [{ protocol: "http", host: "127.0.0.1", port: apiPort }],
+        publicBaseUrl: `http://127.0.0.1:${apiPort}`,
       },
     },
   },
