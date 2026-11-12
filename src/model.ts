@@ -419,7 +419,7 @@ function schemaOf(cl: DataModel): Schema<any> {
 export function GetModel<M extends InstanceType<DataModel>>(
   cl: DataModel & Class<M>,
   instanceId?: InstanceId,
-) {
+): M {
   if (!modelCache.has(cl)) {
     modelCache.set(cl, new Map());
   }
