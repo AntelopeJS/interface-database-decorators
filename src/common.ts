@@ -50,7 +50,20 @@ export type DatumGenerator = (
   tableClass: Constructible,
 ) => DatumGeneratorOutput | Promise<DatumGeneratorOutput>;
 
-export interface MetadataClass<TMetadata> extends Constructible<TMetadata> {
+/**
+ * What metadata is defined on: a table or model class, or an object such as a
+ * table instance or a prototype in its chain. Every object qualifies.
+ */
+export type MetadataTarget = { constructor: Function };
+
+/**
+ * A class of metadata. `getMetadata` constructs it with the target it defines
+ * the metadata on.
+ */
+export interface MetadataClass<TMetadata> extends Constructible<
+  TMetadata,
+  [target: MetadataTarget]
+> {
   key: symbol;
   /**
    * Builds the metadata a subclass starts from out of its parent's, copying
@@ -143,9 +156,8 @@ export class DatumStaticMetadata {
   }
 }
 
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- exported; replacing TTarget with `object` clears this row and adds 6 (1 no-object-parameters, 5 no-unsafe-argument for the any-typed constructor callers pass)
-export function getMetadata<TMetadata, TTarget extends object>(
-  target: TTarget,
+export function getMetadata<TMetadata>(
+  target: MetadataTarget,
   metadataClass: MetadataClass<TMetadata>,
   inherit: boolean = true,
 ): TMetadata {

@@ -1,4 +1,6 @@
 /** @internal @packageDocumentation */
+import type { WriteValue } from "@antelopejs/interface-database/common";
+
 import type { Constructible, DatumStaticMetadata } from "../../common";
 import type {
   Modifier,
@@ -10,23 +12,23 @@ import type {
 type ModifiedFieldList = ModifiersStaticMetadata["fields"][string];
 type ModifiedField = ModifiedFieldList[number];
 
-/** What a modifier keeps for a field of a stored row, beside the locked value. */
-// oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- what a modifier keeps for a field is known only to that modifier, so the shared record cannot name it
-export type ModifierState = { [key: PropertyKey]: unknown };
+/**
+ * What a modifier keeps for a field of a stored row, beside the locked value.
+ * The row stores it, so its values are values the database writes.
+ */
+export type ModifierState = { [key: PropertyKey]: WriteValue };
 
 /**
  * Where a row holds its modified fields: the locked values by field name, and
- * each modifier's state by modifier name. What the values hold is known to the
- * modifiers that wrote them, not to the row.
+ * each modifier's state by modifier name.
  */
 export interface InternalRecord {
   meta: Record<string, ModifierState>;
-  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the locked value of a field is known only to the modifier that locked it, so the shared record cannot name it
-  data: { [field: PropertyKey]: unknown };
+  data: { [field: PropertyKey]: WriteValue };
 }
 
 export interface InternalHolder {
-  constructor: any;
+  constructor: Function;
   _internal?: InternalRecord;
 }
 

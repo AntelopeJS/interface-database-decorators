@@ -1,4 +1,5 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
+import type { WriteValue } from "@antelopejs/interface-database/common";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 import {
   type Cipher,
@@ -11,7 +12,13 @@ import {
 } from "node:crypto";
 
 import { attachModifier, MixinSymbol, TwoWayModifier } from "./common";
-import { isCallable, isRecord, isString } from "./internal/kinds";
+import {
+  isBoolean,
+  isCallable,
+  isNumber,
+  isRecord,
+  isString,
+} from "./internal/kinds";
 
 type Options = {
   /** Encryption algorithm (for supported algorithms refer to {@link createCipheriv}) */
@@ -21,7 +28,6 @@ type Options = {
   /** Initialization Vector size. */
   ivSize?: number;
 };
-type Meta = Record<string, never>;
 type LockedType = [ciphertext: string, iv: string, authTag?: string];
 
 function date_encoder(this: any, key: string) {
@@ -95,6 +101,14 @@ function parseUTCString(text: string): Date {
   return date;
 }
 
+/** Whether a decrypted value is one `JSON.parse` gives with `date_decoder`: a JSON value whose markers became dates. */
+function isStoredValue(value: unknown): value is StoredValue {
+  if (value === null || value instanceof Date || isString(value)) return true;
+  if (Array.isArray(value)) return value.every(isStoredValue);
+  if (isRecord(value)) return Object.values(value).every(isStoredValue);
+  return isNumber(value) || isBoolean(value);
+}
+
 function date_decoder(_key: string, value: StoredValue) {
   return dateOfMarker(value) ?? value;
 }
@@ -116,18 +130,13 @@ function acceptsAuthTag(
  *
  * These fields are stored encrypted in the database.
  */
-export class EncryptionModifier extends TwoWayModifier<
-  LockedType,
-  [],
-  Meta,
-  Options
-> {
+export class EncryptionModifier extends TwoWayModifier<LockedType> {
+  declare public options: Options;
   readonly autolock = true;
 
   public override lock(
     _locked_value: LockedType | undefined,
-    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
-    value: unknown,
+    value: WriteValue,
   ): LockedType {
     const iv = randomBytes(this.options.ivSize || 16);
     const cipher = createCipheriv(
@@ -152,7 +161,11 @@ export class EncryptionModifier extends TwoWayModifier<
 
   readonly autounlock = true;
 
-  public override unlock([locked_value, iv_str, authTag]: LockedType) {
+  public override unlock([
+    locked_value,
+    iv_str,
+    authTag,
+  ]: LockedType): WriteValue {
     const decipher = createDecipheriv(
       this.options.algorithm || "aes-256-gcm",
       this.options.secretKey,
@@ -170,13 +183,16 @@ export class EncryptionModifier extends TwoWayModifier<
       ]).toString("utf8"),
       date_decoder,
     );
+    if (!isStoredValue(decoded)) {
+      throw new TypeError("A decrypted field holds no stored value");
+    }
     return decoded;
   }
 
   public override unlockrequest(
     data: DatabaseDev.ValueProxy<LockedType>,
-  ): DatabaseDev.ValueProxy<unknown> {
-    return data.cast<unknown>();
+  ): DatabaseDev.ValueProxy<WriteValue> {
+    return data.cast<WriteValue>();
   }
 
   [MixinSymbol] = class {};

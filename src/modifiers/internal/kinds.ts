@@ -1,4 +1,9 @@
 /** @internal @packageDocumentation */
+import type {
+  WriteDocument,
+  WriteValue,
+} from "@antelopejs/interface-database/common";
+
 import type { Constructible } from "../../common";
 import type {
   Modifier,
@@ -7,15 +12,17 @@ import type {
   TwoWayModifier,
 } from "../common";
 
-export function isWriteOnly(m: Modifier): m is OneWayModifier<unknown, any[]> {
+export function isWriteOnly(
+  m: Modifier,
+): m is OneWayModifier<WriteValue, any[]> {
   return "lock" in m && !("unlock" in m);
 }
 
-export function isLocking(m: Modifier): m is OneWayModifier<unknown, any[]> {
+export function isLocking(m: Modifier): m is OneWayModifier<WriteValue, any[]> {
   return "lock" in m;
 }
 
-export function isTwoWay(m: Modifier): m is TwoWayModifier<unknown, any[]> {
+export function isTwoWay(m: Modifier): m is TwoWayModifier<WriteValue, any[]> {
   return "unlock" in m;
 }
 
@@ -45,6 +52,14 @@ export function isString(value: unknown): value is string {
   return typeof value === "string";
 }
 
+export function isNumber(value: unknown): value is number {
+  return typeof value === "number";
+}
+
+export function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
+
 /** Whether a value is an object or a function: what a prototype chain holds. */
 export function isObjectLike(value: unknown): value is object {
   return (
@@ -71,4 +86,14 @@ export function isSameOrSubclass<Base extends Constructible>(
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+/** Whether a value written to a row is a document: an object, not a list or a date. */
+export function isWriteDocument(value: WriteValue): value is WriteDocument {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !(value instanceof Date)
+  );
 }

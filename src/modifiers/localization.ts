@@ -1,8 +1,12 @@
 import type * as DatabaseDev from "@antelopejs/interface-database";
+import type {
+  WriteDocument,
+  WriteValue,
+} from "@antelopejs/interface-database/common";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
 
 import { type Constructible, getMetadata, type PlainData } from "../common";
-import { isRecord } from "./internal/kinds";
+import { isRecord, isString } from "./internal/kinds";
 import {
   attachModifier,
   ContainerModifier,
@@ -10,6 +14,7 @@ import {
   ModifiersStaticMetadata,
   unlock,
 } from "./common";
+import type { ModifierState } from "./internal/records";
 
 type Options = {
   /**
@@ -67,10 +72,9 @@ function isPlainObject(value: unknown): value is object {
  *
  * See {@link ContainerModifier} for the generic modifier.
  */
-export class LocalizationModifier extends ContainerModifier<
-  Record<string, never>,
-  Options
-> {
+export class LocalizationModifier extends ContainerModifier {
+  declare public options: Options;
+
   /**
    * The fallback locale of a localized field of a table class.
    *
@@ -83,12 +87,14 @@ export class LocalizationModifier extends ContainerModifier<
     TableClass: Constructible,
     field: string,
   ): string | undefined {
-    const modified = getMetadata(TableClass, ModifiersStaticMetadata).fields[
+    const options = getMetadata(TableClass, ModifiersStaticMetadata).fields[
       field
-    ]?.find(({ id }) => id === LocalizationModifier.name);
-    // SAFETY: attachModifier stores id = Modifier.name together with `new Modifier()`, so the entry found by id === LocalizationModifier.name holds an instance of the class of that name, as in every id lookup of the modifier machinery (unlock, lock, getModifiedFields).
-    return (modified?.modifier as LocalizationModifier | undefined)?.options
-      .fallbackLocale;
+    ]?.find(({ id }) => id === LocalizationModifier.name)?.modifier.options;
+    return options &&
+      "fallbackLocale" in options &&
+      isString(options.fallbackLocale)
+      ? options.fallbackLocale
+      : undefined;
   }
 
   /**
@@ -97,21 +103,18 @@ export class LocalizationModifier extends ContainerModifier<
    * answers `null`, so saving that answer again stores nothing.
    */
   public override lock(
-    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
-    locked_value: Record<string, unknown> | undefined,
-    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides ContainerModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
-    value: unknown,
+    locked_value: WriteDocument | undefined,
+    value: WriteValue,
     key: string | undefined,
-  ) {
+  ): WriteDocument {
     return withoutMissingTexts(super.lock(locked_value, value, key));
   }
 
   /** The value under `key`, else under the fallback locale. */
   public override unlock(
-    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
-    locked_value: Record<string, unknown>,
+    locked_value: WriteDocument,
     key: string | undefined,
-  ) {
+  ): WriteValue {
     const unlocked = super.unlock(locked_value, key);
     if (!NO_TEXT.has(unlocked)) {
       return unlocked;
@@ -119,6 +122,7 @@ export class LocalizationModifier extends ContainerModifier<
     if (this.options.fallbackLocale) {
       return super.unlock(locked_value, this.options.fallbackLocale);
     }
+    return undefined;
   }
 
   /**
@@ -128,7 +132,7 @@ export class LocalizationModifier extends ContainerModifier<
    * `@Localized() @Encrypted()`, keeps the value for the next locale selected:
    * that modifier transforms the value before the locales are set.
    */
-  public fromPlainData<T extends { constructor: any }>(
+  public fromPlainData<T extends { constructor: Function }>(
     object: T,
     field: Extract<keyof T, string>,
     raw: PlainData<T>,
@@ -144,11 +148,10 @@ export class LocalizationModifier extends ContainerModifier<
   }
 
   public override unlockrequest(
-    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container modifier leaves the values by locale untyped
-    data: DatabaseDev.ValueProxy<Record<string, unknown>>,
-    meta: DatabaseDev.ValueProxy<Record<string, never>>,
+    data: DatabaseDev.ValueProxy<WriteDocument>,
+    meta: DatabaseDev.ValueProxy<ModifierState>,
     key: DatabaseDev.ValueProxyOrValue<string | undefined>,
-  ): DatabaseDev.ValueProxy<unknown> {
+  ): DatabaseDev.ValueProxy<WriteValue> {
     const unlocked = super.unlockrequest(data, meta, key);
     const { fallbackLocale } = this.options;
     return fallbackLocale

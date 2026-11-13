@@ -8,6 +8,10 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
+import type {
+  WriteDocument,
+  WriteValue,
+} from "@antelopejs/interface-database/common";
 
 import { getMetadata } from "../common";
 import {
@@ -107,7 +111,9 @@ function storedScrypt(salt: Buffer, key: Buffer) {
 }
 
 /** A stored hash derived ahead of the setter, which `lock` keeps as it is. */
-class PrecomputedHash {
+/** A hash computed off the event loop, assigned to the field in place of the value it hashes. */
+class PrecomputedHash implements WriteDocument {
+  [field: string]: WriteValue;
   public constructor(public readonly stored: string) {}
 }
 
@@ -187,7 +193,7 @@ function storedText(stored: string | undefined) {
 }
 
 function withHashedField<R>(
-  row: { constructor: any },
+  row: { constructor: Function },
   field: PropertyKey,
   use: (modifier: HashModifier, stored: string, alone: boolean) => R,
 ) {
@@ -217,12 +223,10 @@ function withHashedField<R>(
  * Because of this, you lose the ability to query the information directly.
  * You can test equality using {@link testHash}
  */
-export class HashModifier extends OneWayModifier<
-  string | undefined,
-  [],
-  { salt?: string },
-  Options
-> {
+export class HashModifier extends OneWayModifier<string | undefined> {
+  declare public options: Options;
+  declare protected meta: { salt?: string };
+
   public readonly autolock = true;
 
   /**
@@ -231,8 +235,7 @@ export class HashModifier extends OneWayModifier<
    * behind `insert` and `update` are synchronous. `setHashAsync` runs it on
    * the thread pool instead.
    */
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- overrides OneWayModifier.lock; a modified field's value has its table class's type, which the shared modifier chain cannot name
-  public override lock(locked_value: string | undefined, value: unknown) {
+  public override lock(locked_value: string | undefined, value: WriteValue) {
     if (value === undefined) {
       return value;
     }
@@ -321,7 +324,7 @@ export class HashModifier extends OneWayModifier<
     testHash<This extends {}, F extends keyof This>(
       this: This,
       field: F,
-      value: This[F],
+      value: This[F] & WriteValue,
     ): boolean {
       return withHashedField(this, field, (modifier, stored) =>
         modifier.test(stored, value),
@@ -339,7 +342,7 @@ export class HashModifier extends OneWayModifier<
     async testHashAsync<This extends {}, F extends keyof This>(
       this: This,
       field: F,
-      value: This[F],
+      value: This[F] & WriteValue,
     ) {
       return withHashedField(this, field, (modifier, stored) =>
         modifier.testAsync(stored, value),
@@ -364,7 +367,7 @@ export class HashModifier extends OneWayModifier<
     async setHashAsync<This extends object, F extends keyof This>(
       this: This,
       field: F,
-      value: This[F],
+      value: This[F] & WriteValue,
     ): Promise<void> {
       const assigned = await withHashedField(
         this,
