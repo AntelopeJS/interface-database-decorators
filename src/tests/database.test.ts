@@ -295,6 +295,25 @@ describe("Database - fixture race", () => {
       await schema.instance().table("fixture_race_id").run(),
     ).to.have.length(1);
   });
+  it("inserts its fixtures into a schema defined again under its id", async () => {
+    @Fixture(() => [{ _id: "kept-row", name: "Kept row" }])
+    @RegisterTable("fixture_redefined", "test-fixture-redefined")
+    class _TestTable extends Table {
+      declare name: string;
+    }
+    const registration = RegisterSchema("test-fixture-redefined");
+    const registered = Schema.list().get("test-fixture-redefined");
+    if (!registered) throw new Error("Schema not found");
+    const redefined = new Schema(
+      "test-fixture-redefined",
+      registered.definition,
+    );
+    await registration;
+
+    expect(
+      await redefined.instance().table("fixture_redefined").run(),
+    ).to.have.length(1);
+  });
   it("rejects when a fixture fails and the schema was not registered again", async () => {
     @Fixture(() => {
       throw new Error("fixture failed");

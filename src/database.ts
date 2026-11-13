@@ -24,9 +24,9 @@ type TableDefinitions = Record<string, Class<Table>>;
  * provisions), binds each table class to it (see `Table.table`), then
  * inserts fixtures for any table that declares one.
  *
- * A schema registered again under the same id before this call's fixtures are
- * in replaces this one: the database refuses this schema's queries, and the
- * later registration inserts the fixtures, so this call returns without them.
+ * A schema defined again under the same id before this call's fixtures are
+ * in replaces this one, and the database refuses its queries. The fixtures
+ * then go into the schema that replaced it.
  *
  * @param schemaId Schema id matching the `@RegisterTable(_, schemaId)` calls
  */
@@ -38,10 +38,24 @@ export async function RegisterSchema(schemaId: string): Promise<void> {
   const schema = new Schema(schemaId, definition);
   bindTables(schema, tables);
 
+  await insertIntoCurrentSchema(schemaId, schema, tables);
+}
+
+/**
+ * Inserts the fixtures into `schema`, or, when a schema defined again under
+ * `schemaId` replaced it meanwhile, into the schema that replaced it.
+ */
+async function insertIntoCurrentSchema(
+  schemaId: string,
+  schema: Schema<any>,
+  tables: TableDefinitions,
+): Promise<void> {
   try {
     await insertAllFixtureData(schema, tables);
   } catch (error) {
-    if (Schema.list().get(schemaId) === schema) throw error;
+    const current = Schema.list().get(schemaId);
+    if (current === undefined || current === schema) throw error;
+    await insertIntoCurrentSchema(schemaId, current, tables);
   }
 }
 
