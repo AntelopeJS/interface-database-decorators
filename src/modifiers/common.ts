@@ -373,6 +373,10 @@ export function attachModifier<M extends Constructible<Modifier>>(
             getInternal(this),
           );
         },
+        /**
+         * Assigns the field through its modifiers. A modified field holds a
+         * value the database writes, as its table class declares it.
+         */
         set: function (this: InternalHolder, value: WriteValue) {
           getMetadata(this, ModifiersDynamicMetadata).set(
             field,

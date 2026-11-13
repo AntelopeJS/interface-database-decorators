@@ -17,10 +17,10 @@ export type MixinType<T> = T extends { [MixinSymbol]: infer A } ? A : never;
  * to the options it is attached with and the state it keeps for each row.
  */
 export class Modifier {
-  /** The options the modifier was attached with, see `attachModifier`. */
-  public options!: object;
   /** The modifier's state for the row it runs on, stored in the row. */
   protected meta!: ModifierState;
+  /** The options the modifier was attached with, see `attachModifier`. */
+  public options!: object;
 }
 
 export class OneWayModifier<

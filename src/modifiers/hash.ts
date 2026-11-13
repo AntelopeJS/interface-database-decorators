@@ -8,7 +8,10 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { MakePropertyDecorator } from "@antelopejs/interface-core/decorators";
-import type { WriteValue } from "@antelopejs/interface-database/common";
+import type {
+  WriteDocument,
+  WriteValue,
+} from "@antelopejs/interface-database/common";
 
 import { getMetadata } from "../common";
 import {
@@ -108,7 +111,9 @@ function storedScrypt(salt: Buffer, key: Buffer) {
 }
 
 /** A stored hash derived ahead of the setter, which `lock` keeps as it is. */
-class PrecomputedHash {
+/** A hash computed off the event loop, assigned to the field in place of the value it hashes. */
+class PrecomputedHash implements WriteDocument {
+  [field: string]: WriteValue;
   public constructor(public readonly stored: string) {}
 }
 
