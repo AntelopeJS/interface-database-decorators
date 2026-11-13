@@ -4,6 +4,16 @@
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.4.1...v0.5.0)
 
+### Upgrade notes
+
+- The peer `@antelopejs/interface-database` is now `>=0.3.0 <1.0.0`: the modifier contracts use its `WriteValue` and `WriteDocument` types, from `@antelopejs/interface-database/common` ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117)).
+- **Breaking, custom modifiers:** `Modifier`, `OneWayModifier`, `TwoWayModifier` and `ContainerModifier` no longer take `Meta` and `Options` type parameters. Declare them on the subclass instead, with `declare public options: Options` and `declare protected meta: Meta`. `options` is now public. Replace `OneWayModifier<string, [], object, { prefix: string }>` with `OneWayModifier<string>` plus `declare public options: { prefix: string }` ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117)).
+- **Breaking, custom modifiers:** `LockedType` must be a `WriteValue`. `lock` and `test` take the field's value as a `WriteValue`, `unlock` returns one, and `unlockrequest` returns `ValueProxy<WriteValue>`. `ContainerModifier` locks a `WriteDocument`. Change `value: unknown` to `value: WriteValue` in your overrides ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117)).
+- **Breaking, types:** declare an object `LockedType`, `meta`, or a field value passed to `testValue`, `testHash`, `testHashAsync` or `setHashAsync` with `type`, not `interface` or `class`. A `WriteDocument` needs an index signature, which TypeScript gives only to an object `type`. A `Buffer` is not a `WriteValue` ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117)).
+- **Breaking, types:** `getMetadata` takes a `MetadataTarget` and no `TTarget` type parameter, a `MetadataClass` is constructed with that target, and `triggerEvent` takes no type parameter. Drop any explicit type arguments you pass them ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117)).
+- **Behavior change:** under the `"*"` key, such as `localize("*")`, a list or a date now throws a `TypeError`, as a single text already did. On a `@Localized() @Encrypted()` field, this replaces a write that stored `null` for every locale ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117)).
+- `LocalizationModifier.fallbackLocaleOf` returns `undefined` for a field attached with no options or a non-string `fallbackLocale`, and works across copies of the package ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117)).
+
 ### 💅 Refactors
 
 - Remove the unsafe-any directives and three SAFETY assertions ([#116](https://github.com/AntelopeJS/interface-database-decorators/pull/116))
