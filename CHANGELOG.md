@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.5.0
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.4.1...v0.5.0)
+
+### 💅 Refactors
+
+- Remove the unsafe-any directives and three SAFETY assertions ([#116](https://github.com/AntelopeJS/interface-database-decorators/pull/116))
+- **modifiers:** ⚠️  Type the modifier contracts with WriteValue ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117))
+
+#### ⚠️ Breaking Changes
+
+- **modifiers:** ⚠️  Type the modifier contracts with WriteValue ([#117](https://github.com/AntelopeJS/interface-database-decorators/pull/117))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.4.1
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.4.0...v0.4.1)
