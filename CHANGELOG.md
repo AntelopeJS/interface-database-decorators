@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.5.2
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.5.1...v0.5.2)
+
+### 🩹 Fixes
+
+- **database:** Run every query through run() for interface-database 0.4.0 ([#120](https://github.com/AntelopeJS/interface-database-decorators/pull/120))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.5.1
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.5.0...v0.5.1)
