@@ -514,31 +514,56 @@ export function lock<
   }
 }
 
+/**
+ * Whether a field holds `value`. A field with a one-way modifier, such as a
+ * hash, holds `value` when that modifier's `test` accepts it against the value
+ * the modifiers before it unlock. Any other field holds `value` when it reads
+ * `value`, compared with `===`, as a value assigned before the field could be
+ * locked reads.
+ *
+ * @returns `false` when a modifier of the field still waits for its
+ * arguments, such as a locale: the field reads nothing yet.
+ */
 export function testValue<
   T extends { constructor: Function },
   K extends keyof T,
->(object: T, field: K, value: T[K] & WriteValue) {
-  const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
+>(object: T, field: K, value: T[K] & WriteValue): boolean {
   const meta = getMetadata(object, ModifiersDynamicMetadata);
+  const list = fieldsByKey(meta.staticMeta)[field];
+  if (list === undefined) {
+    return object[field] === value;
+  }
   const internal = getInternal(object);
-  const val: WriteValue = dataByKey(internal)[field];
-  for (const { id, modifier, metaRef } of fieldsByKey(metaTable)[field]) {
-    const args =
-      unlockArgsOf(meta, field)[id] ||
-      ("autolock" in modifier && modifier.autolock ? [] : undefined);
-    if (!args) return false;
+  if (!list.some(({ modifier }) => isWriteOnly(modifier))) {
+    const readable = Object.hasOwn(meta.floating, field) || meta.canGet(field);
+    return readable && meta.get(field, internal) === value;
+  }
+  return meta.canSet(field) && testOneWay(meta, internal, field, value);
+}
+
+/** Unlocks a field down to its one-way modifier, then tests `value` with it. */
+function testOneWay(
+  meta: ModifiersDynamicMetadata,
+  internal: InternalRecord,
+  field: PropertyKey,
+  value: WriteValue,
+): boolean {
+  let current: WriteValue = dataByKey(internal)[field];
+  for (const { id, modifier, metaRef } of fieldsByKey(meta.staticMeta)[field]) {
+    const args = unlockArgsOf(meta, field)[id] ?? [];
+    const unlocked = current;
     if (isWriteOnly(modifier)) {
       return withRef(internal, id, modifier, metaRef, (modifier) =>
-        modifier.test(val, value, ...args),
+        modifier.test(unlocked, value, ...args),
       );
     }
-    if (isTwoWay(modifier) && !NO_VALUE.has(val)) {
-      return withRef(internal, id, modifier, metaRef, (modifier) =>
-        modifier.unlock(val, ...args),
+    if (isTwoWay(modifier) && !NO_VALUE.has(unlocked)) {
+      current = withRef(internal, id, modifier, metaRef, (modifier) =>
+        modifier.unlock(unlocked, ...args),
       );
     }
   }
-  return val === value;
+  return false;
 }
 
 export function triggerEvent(
