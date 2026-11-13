@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.1
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.5.0...v0.5.1)
+
+### 🩹 Fixes
+
+- **modifiers:** Compare the value testValue is given instead of returning the unlocked one ([#118](https://github.com/AntelopeJS/interface-database-decorators/pull/118))
+
+### 📖 Documentation
+
+- **changelog:** Upgrade notes of interface-database-decorators 0.5.0 ([#119](https://github.com/AntelopeJS/interface-database-decorators/pull/119))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.5.0
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.4.1...v0.5.0)
