@@ -18,7 +18,7 @@ export const RegisterTable: (
     const metadata = getMetadata(target, DatumStaticMetadata);
     metadata.tableName = tableName;
     metadata.schemaName = schemaName;
-    metadata.schema = Schema.get(schemaName);
+    metadata.schema = Schema.list().get(schemaName);
 
     const tables = schemaTableRegistry.get(schemaName) ?? {};
     tables[tableName] = target;

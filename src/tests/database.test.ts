@@ -16,7 +16,7 @@ describe("Database - initialization", () => {
 
     await RegisterSchema("test-new-schema");
 
-    const schema = Schema.get("test-new-schema");
+    const schema = Schema.list().get("test-new-schema");
     expect(schema).to.not.equal(undefined);
   });
   it("creates tables with default primary key", async () => {
@@ -27,7 +27,7 @@ describe("Database - initialization", () => {
 
     await RegisterSchema("test-pk-schema");
 
-    const schema = Schema.get("test-pk-schema");
+    const schema = Schema.list().get("test-pk-schema");
     expect(schema).to.not.equal(undefined);
   });
   it("creates tables with indexes", async () => {
@@ -42,7 +42,7 @@ describe("Database - initialization", () => {
 
     await RegisterSchema("test-idx-schema");
 
-    const schema = Schema.get("test-idx-schema");
+    const schema = Schema.list().get("test-idx-schema");
     expect(schema).to.not.equal(undefined);
   });
   it("creates tables with grouped indexes", async () => {
@@ -60,7 +60,7 @@ describe("Database - initialization", () => {
 
     await RegisterSchema("test-grp-schema");
 
-    const schema = Schema.get("test-grp-schema");
+    const schema = Schema.list().get("test-grp-schema");
     expect(schema).to.not.equal(undefined);
   });
   it("marks a single-field index as cross-instance", async () => {
@@ -175,9 +175,9 @@ describe("Database - initialization", () => {
 
     await RegisterSchema("test-fixture-schema");
 
-    const schema = Schema.get("test-fixture-schema");
+    const schema = Schema.list().get("test-fixture-schema");
     if (!schema) throw new Error("Schema not found");
-    const result = await schema.instance().table("fixture_table");
+    const result = await schema.instance().table("fixture_table").run();
     for (const val of result) {
       delete val._id;
       delete val._instance;
@@ -205,7 +205,7 @@ describe("Database - initialization", () => {
 
     await RegisterSchema("test-multi-table-schema");
 
-    const schema = Schema.get("test-multi-table-schema");
+    const schema = Schema.list().get("test-multi-table-schema");
     expect(schema).to.not.equal(undefined);
   });
   it("binds a table class registered after RegisterSchema ran to that schema (module hot reload)", async () => {
@@ -243,7 +243,7 @@ describe("Database - initialization", () => {
       declare untyped: string;
     }
     await RegisterSchema("test-fields-schema");
-    const schema = Schema.get("test-fields-schema");
+    const schema = Schema.list().get("test-fields-schema");
     if (!schema) throw new Error("Schema not found");
     const fields = schema.definition.orders.fields;
     expect(fields.status).to.equal("string");
@@ -253,7 +253,7 @@ describe("Database - initialization", () => {
 });
 
 function getIndexDefinitions(schemaId: string, tableName: string) {
-  const schema = Schema.get(schemaId);
+  const schema = Schema.list().get(schemaId);
   if (!schema) throw new Error("Schema not found");
   return schema.definition[tableName].indexes;
 }
@@ -271,11 +271,11 @@ describe("Database - fixture race", () => {
       RegisterSchema("test-fixture-race-no-id"),
     ]);
 
-    const schema = Schema.get("test-fixture-race-no-id");
+    const schema = Schema.list().get("test-fixture-race-no-id");
     if (!schema) throw new Error("Schema not found");
-    expect(await schema.instance().table("fixture_race_no_id")).to.have.length(
-      1,
-    );
+    expect(
+      await schema.instance().table("fixture_race_no_id").run(),
+    ).to.have.length(1);
   });
   it("does not fail the process that loses a fixture insert", async () => {
     @Fixture(() => [{ _id: "only-row", name: "Only row" }])
@@ -289,8 +289,26 @@ describe("Database - fixture race", () => {
       RegisterSchema("test-fixture-race-id"),
     ]);
 
-    const schema = Schema.get("test-fixture-race-id");
+    const schema = Schema.list().get("test-fixture-race-id");
     if (!schema) throw new Error("Schema not found");
-    expect(await schema.instance().table("fixture_race_id")).to.have.length(1);
+    expect(
+      await schema.instance().table("fixture_race_id").run(),
+    ).to.have.length(1);
+  });
+  it("rejects when a fixture fails and the schema was not registered again", async () => {
+    @Fixture(() => {
+      throw new Error("fixture failed");
+    })
+    @RegisterTable("fixture_failure", "test-fixture-failure")
+    class _TestTable extends Table {
+      declare name: string;
+    }
+
+    const registration = RegisterSchema("test-fixture-failure").then(
+      () => "resolved",
+      (error: unknown) => (error instanceof Error ? error.message : "other"),
+    );
+
+    expect(await registration).to.equal("fixture failed");
   });
 });
