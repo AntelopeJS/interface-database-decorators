@@ -24,6 +24,10 @@ type TableDefinitions = Record<string, Class<Table>>;
  * provisions), binds each table class to it (see `Table.table`), then
  * inserts fixtures for any table that declares one.
  *
+ * A schema defined again under the same id before this call's fixtures are
+ * in replaces this one, and the database refuses its queries. The fixtures
+ * then go into the schema that replaced it.
+ *
  * @param schemaId Schema id matching the `@RegisterTable(_, schemaId)` calls
  */
 export async function RegisterSchema(schemaId: string): Promise<void> {
@@ -34,7 +38,25 @@ export async function RegisterSchema(schemaId: string): Promise<void> {
   const schema = new Schema(schemaId, definition);
   bindTables(schema, tables);
 
-  await insertAllFixtureData(schema, tables);
+  await insertIntoCurrentSchema(schemaId, schema, tables);
+}
+
+/**
+ * Inserts the fixtures into `schema`, or, when a schema defined again under
+ * `schemaId` replaced it meanwhile, into the schema that replaced it.
+ */
+async function insertIntoCurrentSchema(
+  schemaId: string,
+  schema: Schema<any>,
+  tables: TableDefinitions,
+): Promise<void> {
+  try {
+    await insertAllFixtureData(schema, tables);
+  } catch (error) {
+    const current = Schema.list().get(schemaId);
+    if (current === undefined || current === schema) throw error;
+    await insertIntoCurrentSchema(schemaId, current, tables);
+  }
 }
 
 function bindTables(schema: Schema<any>, tables: TableDefinitions): void {
@@ -93,7 +115,7 @@ async function insertFixtureData(
   if (!generator) {
     return;
   }
-  const count = await schema.instance().table(tableName).count();
+  const count = await schema.instance().table(tableName).count().run();
   if (count > 0) {
     return;
   }
@@ -106,9 +128,9 @@ async function insertFixtureData(
   }
   const table = schema.instance().table(tableName);
   try {
-    await table.insert(rows.length === 1 ? rows[0] : rows);
+    await table.insert(rows.length === 1 ? rows[0] : rows).run();
   } catch (error) {
-    if ((await table.count()) === 0) throw error;
+    if ((await table.count().run()) === 0) throw error;
   }
 }
 

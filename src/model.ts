@@ -101,6 +101,15 @@ function decodeFieldError(field: string, result: DecodeLeftLike): FieldError {
   return { field, message };
 }
 
+/** Turns the rows a table read returns into instances of `dataType`. */
+function rowReaders<T extends object>(dataType: Constructible<T>) {
+  return {
+    toInstance: (row: T | null) =>
+      row ? fromDatabase(row, dataType) : undefined,
+    toInstances: (rows: T[]) => rows.map((row) => fromDatabase(row, dataType)),
+  };
+}
+
 /**
  * Utility Class factory to create a basic Data Model with 1 table.
  *
@@ -117,8 +126,7 @@ export function BasicDataModel<T extends object>(
   const name: string = resolvedName;
   const schemaName = metadata.schemaName;
   const primaryKey = metadata.primary;
-  const toInstances = (dataR: T[]) =>
-    dataR.map((row) => fromDatabase(row, dataType));
+  const { toInstance, toInstances } = rowReaders(dataType);
   const Model = class Model {
     public static readonly schemaName: string | undefined = schemaName;
     /**
@@ -196,7 +204,7 @@ export function BasicDataModel<T extends object>(
      * @returns Table class instance
      */
     public get(id: string) {
-      return this.table.get(id).then((row) => Model.fromDatabase(row));
+      return this.table.get(id).run().then(toInstance);
     }
 
     /**
@@ -207,9 +215,8 @@ export function BasicDataModel<T extends object>(
      * @returns Array of Table class instances.
      */
     public getBy(index: Extract<keyof T, string>, ...keys: IndexKey[]) {
-      return this.table
-        .getAll(keys.length === 1 ? keys[0] : keys, index)
-        .then((dataR) => toInstances(dataR));
+      const keyed = keys.length === 1 ? keys[0] : keys;
+      return this.table.getAll(keyed, index).run().then(toInstances);
     }
 
     /**
@@ -218,7 +225,7 @@ export function BasicDataModel<T extends object>(
      * @returns Array of Table class instances.
      */
     public getAll() {
-      return this.table.then((dataR) => toInstances(dataR));
+      return this.table.run().then(toInstances);
     }
 
     /**
@@ -404,7 +411,9 @@ function parseUpdateArgs<T>(args: UpdateArgs<T>): ParsedUpdate<T> {
 function schemaOf(cl: DataModel): Schema<any> {
   if (!cl.tableClass) {
     const schema =
-      cl.schemaName === undefined ? undefined : Schema.get(cl.schemaName);
+      cl.schemaName === undefined
+        ? undefined
+        : Schema.list().get(cl.schemaName);
     assert(schema, `Schema not found for '${cl.schemaName}'`);
     return schema;
   }

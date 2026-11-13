@@ -28,6 +28,7 @@ export function tableOf<T>(
  */
 export function boundSchema({ schema, schemaName }: DatumStaticMetadata) {
   return (
-    schema ?? (schemaName === undefined ? undefined : Schema.get(schemaName))
+    schema ??
+    (schemaName === undefined ? undefined : Schema.list().get(schemaName))
   );
 }
