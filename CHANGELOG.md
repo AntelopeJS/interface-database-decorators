@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.4.1
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.4.0...v0.4.1)
+
+### 📖 Documentation
+
+- **readme:** Adopt the AntelopeJS framework README style ([#114](https://github.com/AntelopeJS/interface-database-decorators/pull/114))
+
+### ✅ Tests
+
+- **model:** Read the API port from DECORATORS_TEST_API_PORT ([#115](https://github.com/AntelopeJS/interface-database-decorators/pull/115))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.4.0
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.3.2...v0.4.0)
