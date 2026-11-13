@@ -514,31 +514,43 @@ export function lock<
   }
 }
 
+/**
+ * Whether a modified field holds `value`. The stored value is unlocked
+ * through the field's modifiers as a read does; a one-way modifier, such as a
+ * hash, tests `value` against what it locked. Otherwise the field holds
+ * `value` when it reads the same value, compared with `===`.
+ *
+ * @returns `false` when a modifier of the field is still locked: a field
+ * whose modifier takes arguments, such as a locale, needs them first.
+ */
 export function testValue<
   T extends { constructor: Function },
   K extends keyof T,
->(object: T, field: K, value: T[K] & WriteValue) {
+>(object: T, field: K, value: T[K] & WriteValue): boolean {
   const metaTable = getMetadata(object.constructor, ModifiersStaticMetadata);
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   const internal = getInternal(object);
-  const val: WriteValue = dataByKey(internal)[field];
+  const stored: WriteValue = dataByKey(internal)[field];
+  let current = stored;
   for (const { id, modifier, metaRef } of fieldsByKey(metaTable)[field]) {
     const args =
       unlockArgsOf(meta, field)[id] ||
       ("autolock" in modifier && modifier.autolock ? [] : undefined);
     if (!args) return false;
+    const unlocked = current;
     if (isWriteOnly(modifier)) {
       return withRef(internal, id, modifier, metaRef, (modifier) =>
-        modifier.test(val, value, ...args),
+        modifier.test(unlocked, value, ...args),
       );
     }
-    if (isTwoWay(modifier) && !NO_VALUE.has(val)) {
-      return withRef(internal, id, modifier, metaRef, (modifier) =>
-        modifier.unlock(val, ...args),
+    if (isTwoWay(modifier) && !NO_VALUE.has(unlocked)) {
+      current = withRef(internal, id, modifier, metaRef, (modifier) =>
+        modifier.unlock(unlocked, ...args),
       );
     }
   }
-  return val === value;
+  const read = current === undefined && stored !== undefined ? null : current;
+  return read === value;
 }
 
 export function triggerEvent(
