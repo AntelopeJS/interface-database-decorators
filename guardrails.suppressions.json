@@ -4,12 +4,12 @@
     "anti-slop/no-unknown-returns": 1,
     "anti-slop/no-unsafe-dictionary-type": 10,
     "typescript/no-unnecessary-type-parameters": 4,
-    "typescript/no-unsafe-assignment": 2,
-    "typescript/no-unsafe-return": 3
+    "typescript/no-unsafe-assignment": 0,
+    "typescript/no-unsafe-return": 0
   },
   "tsExpectError": 0,
   "tsIgnore": 0,
-  "safety": 8,
+  "safety": 6,
   "config": {},
   "agentFiles": true
 }

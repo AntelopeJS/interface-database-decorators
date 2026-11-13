@@ -15,7 +15,7 @@ import { MixinSymbol, type MixinType } from "./modifiers/common";
 import { isSameOrSubclass, isString } from "./modifiers/internal/kinds";
 import { fieldTypesByKey } from "./modifiers/internal/records";
 import { type Constructible, DatumStaticMetadata, getMetadata } from "./common";
-import { boundSchema } from "./internal/bound-schema";
+import { boundSchema, tableOf } from "./internal/bound-schema";
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I,
@@ -104,16 +104,14 @@ export class Table {
       `${this.name} has no table name: decorate it with @RegisterTable`,
     );
     if (isSchemaInstance(target)) {
-      // oxlint-disable-next-line typescript/no-unsafe-return -- target is a SchemaInstance<any>, so its table is a Table<any>; a schema instance covers every table of its schema, so no type parameter of it states that this class's table holds this class's rows
-      return target.table(tableName);
+      return tableOf(target, tableName);
     }
     const schema = boundSchema(metadata);
     assert(
       schema,
       `${this.name} is not bound to a schema: call RegisterSchema("${metadata.schemaName}") in the module that declares it`,
     );
-    // oxlint-disable-next-line typescript/no-unsafe-return -- the schema instance is a SchemaInstance<any>, so its table is a Table<any>; a schema instance covers every table of its schema, so no type parameter of it states that this class's table holds this class's rows
-    return schema.instance(target).table(tableName);
+    return tableOf(schema.instance(target), tableName);
   }
 
   /**

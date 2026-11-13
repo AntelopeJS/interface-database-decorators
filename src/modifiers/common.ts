@@ -10,6 +10,7 @@ import {
   ignoredEventNames,
   isEventHandler,
   isLocking,
+  isObjectLike,
   isOnlyEvents,
   isTwoWay,
   isWriteOnly,
@@ -239,12 +240,22 @@ export function fromPlainData<T extends object>(
   rawObject: PlainData<T>,
   TableClass: Constructible<T>,
 ): T {
-  const instance = {};
-  Object.setPrototypeOf(instance, prototypeOf(TableClass));
+  const instance = withPrototypeOf({}, TableClass);
   Object.assign(instance, Object.fromEntries(Object.entries(rawObject)));
   triggerEvent(instance, "fromPlainData", rawObject);
-  // SAFETY: instance gets the prototype of TableClass and the fields of rawObject, so it is a T, as fromPlainData returns; setPrototypeOf types no result.
-  return instance as T;
+  return instance;
+}
+
+/** `fields` turned into an instance of `TableClass` without running its constructor. */
+function withPrototypeOf<I extends object>(
+  fields: Partial<I>,
+  TableClass: Constructible<I>,
+): I {
+  Object.setPrototypeOf(fields, prototypeOf(TableClass));
+  if (!(fields instanceof TableClass)) {
+    throw new TypeError(`${TableClass.name} does not recognize its instances`);
+  }
+  return fields;
 }
 
 /**
@@ -271,12 +282,13 @@ export function fromDatabase<T extends Constructible>(
   rawObject: any,
   TableClass: T,
 ): InstanceType<T> {
-  // oxlint-disable-next-line typescript/no-unsafe-assignment -- rawObject is a stored row, typed any by the published fromDatabase signature; typing it T breaks consumers
-  const shallowCopy = { ...rawObject };
+  const row: unknown = rawObject;
+  const shallowCopy = isObjectLike(row) ? { ...row } : {};
   Object.setPrototypeOf(shallowCopy, prototypeOf(TableClass));
-  triggerEvent(shallowCopy, "fromDatabase", rawObject);
-  // oxlint-disable-next-line typescript/no-unsafe-return -- shallowCopy is a copy of the any-typed rawObject
-  return shallowCopy;
+  // SAFETY: shallowCopy now has the prototype of TableClass and the fields of the stored row; the published signature takes TableClass as T extends Constructible, and instanceof on such a T narrows only to object, so nothing narrower than this assertion reaches InstanceType<T>.
+  const instance = shallowCopy as InstanceType<T>;
+  triggerEvent(instance, "fromDatabase", rawObject);
+  return instance;
 }
 
 /**
