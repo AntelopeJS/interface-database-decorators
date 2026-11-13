@@ -80,8 +80,8 @@ export class ContainerModifier extends TwoWayModifier<
    * container, so it takes a record of values by key; `undefined` or `null`
    * clears it.
    *
-   * @throws TypeError when `key` is `"*"` and `value` is neither a record,
-   * `undefined` nor `null`
+   * @throws TypeError when `key` is `"*"` and `value` is neither a record (an
+   * object other than a list or a date), `undefined` nor `null`
    */
   public override lock(
     locked_value: WriteDocument | undefined,
