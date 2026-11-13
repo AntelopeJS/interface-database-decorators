@@ -14,6 +14,7 @@
 ## Tests
 
 - Suites live in `src/tests/`. They compile to `dist/tests` and ship in the package, so implementing modules can run them as a conformance suite; `src/tests/codec_helpers.ts` and `src/tests/helpers/` are part of that surface.
+- The model tests fetch routes from the `@antelopejs/api` module on `DECORATORS_TEST_API_PORT`, 5010 when unset. A project that runs the suite serves `api` on that same port, so suites that each set their own port run in parallel on one machine.
 - `pnpm test` builds once, then runs `ajs module test .` with the project in `src/antelope.test.ts`: a MongoDB memory server, `@antelopejs/mongodb` and `@antelopejs/api` from npm, cached in `.antelope/cache`. The first run needs network access to fetch them and the `mongod` binary.
 - `pnpm run checks` runs this whole suite. The documentation check runs only in CI (the `Check documentation` step of `ci-node.yml`). To run it locally, clone `AntelopeJS/tooling-configs` at `v0.0.9`, run `npm ci --prefix actions/docs --omit=dev`, then from this repository run `node <clone>/actions/docs/check.mjs --files $'README.md\ndocs' --typescript-project docs/tsconfig.json`.
 

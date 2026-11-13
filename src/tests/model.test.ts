@@ -11,6 +11,9 @@ import {
 import { BasicDataModel, GetModel, Model } from "../model";
 
 import { asFieldType, numberCodec, stringCodec } from "./codec_helpers";
+import { ApiPort } from "./helpers/api-port";
+
+const apiUrl = `http://localhost:${ApiPort()}`;
 
 describe("Model - data operations", () => {
   it("creates basic data model", async () => {
@@ -150,7 +153,7 @@ describe("Model - data operations", () => {
       }
     }
 
-    const res = await fetch("http://localhost:5010/staticmodel");
+    const res = await fetch(`${apiUrl}/staticmodel`);
     expect(res.status, res.statusText).to.equal(200);
   });
   it("handles model with callback instance id", async () => {
@@ -171,9 +174,7 @@ describe("Model - data operations", () => {
       }
     }
 
-    const res = await fetch(
-      "http://localhost:5010/dynamicmodel/test-dynamic-model-db",
-    );
+    const res = await fetch(`${apiUrl}/dynamicmodel/test-dynamic-model-db`);
     expect(res.status, res.statusText).to.equal(200);
   });
 });
