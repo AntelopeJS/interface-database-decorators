@@ -1,15 +1,15 @@
 {
   "rules": {
-    "anti-slop/no-unknown-parameters": 8,
-    "anti-slop/no-unknown-returns": 1,
-    "anti-slop/no-unsafe-dictionary-type": 10,
-    "typescript/no-unnecessary-type-parameters": 4,
+    "anti-slop/no-unknown-parameters": 1,
+    "anti-slop/no-unknown-returns": 0,
+    "anti-slop/no-unsafe-dictionary-type": 0,
+    "typescript/no-unnecessary-type-parameters": 0,
     "typescript/no-unsafe-assignment": 0,
     "typescript/no-unsafe-return": 0
   },
   "tsExpectError": 0,
   "tsIgnore": 0,
-  "safety": 6,
+  "safety": 5,
   "config": {},
   "agentFiles": true
 }

@@ -1,40 +1,42 @@
 /** @internal @packageDocumentation */
 import * as DatabaseDev from "@antelopejs/interface-database";
+import type {
+  WriteDocument,
+  WriteValue,
+} from "@antelopejs/interface-database/common";
 
-import { isRecord } from "./kinds";
+import type { ModifierState } from "./records";
+import { isWriteDocument } from "./kinds";
 
 export const MixinSymbol = Symbol();
 
 export type MixinType<T> = T extends { [MixinSymbol]: infer A } ? A : never;
 
-export class Modifier<
-  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Meta is read only by subclasses, through this.meta; removing it changes the published Modifier<Meta, Options>
-  Meta extends object = object,
-  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Options is read only by subclasses, through this.options; removing it changes the published Modifier<Meta, Options>
-  Options extends object = object,
-> {
-  protected meta!: Meta;
-  protected options!: Options;
+/**
+ * A field modifier. A subclass narrows `options` and `meta` with `declare`
+ * to the options it is attached with and the state it keeps for each row.
+ */
+export class Modifier {
+  /** The options the modifier was attached with, see `attachModifier`. */
+  public options!: object;
+  /** The modifier's state for the row it runs on, stored in the row. */
+  protected meta!: ModifierState;
 }
 
 export class OneWayModifier<
-  LockedType,
+  LockedType extends WriteValue,
   Args extends any[] = [],
-  Meta extends object = object,
-  Options extends object = object,
-> extends Modifier<Meta, Options> {
+> extends Modifier {
   public lock(
     _locked_value: LockedType | undefined,
-    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- the published override point of every modifier; a modified field's value has its table class's type, which the shared modifier chain cannot name
-    _value: unknown,
+    _value: WriteValue,
     ..._args: Args
   ): LockedType {
     throw new Error("Unimplemented");
   }
   public test(
     locked_value: LockedType,
-    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
-    value: unknown,
+    value: WriteValue,
     ...args: Args
   ): boolean {
     return this.lock(undefined, value, ...args) === locked_value;
@@ -46,20 +48,17 @@ type ProxyOrValArray<T extends any[]> = {
 };
 
 export class TwoWayModifier<
-  LockedType,
+  LockedType extends WriteValue,
   Args extends any[] = [],
-  Meta extends object = object,
-  Options extends object = object,
-> extends OneWayModifier<LockedType, Args, Meta, Options> {
-  // oxlint-disable-next-line anti-slop/no-unknown-returns -- the unlocked value has its table class's type, which the shared modifier chain cannot name
-  public unlock(_locked_value: LockedType, ..._args: Args): unknown {
+> extends OneWayModifier<LockedType, Args> {
+  public unlock(_locked_value: LockedType, ..._args: Args): WriteValue {
     throw new Error("Unimplemented");
   }
   public unlockrequest(
     _data: DatabaseDev.ValueProxy<LockedType>,
-    _meta: DatabaseDev.ValueProxy<Meta>,
+    _meta: DatabaseDev.ValueProxy<ModifierState>,
     ..._args: ProxyOrValArray<Args>
-  ): DatabaseDev.ValueProxy<unknown> {
+  ): DatabaseDev.ValueProxy<WriteValue> {
     throw new Error("Unimplemented");
   }
 }
@@ -72,15 +71,9 @@ export class TwoWayModifier<
  * `lock` stores nothing under it, and `unlock` and `unlockrequest` find no
  * value. A key given as a `ValueProxy` goes to the database as it is.
  */
-export class ContainerModifier<
-  Meta extends object = object,
-  Options extends object = object,
-> extends TwoWayModifier<
-  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
-  Record<string, unknown>,
-  [key: string | undefined],
-  Meta,
-  Options
+export class ContainerModifier extends TwoWayModifier<
+  WriteDocument,
+  [key: string | undefined]
 > {
   /**
    * Stores `value` under `key`. The wildcard key `"*"` replaces the whole
@@ -91,12 +84,10 @@ export class ContainerModifier<
    * `undefined` nor `null`
    */
   public override lock(
-    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
-    locked_value: Record<string, unknown> | undefined,
-    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a modified field's value has its table class's type, which the shared modifier chain cannot name
-    value: unknown,
+    locked_value: WriteDocument | undefined,
+    value: WriteValue,
     key: string | undefined,
-  ) {
+  ): WriteDocument {
     if (key === undefined) {
       return locked_value ?? {};
     }
@@ -104,7 +95,7 @@ export class ContainerModifier<
       if (value === undefined || value === null) {
         return {};
       }
-      if (!isRecord(value)) {
+      if (!isWriteDocument(value)) {
         throw new TypeError('The "*" key takes a record of values by key');
       }
       return value;
@@ -117,10 +108,9 @@ export class ContainerModifier<
       : { [key]: value };
   }
   public override unlock(
-    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
-    locked_value: Record<string, unknown>,
+    locked_value: WriteDocument,
     key: string | undefined,
-  ) {
+  ): WriteValue {
     if (key === undefined) {
       return undefined;
     }
@@ -130,13 +120,12 @@ export class ContainerModifier<
     return Object.hasOwn(locked_value, key) ? locked_value[key] : undefined;
   }
   public override unlockrequest(
-    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the container holds the field's values by key, typed by the table class, not by the modifier
-    data: DatabaseDev.ValueProxy<Record<string, unknown>>,
-    _meta: DatabaseDev.ValueProxy<Meta>,
+    data: DatabaseDev.ValueProxy<WriteDocument>,
+    _meta: DatabaseDev.ValueProxy<ModifierState>,
     key: DatabaseDev.ValueProxyOrValue<string | undefined>,
-  ): DatabaseDev.ValueProxy<unknown> {
+  ): DatabaseDev.ValueProxy<WriteValue> {
     if (key === undefined) {
-      return DatabaseDev.ValueProxy.constant<unknown>(null);
+      return DatabaseDev.ValueProxy.constant<WriteValue>(null);
     }
     return data.key(
       key instanceof DatabaseDev.ValueProxy ? key.cast<string>() : key,

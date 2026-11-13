@@ -13,7 +13,7 @@ import {
 
 describe("Modifiers - common", () => {
   it("creates basic modifier", async () => {
-    class TestModifier extends Modifier<any, any> {
+    class TestModifier extends Modifier {
       public lock(v: any): any {
         return v;
       }
@@ -80,7 +80,8 @@ describe("Modifiers - common", () => {
       suffix: string;
     }
 
-    class SuffixModifier extends OneWayModifier<string, [], object, Opts> {
+    class SuffixModifier extends OneWayModifier<string> {
+      declare public options: Opts;
       public readonly autolock = true;
       lock(_: string | undefined, value: string): string {
         return `${String(value)}${this.options.suffix}`;
@@ -100,23 +101,15 @@ describe("Modifiers - common", () => {
 
 describe("Modifiers - common", () => {
   it("attaches multiple modifiers on same field", async () => {
-    class Prefix extends OneWayModifier<
-      string,
-      [],
-      object,
-      { prefix: string }
-    > {
+    class Prefix extends OneWayModifier<string> {
+      declare public options: { prefix: string };
       lock(_: string | undefined, value: string): string {
         return `${this.options.prefix}${String(value)}`;
       }
     }
 
-    class Suffix extends TwoWayModifier<
-      string,
-      [],
-      object,
-      { suffix: string }
-    > {
+    class Suffix extends TwoWayModifier<string> {
+      declare public options: { suffix: string };
       lock(_: string | undefined, value: string): string {
         return `${String(value)}${this.options.suffix}`;
       }

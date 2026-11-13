@@ -16,7 +16,9 @@ type Options = {
  * This is an event-only modifier: it does not transform stored values and
  * does not require the Table class to incorporate a mixin.
  */
-export class AutoDateModifier extends Modifier<object, Options> {
+export class AutoDateModifier extends Modifier {
+  declare public options: Options;
+
   public insert<F extends string>(object: Partial<Record<F, Date>>, field: F) {
     object[field] = new Date();
   }

@@ -378,3 +378,24 @@ class TestableLocalizationModifier extends LocalizationModifier {
     return this.options;
   }
 }
+
+describe("Modifiers - localization wildcard key", () => {
+  it("refuses a list or a date assigned to every locale at once", async () => {
+    class Page extends Table.with(LocalizationModifier) {
+      @Localized({ fallbackLocale: "en" })
+      @Field("string")
+      declare title: string | string[] | Date;
+    }
+    const page = fromPlainData({}, Page).localize("en");
+    page.title = "Hello";
+
+    expect(() => {
+      page.localize("*").title = ["Bonjour"];
+    }).to.throw(TypeError);
+    expect(() => {
+      page.localize("*").title = new Date(0);
+    }).to.throw(TypeError);
+    const stored = fromDatabase(toDatabase(page), Page);
+    expect(stored.localize("en").title).to.equal("Hello");
+  });
+});
