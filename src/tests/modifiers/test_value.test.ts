@@ -1,8 +1,14 @@
 import { expect } from "chai";
 import { Field, Table } from "../../table";
 import { Encrypted, EncryptionModifier } from "../../modifiers/encryption";
+import { Hashed, HashModifier } from "../../modifiers/hash";
 import { Localized, LocalizationModifier } from "../../modifiers/localization";
-import { fromPlainData, testValue } from "../../modifiers/common";
+import {
+  fromDatabase,
+  fromPlainData,
+  testValue,
+  toDatabase,
+} from "../../modifiers/common";
 
 const secretKey = "12345678901234567890123456789012";
 
@@ -40,6 +46,66 @@ describe("Modifiers - testValue", () => {
     }
     const note = fromPlainData({}, Note).localize("en");
     note.body = "Hello";
+
+    expect(testValue(note, "body", "Hello")).to.equal(true);
+    expect(testValue(note, "body", "Bonjour")).to.equal(false);
+  });
+  it("matches a localized field with no text against null", () => {
+    class Page extends Table.with(LocalizationModifier) {
+      @Localized()
+      @Field("string")
+      declare title: string | null;
+    }
+    const page = fromPlainData({}, Page).localize("en");
+    page.title = "Hello";
+    page.localize("de");
+
+    expect(testValue(page, "title", null)).to.equal(true);
+    expect(testValue(page, "title", "Hello")).to.equal(false);
+  });
+  it("answers false for a field whose locale is not selected yet", () => {
+    class Page extends Table.with(LocalizationModifier) {
+      @Localized()
+      @Field("string")
+      declare title?: string;
+    }
+    const stored = fromDatabase(
+      toDatabase(fromPlainData({ title: { en: "Hello" } }, Page)),
+      Page,
+    );
+
+    expect(testValue(stored, "title", undefined)).to.equal(false);
+  });
+  it("compares a value assigned before its locale is selected", () => {
+    class Page extends Table.with(LocalizationModifier) {
+      @Localized()
+      @Field("string")
+      declare title: string;
+    }
+    const page = fromPlainData({}, Page);
+    page.title = "Hello";
+
+    expect(testValue(page, "title", "Hello")).to.equal(true);
+    expect(testValue(page, "title", "Bonjour")).to.equal(false);
+  });
+  it("tests a value against a hashed field", () => {
+    class Account extends Table.with(HashModifier) {
+      @Hashed({ algorithm: "sha256" })
+      @Field("string")
+      declare password: string;
+    }
+    const account = new Account();
+    account.password = "right";
+
+    expect(testValue(account, "password", "right")).to.equal(true);
+    expect(testValue(account, "password", "wrong")).to.equal(false);
+  });
+  it("compares a field with no modifier", () => {
+    class Note extends Table {
+      @Field("string")
+      declare body: string;
+    }
+    const note = fromPlainData({ body: "Hello" }, Note);
 
     expect(testValue(note, "body", "Hello")).to.equal(true);
     expect(testValue(note, "body", "Bonjour")).to.equal(false);
