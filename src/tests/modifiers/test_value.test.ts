@@ -3,11 +3,14 @@ import { Field, Table } from "../../table";
 import { Encrypted, EncryptionModifier } from "../../modifiers/encryption";
 import { Hashed, HashModifier } from "../../modifiers/hash";
 import { Localized, LocalizationModifier } from "../../modifiers/localization";
+import type { WriteValue } from "@antelopejs/interface-database/common";
 import {
+  attachModifier,
   fromDatabase,
   fromPlainData,
   testValue,
   toDatabase,
+  TwoWayModifier,
 } from "../../modifiers/common";
 
 const secretKey = "12345678901234567890123456789012";
@@ -54,13 +57,14 @@ describe("Modifiers - testValue", () => {
     class Page extends Table.with(LocalizationModifier) {
       @Localized()
       @Field("string")
-      declare title: string | null;
+      declare title?: string | null;
     }
     const page = fromPlainData({}, Page).localize("en");
     page.title = "Hello";
     page.localize("de");
 
     expect(testValue(page, "title", null)).to.equal(true);
+    expect(testValue(page, "title", undefined)).to.equal(false);
     expect(testValue(page, "title", "Hello")).to.equal(false);
   });
   it("answers false for a field whose locale is not selected yet", () => {
@@ -99,6 +103,29 @@ describe("Modifiers - testValue", () => {
 
     expect(testValue(account, "password", "right")).to.equal(true);
     expect(testValue(account, "password", "wrong")).to.equal(false);
+  });
+  it("compares what a field reads through a modifier that only unlocks by itself", () => {
+    class Prefix extends TwoWayModifier<string> {
+      public readonly autounlock = true;
+      public override lock(_locked: string | undefined, value: WriteValue) {
+        return `L:${JSON.stringify(value)}`;
+      }
+      public override unlock(locked: string) {
+        return locked.slice(2);
+      }
+    }
+    class Note extends Table {
+      @Field("string")
+      declare body: string;
+    }
+    attachModifier(Note, Prefix, "body", {});
+    const note = fromDatabase(
+      { _id: "n", _internal: { meta: {}, data: { body: "L:x" } } },
+      Note,
+    );
+
+    expect(testValue(note, "body", "x")).to.equal(true);
+    expect(testValue(note, "body", "L:x")).to.equal(false);
   });
   it("compares a field with no modifier", () => {
     class Note extends Table {
