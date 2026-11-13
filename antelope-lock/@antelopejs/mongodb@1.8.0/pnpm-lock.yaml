@@ -12,8 +12,8 @@ importers:
         specifier: '>=0.2.4 <1.0.0'
         version: 0.5.1
       '@antelopejs/interface-database':
-        specifier: '>=0.3.1 <0.4.0'
-        version: 0.3.3(@antelopejs/interface-core@0.5.1)
+        specifier: '>=0.4.0 <0.5.0'
+        version: 0.4.0(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-database-catalog':
         specifier: '>=0.0.3 <0.1.0'
         version: 0.0.4(@antelopejs/interface-core@0.5.1)
@@ -37,7 +37,7 @@ importers:
         specifier: ^1.21.0
         version: 1.22.0
       '@antelopejs/tooling-configs':
-        specifier: ^0.5.1
+        specifier: ^0.5.5
         version: 0.5.8(eslint-plugin-perfectionist@5.13.0(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3))(knip@6.45.1)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2007))
       '@types/chai':
         specifier: ^4.3.20
@@ -116,8 +116,8 @@ packages:
     peerDependencies:
       '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
 
-  '@antelopejs/interface-database@0.3.3':
-    resolution: {integrity: sha512-4NKCw+qc2BmisdPmh1i9ts6RHR6wOQz/TCnJtuwP8+a32PqTv2ZVZyHlLUX9RceKExqCQP6z90yXjtuqskRQVA==}
+  '@antelopejs/interface-database@0.4.0':
+    resolution: {integrity: sha512-cdVGd0qdHwkS3PHdbV9IJUyL3OoGjnmXoVbXdHPNmbwzmjUDkZQHFN2Y3b58SGsH11k3nS1EJLq0sTbKVhaKdQ==}
     peerDependencies:
       '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
 
@@ -2842,7 +2842,7 @@ snapshots:
     dependencies:
       '@antelopejs/interface-core': 0.5.1
 
-  '@antelopejs/interface-database@0.3.3(@antelopejs/interface-core@0.5.1)':
+  '@antelopejs/interface-database@0.4.0(@antelopejs/interface-core@0.5.1)':
     dependencies:
       '@antelopejs/interface-core': 0.5.1
 
