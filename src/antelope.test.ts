@@ -23,7 +23,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/api",
-        version: "1.6.0",
+        version: "1.7.4",
       },
       config: {
         servers: [{ protocol: "http", host: "127.0.0.1", port: apiPort }],
