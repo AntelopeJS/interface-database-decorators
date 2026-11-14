@@ -9,27 +9,27 @@ importers:
   .:
     dependencies:
       '@antelopejs/interface-api':
-        specifier: '>=0.1.0 <0.2.0'
-        version: 0.1.0(@antelopejs/interface-core@0.4.1)
+        specifier: '>=0.3.0 <0.4.0'
+        version: 0.3.3(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-api-util':
-        specifier: '>=0.2.0 <0.3.0'
-        version: 0.2.0(@antelopejs/interface-api@0.1.0(@antelopejs/interface-core@0.4.1))(@antelopejs/interface-core@0.4.1)
+        specifier: '>=0.3.0 <0.4.0'
+        version: 0.3.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-core':
-        specifier: '>=0.2.6 <1.0.0'
-        version: 0.4.1
+        specifier: '>=0.5.1 <0.6.0'
+        version: 0.5.1
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
       ws:
-        specifier: ^8.20.0
-        version: 8.22.2
+        specifier: ^8.21.0
+        version: 8.23.0
     devDependencies:
       '@antelopejs/core':
-        specifier: ^1.17.0
-        version: 1.21.2
+        specifier: ~1.23.0
+        version: 1.23.1
       '@antelopejs/tooling-configs':
-        specifier: ^0.2.11
-        version: 0.2.19(eslint-plugin-perfectionist@5.13.0(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3))(knip@6.45.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2006))
+        specifier: '>=0.6.0 <0.7.0'
+        version: 0.6.0(eslint-plugin-perfectionist@5.13.0(eslint@10.15.0(jiti@2.7.0))(typescript@5.9.3))(knip@6.45.1)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2007))
       '@types/mocha':
         specifier: ^10.0.10
         version: 10.0.10
@@ -44,10 +44,10 @@ importers:
         version: 8.18.2
       eslint-plugin-perfectionist:
         specifier: ^5.11.0
-        version: 5.13.0(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3)
+        version: 5.13.0(eslint@10.15.0(jiti@2.7.0))(typescript@5.9.3)
       knip:
         specifier: ^6.34.0
-        version: 6.45.0
+        version: 6.45.1
       lefthook:
         specifier: ^2.2.2
         version: 2.2.2
@@ -56,10 +56,10 @@ importers:
         version: 0.66.0
       oxlint:
         specifier: 1.81.0
-        version: 1.81.0(oxlint-tsgolint@7.0.2006)
+        version: 1.81.0(oxlint-tsgolint@7.0.2007)
       oxlint-tsgolint:
         specifier: ^7.0.2001
-        version: 7.0.2006
+        version: 7.0.2007
       release-it:
         specifier: ^19.2.4
         version: 19.2.4(@types/node@22.20.5)
@@ -78,27 +78,27 @@ importers:
 
 packages:
 
-  '@antelopejs/core@1.21.2':
-    resolution: {integrity: sha512-3TaRUOADEv9ZKxXPfTbfU8orzWaBH1gVfpOD6HOiVsH64QKOkvBRHbZ2ATBihR64kgh2N6FoR+rqByJ9IhfIug==}
+  '@antelopejs/core@1.23.1':
+    resolution: {integrity: sha512-0hTjFw5vHNwwTE6HYCvEHErKkJR9MiehE1UmY3P1M0LEky5j+TPWYcf7+Qtzp9U6ErYb+cRljHCzRaBu2pEbIw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  '@antelopejs/interface-api-util@0.2.0':
-    resolution: {integrity: sha512-dS3tepJn9558+hzFx7dUIL9AT8LKkR3T63F1DPYlosGejWAhXevPmQ5XpYgQWHfD9iio0/ybnlnrbll/yHdm0Q==}
+  '@antelopejs/interface-api-util@0.3.2':
+    resolution: {integrity: sha512-bNzujj2Jf9VM+XYSO0QcrD3SUmOk5TcWncGioCWnlWnfGvuPgeWE8T58+SMYyfzmPalQQa0JUed/+6k+e59lZw==}
     peerDependencies:
-      '@antelopejs/interface-api': '>=0.0.15 <1.0.0'
+      '@antelopejs/interface-api': '>=0.3.0 <1.0.0'
       '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
 
-  '@antelopejs/interface-api@0.1.0':
-    resolution: {integrity: sha512-MJtxw9PyXbLAhLe0X4ZQkyXe7NCTa19x91GpBTk5XfD3inQJljMkAlFMkch2pEKl1lcR1X2wEJl21XZ0rUHXeg==}
+  '@antelopejs/interface-api@0.3.3':
+    resolution: {integrity: sha512-jcsbhW5sO56ZFGBvHPy8/bmIw9BPS/lxBPF4Pyv3YwY9/VaFXGZVI3N+TjgJAHOwnjW8gRuASfqaTDYaFM/ldQ==}
     peerDependencies:
-      '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
+      '@antelopejs/interface-core': '>=0.5.1 <0.6.0'
 
-  '@antelopejs/interface-core@0.4.1':
-    resolution: {integrity: sha512-6UZWBp4IXHUNqP26uaqG+kmDfJW79LvPpskITmoouv57zsZ0RgyCLfc0sHs7Bcj/88hvhy/KLYgQ51p11IlBjQ==}
+  '@antelopejs/interface-core@0.5.1':
+    resolution: {integrity: sha512-ON/7TYA1yyT8UznzKi6vnwyjRU3byNE0OcFXBmf8dE/dqp8hKjeWHVyA2EUPOngmEimCLw4idZqOS5DJqMJx3g==}
 
-  '@antelopejs/tooling-configs@0.2.19':
-    resolution: {integrity: sha512-7CNi8CUoDwoKDgG8QB/Js/QpPku8iq8tvbb71OpDHZ4aFzVFIF6+vT5ZUbrxsXAKgrG8etXICQ6IwvU12WHofw==}
+  '@antelopejs/tooling-configs@0.6.0':
+    resolution: {integrity: sha512-DtGbS8grU8KKoB/HcvxKfwQy2AqQh7OUF2it85zf4czzZPodgdsw1/Ajj4onJvOYygqNgcd7D7EdDFtmY7FuDA==}
     engines: {node: '>=22.18.0'}
     hasBin: true
     peerDependencies:
@@ -106,7 +106,7 @@ packages:
       eslint-plugin-perfectionist: '>=5.0.0'
       knip: '>=6.0.0'
       mongodb-memory-server: '>=10.0.0'
-      oxfmt: ^0.66.0
+      oxfmt: ^0.66.0 || ^0.77.0
       oxlint: 1.81.0
       pixelmatch: '>=7.0.0'
       playwright-core: '>=1.56.0'
@@ -164,8 +164,8 @@ packages:
     resolution: {integrity: sha512-R76UKbvsqI68DJJVTVyqFKqU98CN4+B+acxNfEA2IFarSzP0SjtKf/3+fFiXzTyv5Fj3PxLkGHe2wnVWWMxobQ==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
 
-  '@eslint/config-array@0.23.5':
-    resolution: {integrity: sha512-Y3kKLvC1dvTOT+oGlqNQ1XLqK6D1HU2YXPc52NmAlJZbMMWDzGYXMiPRJ8TYD39muD/OTjlZmNJ4ib7dvSrMBA==}
+  '@eslint/config-array@0.23.6':
+    resolution: {integrity: sha512-WrTH7nioI9QPY4NZGnsywmecswJdgeq4BCM76qok9VgjTO29ZgUzUvcuJLVPYVQM4uDbaPBU0M33R9DIxI8X3w==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
   '@eslint/config-helpers@0.7.0':
@@ -748,33 +748,33 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@oxlint-tsgolint/darwin-arm64@7.0.2006':
-    resolution: {integrity: sha512-uc0MEHXZUDW23Zmo5X28eSNeSnP17jKnh9GiehpVZqhfy99ks8spyXT5Llar3tjDN7ppnQN0Qd9FK6WNkdD+fQ==}
+  '@oxlint-tsgolint/darwin-arm64@7.0.2007':
+    resolution: {integrity: sha512-bjNxPFyu1wNK74epHzXrtVLrj7oEuB8jQvJZDSia2d5EZ/0YgnyhI37E9U530IUZlNCqlTWjko1iT3CKAYF9+A==}
     cpu: [arm64]
     os: [darwin]
 
-  '@oxlint-tsgolint/darwin-x64@7.0.2006':
-    resolution: {integrity: sha512-+x1/pa3S3VMC9cif8XKTOCQUuqRT+wu1Ix+FK5svXa2xbXCuE7+4S0SfmuSnK/mk9AI5+xBxZFhILxmCPUZ1hA==}
+  '@oxlint-tsgolint/darwin-x64@7.0.2007':
+    resolution: {integrity: sha512-dCd7mzk2FeTaU46LLeXy5mQyEFICaPqlew/LpehNzEuL86D0jTYlwZHbibRqdRrvkSNgq1szz/7014FIHgyV1g==}
     cpu: [x64]
     os: [darwin]
 
-  '@oxlint-tsgolint/linux-arm64@7.0.2006':
-    resolution: {integrity: sha512-90v7HX8m54kHXn5DpjNEN18Fb7xwJMREe/wji3USyAf9pTMv7a3qZ3cPoLViIcIzxPLmkcYZIs1j1H3Z2gbVLA==}
+  '@oxlint-tsgolint/linux-arm64@7.0.2007':
+    resolution: {integrity: sha512-qb0XUQXuTmQ8H++zsx/tQitG0/fU3BE16KGp1qXExeDgRzEc7WIlCuN1i+rmA40lty9gQs+x3a73BFODVhTZqA==}
     cpu: [arm64]
     os: [linux]
 
-  '@oxlint-tsgolint/linux-x64@7.0.2006':
-    resolution: {integrity: sha512-/k0wsEqHiA5dWBJYuld3Vecv6bIhKCasxpho/aFkvh870Qox33MuTkKUGWIVm/njAxw7W4pu1a/Xfa3jwuKuPQ==}
+  '@oxlint-tsgolint/linux-x64@7.0.2007':
+    resolution: {integrity: sha512-75vx0067HSgxq/HEZzlHwqhcujn3bshg43fVLTx604jZdZZMQfPVCcxTh2RTEShP7ACT1PRty6vboZlWh5RtEA==}
     cpu: [x64]
     os: [linux]
 
-  '@oxlint-tsgolint/win32-arm64@7.0.2006':
-    resolution: {integrity: sha512-CQT5sqcLZLNZSWLzUUEjQmp74UX8h1agp3ZJ8pfRktHbx6gfBa8a7CjrnRrZ9VXlwnXVkpw7m5KBO6y+S5MQRA==}
+  '@oxlint-tsgolint/win32-arm64@7.0.2007':
+    resolution: {integrity: sha512-6zl7I+BvScfOPtnPtSEP5JA+z8NkDPGd47YnQChL5lLF/Dzs7Rasr1G+q0zGlQcP8OEgW43hW4QlUTXxPfD13Q==}
     cpu: [arm64]
     os: [win32]
 
-  '@oxlint-tsgolint/win32-x64@7.0.2006':
-    resolution: {integrity: sha512-VZsGowXcp3vQNkjoGeVCOTf4aGrRpRk6bBJWhefnJVPr6z+dX+LKqqHfwaqnFvg66Q2iJpXqklRW38YO21ee+Q==}
+  '@oxlint-tsgolint/win32-x64@7.0.2007':
+    resolution: {integrity: sha512-VptFHYhBm0SIWCUkx89hmTrKVOQsDg0iB1YE3EBlvRRtCHGUd3pU1kMxPBg1wOd83ZMmIn7zB6maBROtpmrP5g==}
     cpu: [x64]
     os: [win32]
 
@@ -990,6 +990,10 @@ packages:
     resolution: {integrity: sha512-NAGrjn0Pitjqzq/GkgMC4kBYm233PQ8GffyQ9+kTA3AlNQYEzOf25EIM02BAHZv5FRJSpHpJk+OGUxVkOB93GQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@typescript/typescript6@6.0.2':
+    resolution: {integrity: sha512-mbCddXd+jm7hfx7w2YU64/Av4/NqqeG3GoRZgxPcgoTxYjhrcfJRw9ULch71SS4G+Q3bOXFhRvPqjguN0Hyp5w==}
+    hasBin: true
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -1066,14 +1070,14 @@ packages:
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
-  brace-expansion@1.1.21:
-    resolution: {integrity: sha512-9zeA+KLZNNzglF2TPKRQEDyx6Yby7daAkuy8MiPzpXPsYDWi/DRM8jmwUDxokQjYqBpv5DgPiwD4h4ZZSy1Ujw==}
+  brace-expansion@1.1.22:
+    resolution: {integrity: sha512-CKLDTuSsN0+r1ThM0WkzzBI7dnPI6xEGfa/JnVYIK9JNBA1N1NyPwXVHor//NKD/y3sDxp764sZdLhFK7pH8XQ==}
 
-  brace-expansion@2.1.7:
-    resolution: {integrity: sha512-uZbew1NqdmPDTMJ8ah1y+b+9QEJrfkXFk3RcTQw3X0jW/xRUvFKsg1CfQdSYGdTbXZWExtU3J3ccxtnfw1Fi0g==}
+  brace-expansion@2.1.8:
+    resolution: {integrity: sha512-BnlDzDYQoplTsZSvPi86CNzmbcb07X8ufR8fk1zivaiEJlXJkiq1MQyDCVmlWcsWbj6aWXqHnrwwevbrm/Saig==}
 
-  brace-expansion@5.0.12:
-    resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
+  brace-expansion@5.0.13:
+    resolution: {integrity: sha512-Vh3dmFbc4wZeox7M9I/0L9GfFd83Su4+yCck/OF9Gi/P/dAHn0RT7X4K9R7gMNMhDck3DvhR6QXsnQdjjgwNvQ==}
     engines: {node: 20 || >=22}
 
   braces@3.0.3:
@@ -1330,8 +1334,8 @@ packages:
     resolution: {integrity: sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  eslint@10.14.0:
-    resolution: {integrity: sha512-T0pNsxkb9IKmtQjhpK3d7nWOpFv+YHuMbTJnSVMoQblF0onvXfErrtp4V1jHtsQPan7dKaGVD0q1WCXnzMF31A==}
+  eslint@10.15.0:
+    resolution: {integrity: sha512-+5Wg4p+ze3sG1WErYgUO/3H1IQIfFBymVUA0Fo/XTeBOLS6UQIUekpSJ8sdRkn7O7wjh84b55w/roqavH2aScg==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -1505,16 +1509,16 @@ packages:
     resolution: {integrity: sha512-wfsFgXQ8A3SEI9XGf7Nl3Y9l7ffSrGh7SUCT7vU/2CzYPep9kjxAn1S40F9OPKxAMGCVl7HtNlJhrCJUeUq83g==}
     engines: {node: 18 || 20 || >=22}
 
-  glob@14.0.4:
-    resolution: {integrity: sha512-mMiwNKoJZ4HAIRVJxotO6LsNRReA30gQwP9E2/p94tfLv+jygCNpKDjhhSL6OLY6LE371EZm5EAf7RpYuUqlsw==}
+  glob@14.0.6:
+    resolution: {integrity: sha512-OwXjVP2svY5EyLY75Vek96C8qK43gqrt4xsZ+qSILdnaEiJPXkd62mcfUSNx/TQErQRdu5uM5kF67sfONragKw==}
     engines: {node: 18 || 20 || >=22}
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
     deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
-  graceful-fs@4.2.11:
-    resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+  graceful-fs@4.2.12:
+    resolution: {integrity: sha512-iuyGF2E4oafQfPsRrG2wtY2ILupMhvtdrhzrxB+0VcjsPpSPttpfYdjnGFGsTi5MaJFjI1jOKHPQ6UTbTj9TAw==}
 
   gunzip-maybe@1.4.2:
     resolution: {integrity: sha512-4haO1M4mLO91PW57BMsDFf75UmwoRX0GkdD+Faw+Lr+r/OZrOCS0pIBwOL1xCKQqnQzbNFGgK2V2CpBUPeFNTw==}
@@ -1696,8 +1700,8 @@ packages:
   keyv@5.6.0:
     resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
 
-  knip@6.45.0:
-    resolution: {integrity: sha512-ywPAhxiJGPWD/1V5dVYawA6el74q4vgX8omkeyl0MbA1CCkdjxrvWXXVqM20a5wQWcl1NbC9ImLHYsbFEbD0Xg==}
+  knip@6.45.1:
+    resolution: {integrity: sha512-zp3zXKy2cZWiIttdlWU5fisKxVQaLSU6471ej0KGz1GdHdaHxpzTAO/LIyFNc3gU3v1W7LJaqvYumoO3l/u+6A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -1831,8 +1835,8 @@ packages:
     resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
     engines: {node: 18 || 20 || >=22}
 
-  minimatch@11.0.6:
-    resolution: {integrity: sha512-6NZbDPQIRnsJFjJ9wbd5659OKaTHCqpPHdldE3WwArjxr5wLxHIwnx4eTGcPebpVBZZQbITvQQIx8K0VGXoT3Q==}
+  minimatch@11.0.8:
+    resolution: {integrity: sha512-nFQuYSTVrGvysVBps5Ih+0BdnYFN/Cj3C816r6+p7yK+FHrVLGE4O4N9AFwykrlNlvM2HYt+Rad1Uiro6h88Ig==}
     engines: {node: 20 || >=22}
 
   minimatch@3.1.5:
@@ -1985,8 +1989,8 @@ packages:
       vite-plus:
         optional: true
 
-  oxlint-tsgolint@7.0.2006:
-    resolution: {integrity: sha512-5B3UtH71kycPHUC1kFEIffivEAs49SUmkJuHZOZnTY0NPj4legp0bcsCQucuLVNCoJzDucS68P2C4WIhP+LypQ==}
+  oxlint-tsgolint@7.0.2007:
+    resolution: {integrity: sha512-i8X2qf6VVqFzoNVP34joMKuZpO6T2uXMOgKJaSPFc6p+E3FTnbIGPRbI8K4ZApmtDTMu2CIeGfpzeK1zzGwfnA==}
     hasBin: true
 
   oxlint@1.81.0:
@@ -2401,6 +2405,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
@@ -2469,8 +2478,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.22.2:
-    resolution: {integrity: sha512-/rEZ2ejown2N5gxVTHUu9bVVC7ttu0/Tgzf5hbTOixR3Fs7mbbXgn2DbdbcKgJOmpQMtrIUWivtYuVMnp/W/yA==}
+  ws@8.23.0:
+    resolution: {integrity: sha512-wCkmX8QMOrKjgO8HW2WyDbTSGeqkocxgDzS9iR79rEAexty6/2qzilx3Ag8Tqf9ykop3irLKle0MtVn5qjVnoQ==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -2530,9 +2539,9 @@ packages:
 
 snapshots:
 
-  '@antelopejs/core@1.21.2':
+  '@antelopejs/core@1.23.1':
     dependencies:
-      '@antelopejs/interface-core': 0.4.1
+      '@antelopejs/interface-core': 0.5.1
       '@clack/prompts': 1.9.0
       '@types/proper-lockfile': 4.1.4
       commander: 13.1.0
@@ -2545,30 +2554,32 @@ snapshots:
       semver: 7.8.6
       typescript: 5.9.3
 
-  '@antelopejs/interface-api-util@0.2.0(@antelopejs/interface-api@0.1.0(@antelopejs/interface-core@0.4.1))(@antelopejs/interface-core@0.4.1)':
+  '@antelopejs/interface-api-util@0.3.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1))(@antelopejs/interface-core@0.5.1)':
     dependencies:
-      '@antelopejs/interface-api': 0.1.0(@antelopejs/interface-core@0.4.1)
-      '@antelopejs/interface-core': 0.4.1
+      '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
+      '@antelopejs/interface-core': 0.5.1
 
-  '@antelopejs/interface-api@0.1.0(@antelopejs/interface-core@0.4.1)':
+  '@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.1)':
     dependencies:
-      '@antelopejs/interface-core': 0.4.1
+      '@antelopejs/interface-core': 0.5.1
 
-  '@antelopejs/interface-core@0.4.1':
+  '@antelopejs/interface-core@0.5.1':
     dependencies:
       reflect-metadata: 0.2.2
 
-  '@antelopejs/tooling-configs@0.2.19(eslint-plugin-perfectionist@5.13.0(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3))(knip@6.45.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2006))':
+  '@antelopejs/tooling-configs@0.6.0(eslint-plugin-perfectionist@5.13.0(eslint@10.15.0(jiti@2.7.0))(typescript@5.9.3))(knip@6.45.1)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2007))':
     dependencies:
       '@oxlint/plugins': 1.81.0
+      '@typescript/typescript6': 6.0.2
       dts-bundle-generator: 9.5.1
-      typescript: 5.9.3
+      minimatch: 10.2.6
+      semver: 7.8.6
       yaml: 2.9.1
     optionalDependencies:
-      eslint-plugin-perfectionist: 5.13.0(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3)
-      knip: 6.45.0
+      eslint-plugin-perfectionist: 5.13.0(eslint@10.15.0(jiti@2.7.0))(typescript@5.9.3)
+      knip: 6.45.1
       oxfmt: 0.66.0
-      oxlint: 1.81.0(oxlint-tsgolint@7.0.2006)
+      oxlint: 1.81.0(oxlint-tsgolint@7.0.2007)
 
   '@cacheable/memory@2.2.0':
     dependencies:
@@ -2611,18 +2622,18 @@ snapshots:
       tslib: 2.9.1
     optional: true
 
-  '@eslint-community/eslint-utils@4.10.1(eslint@10.14.0(jiti@2.7.0))':
+  '@eslint-community/eslint-utils@4.10.1(eslint@10.15.0(jiti@2.7.0))':
     dependencies:
-      eslint: 10.14.0(jiti@2.7.0)
+      eslint: 10.15.0(jiti@2.7.0)
       eslint-visitor-keys: 3.4.3
 
   '@eslint-community/regexpp@4.12.3': {}
 
-  '@eslint/config-array@0.23.5':
+  '@eslint/config-array@0.23.6':
     dependencies:
       '@eslint/object-schema': 3.0.5
       debug: 4.4.3(supports-color@8.1.1)
-      minimatch: 10.2.6
+      minimatch: 11.0.8
     transitivePeerDependencies:
       - supports-color
 
@@ -3058,22 +3069,22 @@ snapshots:
   '@oxfmt/binding-win32-x64-msvc@0.66.0':
     optional: true
 
-  '@oxlint-tsgolint/darwin-arm64@7.0.2006':
+  '@oxlint-tsgolint/darwin-arm64@7.0.2007':
     optional: true
 
-  '@oxlint-tsgolint/darwin-x64@7.0.2006':
+  '@oxlint-tsgolint/darwin-x64@7.0.2007':
     optional: true
 
-  '@oxlint-tsgolint/linux-arm64@7.0.2006':
+  '@oxlint-tsgolint/linux-arm64@7.0.2007':
     optional: true
 
-  '@oxlint-tsgolint/linux-x64@7.0.2006':
+  '@oxlint-tsgolint/linux-x64@7.0.2007':
     optional: true
 
-  '@oxlint-tsgolint/win32-arm64@7.0.2006':
+  '@oxlint-tsgolint/win32-arm64@7.0.2007':
     optional: true
 
-  '@oxlint-tsgolint/win32-x64@7.0.2006':
+  '@oxlint-tsgolint/win32-x64@7.0.2007':
     optional: true
 
   '@oxlint/binding-android-arm-eabi@1.81.0':
@@ -3227,13 +3238,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@8.72.2(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3)':
+  '@typescript-eslint/utils@8.72.2(eslint@10.15.0(jiti@2.7.0))(typescript@5.9.3)':
     dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@10.14.0(jiti@2.7.0))
+      '@eslint-community/eslint-utils': 4.10.1(eslint@10.15.0(jiti@2.7.0))
       '@typescript-eslint/scope-manager': 8.72.2
       '@typescript-eslint/types': 8.72.2
       '@typescript-eslint/typescript-estree': 8.72.2(typescript@5.9.3)
-      eslint: 10.14.0(jiti@2.7.0)
+      eslint: 10.15.0(jiti@2.7.0)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -3242,6 +3253,10 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.72.2
       eslint-visitor-keys: 5.0.1
+
+  '@typescript/typescript6@6.0.2':
+    dependencies:
+      '@typescript/old': typescript@6.0.3
 
   acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
@@ -3311,16 +3326,16 @@ snapshots:
       inherits: 2.0.4
       readable-stream: 3.6.2
 
-  brace-expansion@1.1.21:
+  brace-expansion@1.1.22:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
 
-  brace-expansion@2.1.7:
+  brace-expansion@2.1.8:
     dependencies:
       balanced-match: 1.0.2
 
-  brace-expansion@5.0.12:
+  brace-expansion@5.0.13:
     dependencies:
       balanced-match: 4.0.4
 
@@ -3563,13 +3578,13 @@ snapshots:
     optionalDependencies:
       source-map: 0.6.1
 
-  eslint-plugin-perfectionist@5.13.0(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3):
+  eslint-plugin-perfectionist@5.13.0(eslint@10.15.0(jiti@2.7.0))(typescript@5.9.3):
     dependencies:
       '@typescript-eslint/types': 8.72.2
-      '@typescript-eslint/utils': 8.72.2(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3)
+      '@typescript-eslint/utils': 8.72.2(eslint@10.15.0(jiti@2.7.0))(typescript@5.9.3)
       natural-orderby: 5.0.0
     optionalDependencies:
-      eslint: 10.14.0(jiti@2.7.0)
+      eslint: 10.15.0(jiti@2.7.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -3585,11 +3600,11 @@ snapshots:
 
   eslint-visitor-keys@5.0.1: {}
 
-  eslint@10.14.0(jiti@2.7.0):
+  eslint@10.15.0(jiti@2.7.0):
     dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@10.14.0(jiti@2.7.0))
+      '@eslint-community/eslint-utils': 4.10.1(eslint@10.15.0(jiti@2.7.0))
       '@eslint-community/regexpp': 4.12.3
-      '@eslint/config-array': 0.23.5
+      '@eslint/config-array': 0.23.6
       '@eslint/config-helpers': 0.7.0
       '@eslint/core': 1.2.1
       '@eslint/plugin-kit': 0.7.3
@@ -3614,7 +3629,7 @@ snapshots:
       imurmurhash: 0.1.4
       is-glob: 4.0.3
       json-stable-stringify-without-jsonify: 1.0.1
-      minimatch: 10.2.6
+      minimatch: 11.0.8
       natural-compare: 1.4.0
       optionator: 0.9.4
     optionalDependencies:
@@ -3797,9 +3812,9 @@ snapshots:
       minipass: 7.1.3
       path-scurry: 2.0.2
 
-  glob@14.0.4:
+  glob@14.0.6:
     dependencies:
-      minimatch: 11.0.6
+      minimatch: 11.0.8
       minipass: 7.1.3
       path-scurry: 3.0.0
 
@@ -3812,7 +3827,7 @@ snapshots:
       once: 1.4.0
       path-is-absolute: 1.0.1
 
-  graceful-fs@4.2.11: {}
+  graceful-fs@4.2.12: {}
 
   gunzip-maybe@1.4.2:
     dependencies:
@@ -3983,7 +3998,7 @@ snapshots:
     dependencies:
       '@keyv/serialize': 1.1.1
 
-  knip@6.45.0:
+  knip@6.45.1:
     dependencies:
       formatly: 0.11.4
       get-tsconfig: 4.14.3
@@ -4094,20 +4109,20 @@ snapshots:
 
   minimatch@10.2.6:
     dependencies:
-      brace-expansion: 5.0.12
+      brace-expansion: 5.0.13
 
-  minimatch@11.0.6:
+  minimatch@11.0.8:
     dependencies:
       '@isaacs/nonrecursive-glob-match': 1.1.0
-      brace-expansion: 5.0.12
+      brace-expansion: 5.0.13
 
   minimatch@3.1.5:
     dependencies:
-      brace-expansion: 1.1.21
+      brace-expansion: 1.1.22
 
   minimatch@9.0.9:
     dependencies:
-      brace-expansion: 2.1.7
+      brace-expansion: 2.1.8
 
   minimist@1.2.8: {}
 
@@ -4329,16 +4344,16 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.66.0
       '@oxfmt/binding-win32-x64-msvc': 0.66.0
 
-  oxlint-tsgolint@7.0.2006:
+  oxlint-tsgolint@7.0.2007:
     optionalDependencies:
-      '@oxlint-tsgolint/darwin-arm64': 7.0.2006
-      '@oxlint-tsgolint/darwin-x64': 7.0.2006
-      '@oxlint-tsgolint/linux-arm64': 7.0.2006
-      '@oxlint-tsgolint/linux-x64': 7.0.2006
-      '@oxlint-tsgolint/win32-arm64': 7.0.2006
-      '@oxlint-tsgolint/win32-x64': 7.0.2006
+      '@oxlint-tsgolint/darwin-arm64': 7.0.2007
+      '@oxlint-tsgolint/darwin-x64': 7.0.2007
+      '@oxlint-tsgolint/linux-arm64': 7.0.2007
+      '@oxlint-tsgolint/linux-x64': 7.0.2007
+      '@oxlint-tsgolint/win32-arm64': 7.0.2007
+      '@oxlint-tsgolint/win32-x64': 7.0.2007
 
-  oxlint@1.81.0(oxlint-tsgolint@7.0.2006):
+  oxlint@1.81.0(oxlint-tsgolint@7.0.2007):
     optionalDependencies:
       '@oxlint/binding-android-arm-eabi': 1.81.0
       '@oxlint/binding-android-arm64': 1.81.0
@@ -4359,7 +4374,7 @@ snapshots:
       '@oxlint/binding-win32-arm64-msvc': 1.81.0
       '@oxlint/binding-win32-ia32-msvc': 1.81.0
       '@oxlint/binding-win32-x64-msvc': 1.81.0
-      oxlint-tsgolint: 7.0.2006
+      oxlint-tsgolint: 7.0.2007
 
   p-limit@3.1.0:
     dependencies:
@@ -4467,7 +4482,7 @@ snapshots:
 
   proper-lockfile@4.1.2:
     dependencies:
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       retry: 0.12.0
       signal-exit: 3.0.7
 
@@ -4596,7 +4611,7 @@ snapshots:
 
   rimraf@6.1.4:
     dependencies:
-      glob: 14.0.4
+      glob: 14.0.6
       package-json-from-dist: 1.0.1
 
   run-applescript@7.1.0: {}
@@ -4782,6 +4797,8 @@ snapshots:
 
   typescript@5.9.3: {}
 
+  typescript@6.0.3: {}
+
   ufo@1.6.4: {}
 
   unbash@6.0.4: {}
@@ -4841,7 +4858,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.22.2: {}
+  ws@8.23.0: {}
 
   wsl-utils@0.1.0:
     dependencies:

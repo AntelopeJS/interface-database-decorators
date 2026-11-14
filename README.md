@@ -98,11 +98,11 @@ The package declares these `@antelopejs/*` peer dependencies:
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                          | Supported         | Tested with |
-| -------------------------------- | ----------------- | ----------- |
-| `@antelopejs/interface-api`      | `>=0.0.15 <1.0.0` | `0.0.15`    |
-| `@antelopejs/interface-core`     | `>=0.2.4 <1.0.0`  | `0.4.0`     |
-| `@antelopejs/interface-database` | `>=0.3.0 <1.0.0`  | `0.4.0`     |
+| Package                          | Supported        | Tested with |
+| -------------------------------- | ---------------- | ----------- |
+| `@antelopejs/interface-api`      | `>=0.3.3 <0.4.0` | `0.3.3`     |
+| `@antelopejs/interface-core`     | `>=0.5.1 <0.6.0` | `0.5.1`     |
+| `@antelopejs/interface-database` | `>=0.4.0 <0.5.0` | `0.4.0`     |
 
 <!-- antelopejs-docs-compat:end -->
 
