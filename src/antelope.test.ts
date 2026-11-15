@@ -16,14 +16,14 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/mongodb",
-        version: "1.8.0",
+        version: "1.8.4",
       },
     },
     api: {
       source: {
         type: "package",
         package: "@antelopejs/api",
-        version: "1.7.4",
+        version: "1.7.5",
       },
       config: {
         servers: [{ protocol: "http", host: "127.0.0.1", port: apiPort }],

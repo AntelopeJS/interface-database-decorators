@@ -62,11 +62,11 @@ const TEST_CONFIG = `
 const { defineConfig } = require(require.resolve("@antelopejs/interface-core/config", { paths: [process.env.VERIFY_REPO] }));
 const modules = {
   local: { source: { type: "local", path: "." } },
-  mongodb: { source: { type: "package", package: "@antelopejs/mongodb", version: "1.5.0" }, config: { url: process.env.VERIFY_MONGO_URL, database: "${DATABASE}" } },
+  mongodb: { source: { type: "package", package: "@antelopejs/mongodb", version: "1.8.4" }, config: { url: process.env.VERIFY_MONGO_URL, database: "${DATABASE}" } },
 };
 if (process.env.VERIFY_API_PORT) {
   modules.api = {
-    source: { type: "package", package: "@antelopejs/api", version: "1.6.0" },
+    source: { type: "package", package: "@antelopejs/api", version: "1.7.5" },
     config: { servers: [{ protocol: "http", host: "127.0.0.1", port: Number(process.env.VERIFY_API_PORT) }], publicBaseUrl: "http://127.0.0.1:" + process.env.VERIFY_API_PORT },
   };
 }
