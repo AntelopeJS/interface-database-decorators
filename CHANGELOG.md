@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.3
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.5.2...v0.5.3)
+
+### 💅 Refactors
+
+- **model:** Drop the last lint directive and cap the AntelopeJS ranges for tooling-configs 0.7.0 ([#121](https://github.com/AntelopeJS/interface-database-decorators/pull/121))
+
+### 🤖 CI
+
+- Run the check jobs on Windows beside Linux ([#122](https://github.com/AntelopeJS/interface-database-decorators/pull/122))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.5.2
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.5.1...v0.5.2)
