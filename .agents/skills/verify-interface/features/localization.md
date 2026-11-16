@@ -2,6 +2,7 @@
 covers:
   - src/modifiers/localization.ts
   - .agents/skills/verify-interface/scenarios/localization.ts
+  - .agents/skills/verify-interface/scenarios/test-value.ts
   - package.json
   - pnpm-lock.yaml
   - tsconfig.json
@@ -22,6 +23,7 @@ journeys:
   - localize-wildcard
   - localize-wildcard-replace
   - localized-storage
+  - test-value-two-way
 ---
 
 # Localization
@@ -35,6 +37,7 @@ journeys:
 - `localize-wildcard-replace`: a wildcard write replaces what was stored.
 - `localize-wildcard`: the `"*"` key.
 - `localized-storage`: one value per locale in MongoDB.
+- `test-value-two-way`: `testValue` is `true` for the right value and `false` for a wrong one, and `false` until a locale is selected.
 
 ## How to get to it (user POV)
 

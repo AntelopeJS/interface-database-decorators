@@ -9,6 +9,7 @@ import { AUTODATE_JOURNEYS, LOCALIZATION_JOURNEYS } from "./scenarios/localizati
 import { MODEL_JOURNEYS } from "./scenarios/models.ts";
 import { REGISTRATION_JOURNEYS } from "./scenarios/registration.ts";
 import { TABLE_JOURNEYS } from "./scenarios/tables.ts";
+import { TEST_VALUE_JOURNEYS } from "./scenarios/test-value.ts";
 
 const config: VerifyConfig = {
   services: {
@@ -43,7 +44,7 @@ const config: VerifyConfig = {
       why: "the package name and release workflow claim @antelopejs/interface-database-decorators on npm",
     },
   },
-  journeys: { ...TABLE_JOURNEYS, ...REGISTRATION_JOURNEYS, ...MODEL_JOURNEYS, ...DECORATION_JOURNEYS, ...ENCRYPTION_JOURNEYS, ...HASH_JOURNEYS, ...LOCALIZATION_JOURNEYS, ...AUTODATE_JOURNEYS, ...CUSTOM_JOURNEYS, ...DECLARATION_JOURNEYS },
+  journeys: { ...TABLE_JOURNEYS, ...REGISTRATION_JOURNEYS, ...MODEL_JOURNEYS, ...DECORATION_JOURNEYS, ...ENCRYPTION_JOURNEYS, ...HASH_JOURNEYS, ...LOCALIZATION_JOURNEYS, ...AUTODATE_JOURNEYS, ...CUSTOM_JOURNEYS, ...DECLARATION_JOURNEYS, ...TEST_VALUE_JOURNEYS },
 };
 
 export default config;
