@@ -2,6 +2,7 @@
 covers:
   - src/modifiers/encryption.ts
   - .agents/skills/verify-interface/scenarios/encryption.ts
+  - .agents/skills/verify-interface/scenarios/test-value.ts
   - package.json
   - pnpm-lock.yaml
   - tsconfig.json
@@ -20,6 +21,7 @@ journeys:
   - encryption-at-rest
   - encryption-dates
   - encryption-keys
+  - test-value-two-way
 ---
 
 # Encryption
@@ -31,6 +33,7 @@ journeys:
 - `encryption-at-rest`: base64 ciphertext, iv and auth tag; only the key opens it.
 - `encryption-dates`: a `Date` returns with whole-second precision.
 - `encryption-keys`: the key is a UTF-8 string, so a hex key is refused.
+- `test-value-two-way`: `testValue` is `true` for the right value and `false` for a wrong one, the unlocked value never returned.
 
 ## How to get to it (user POV)
 
