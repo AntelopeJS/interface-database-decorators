@@ -169,7 +169,7 @@ export function BasicDataModel<T extends object>(
      * Pass `{ partial: true }` to skip fields not present on `obj` (patch semantics).
      */
     public static validate(
-      obj: unknown,
+      obj: Parameters<typeof isRecord>[0],
       options?: ValidateInputOptions,
     ): ValidationResult {
       const fields = metadata.fields;
