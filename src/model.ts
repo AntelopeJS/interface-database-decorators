@@ -169,8 +169,7 @@ export function BasicDataModel<T extends object>(
      * Pass `{ partial: true }` to skip fields not present on `obj` (patch semantics).
      */
     public static validate(
-      // oxlint-disable-next-line anti-slop/no-unknown-parameters -- validate decodes untrusted input against the field codecs, so unknown is its contract
-      obj: unknown,
+      obj: Parameters<typeof isRecord>[0],
       options?: ValidateInputOptions,
     ): ValidationResult {
       const fields = metadata.fields;
