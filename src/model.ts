@@ -169,6 +169,7 @@ export function BasicDataModel<T extends object>(
      * Pass `{ partial: true }` to skip fields not present on `obj` (patch semantics).
      */
     public static validate(
+      // oxlint-disable-next-line anti-slop/no-unknown-parameters -- the validator's input is untrusted by design
       obj: unknown,
       options?: ValidateInputOptions,
     ): ValidationResult {
