@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.5.4
+
+[compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.5.3...v0.5.4)
+
+### 🩹 Fixes
+
+- **model:** Accept unknown in Model.validate ([#129](https://github.com/AntelopeJS/interface-database-decorators/pull/129))
+
+### 📦 Build
+
+- Move to @antelopejs/tooling-configs 0.8 and the three-tier CI ([#126](https://github.com/AntelopeJS/interface-database-decorators/pull/126))
+
+### ✅ Tests
+
+- **verify:** Add a testValue journey for encrypted and localized fields ([#124](https://github.com/AntelopeJS/interface-database-decorators/pull/124))
+
+### 🤖 CI
+
+- Add the next-sync caller workflow ([#125](https://github.com/AntelopeJS/interface-database-decorators/pull/125))
+- Run CI on pushes to next ([#127](https://github.com/AntelopeJS/interface-database-decorators/pull/127))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.5.3
 
 [compare changes](https://github.com/AntelopeJS/interface-database-decorators/compare/v0.5.2...v0.5.3)
