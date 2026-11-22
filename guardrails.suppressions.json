@@ -1,12 +1,5 @@
 {
-  "rules": {
-    "anti-slop/no-unknown-parameters": 1,
-    "anti-slop/no-unknown-returns": 0,
-    "anti-slop/no-unsafe-dictionary-type": 0,
-    "typescript/no-unnecessary-type-parameters": 0,
-    "typescript/no-unsafe-assignment": 0,
-    "typescript/no-unsafe-return": 0
-  },
+  "rules": {},
   "tsExpectError": 0,
   "tsIgnore": 0,
   "safety": 5,
