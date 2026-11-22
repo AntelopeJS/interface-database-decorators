@@ -24,6 +24,7 @@ jobs:
       renovate-sync: false
       test-job: true
       affected-tests: true
+      module-locks: true
     permissions:
       contents: read
   renovate-sync:
@@ -34,3 +35,13 @@ jobs:
       actions: write
       statuses: write
     uses: AntelopeJS/.github/.github/workflows/ci-renovate-sync.yml@v2
+  module-locks:
+    needs: ci
+    if: ${{ !cancelled() }}
+    permissions:
+      contents: read
+      actions: read
+    uses: AntelopeJS/.github/.github/workflows/module-locks-renovate.yml@v2
+    secrets:
+      RELEASE_APP_ID: ${{ secrets.RELEASE_APP_ID }}
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
