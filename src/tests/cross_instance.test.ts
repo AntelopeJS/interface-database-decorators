@@ -137,7 +137,8 @@ function TableOpensBoundSchemaTest() {
     ["table", "items"],
   ]);
   expect(stagesOf(Item.table("t1"))[1]).to.deep.equal(["instance", "t1"]);
-  expect(stagesOf(Item.table(bound!.instance("t2")))[1]).to.deep.equal([
+  if (!bound) throw new Error("Bound schema is missing");
+  expect(stagesOf(Item.table(bound.instance("t2")))[1]).to.deep.equal([
     "instance",
     "t2",
   ]);
