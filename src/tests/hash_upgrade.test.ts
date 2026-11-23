@@ -59,7 +59,6 @@ scryptSuite("Integration - upgrade of stored hashes", () => {
     return account;
   }
 
-  /** Starts both async tests before the sync ones, so their scrypt runs overlap. */
   async function expectVerifies(account: Account) {
     const pending = Promise.all([
       account.testHashAsync("password", PASSWORD),
