@@ -110,7 +110,6 @@ function storedScrypt(salt: Buffer, key: Buffer) {
   return `${CURRENT_PREFIX}${unpaddedBase64(salt)}$${unpaddedBase64(key)}`;
 }
 
-/** A stored hash derived ahead of the setter, which `lock` keeps as it is. */
 /** A hash computed off the event loop, assigned to the field in place of the value it hashes. */
 class PrecomputedHash implements WriteDocument {
   [field: string]: WriteValue;
@@ -199,8 +198,8 @@ function withHashedField<R>(
 ) {
   const metaTable = getMetadata(row.constructor, ModifiersStaticMetadata);
   const list = fieldsByKey(metaTable)[field];
-  const entry = list?.find(({ modifier }) => modifier instanceof HashModifier);
-  if (!entry || !(entry.modifier instanceof HashModifier)) {
+  const entry = list?.find(({ modifier }) => IsHashModifier(modifier));
+  if (!entry || !IsHashModifier(entry.modifier)) {
     throw new Error(`Field ${String(field)} is not hashed`);
   }
   const internal = getInternal(row);
@@ -223,11 +222,25 @@ function withHashedField<R>(
  * Because of this, you lose the ability to query the information directly.
  * You can test equality using {@link testHash}
  */
+const HASH_MODIFIER_BRAND = Symbol.for(
+  "@antelopejs/interface-database-decorators/HashModifier",
+);
+
+/** Whether a value is a {@link HashModifier}, whichever copy of this package built it. */
+function IsHashModifier(value: unknown): value is HashModifier {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Object.hasOwn(value, HASH_MODIFIER_BRAND)
+  );
+}
+
 export class HashModifier extends OneWayModifier<string | undefined> {
   declare public options: Options;
   declare protected meta: { salt?: string };
 
   public readonly autolock = true;
+  public readonly [HASH_MODIFIER_BRAND] = true;
 
   /**
    * Hashes a new value. Assigning the stored hash back keeps it as it is.

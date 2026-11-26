@@ -12,6 +12,12 @@ export const MixinSymbol = Symbol();
 
 export type MixinType<T> = T extends { [MixinSymbol]: infer A } ? A : never;
 
+function isProxyOfKey(
+  value: DatabaseDev.ValueProxyOrValue<string | undefined>,
+): value is DatabaseDev.ValueProxy<string | undefined> {
+  return DatabaseDev.IsValueProxy(value);
+}
+
 /**
  * A field modifier. A subclass narrows `options` and `meta` with `declare`
  * to the options it is attached with and the state it keeps for each row.
@@ -127,8 +133,6 @@ export class ContainerModifier extends TwoWayModifier<
     if (key === undefined) {
       return DatabaseDev.ValueProxy.constant<WriteValue>(null);
     }
-    return data.key(
-      key instanceof DatabaseDev.ValueProxy ? key.cast<string>() : key,
-    );
+    return data.key(isProxyOfKey(key) ? key.cast<string>() : key);
   }
 }
