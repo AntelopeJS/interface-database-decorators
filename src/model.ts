@@ -178,7 +178,7 @@ export function BasicDataModel<T extends object>(
       const record = isRecord(obj) ? obj : undefined;
       for (const [field, type] of Object.entries(fields)) {
         if (!isCodec(type)) continue;
-        if (partial && (!record || !(field in record))) continue;
+        if (partial && (!record || !Object.hasOwn(record, field))) continue;
         const result = type.decode(record?.[field]);
         if (result._tag === "Left") {
           errors.push(decodeFieldError(field, result));

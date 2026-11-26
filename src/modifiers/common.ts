@@ -136,7 +136,7 @@ export class ModifiersDynamicMetadata {
         ({ id, modifier }) =>
           !("autounlock" in modifier && modifier.autounlock) &&
           "unlock" in modifier &&
-          !(id in unlockArgsOf(this, field)),
+          !Object.hasOwn(unlockArgsOf(this, field), id),
       )
     );
   }
@@ -179,7 +179,7 @@ export class ModifiersDynamicMetadata {
       ({ id, modifier }) =>
         !("autolock" in modifier && modifier.autolock) &&
         "lock" in modifier &&
-        !(id in unlockArgsOf(this, field)),
+        !Object.hasOwn(unlockArgsOf(this, field), id),
     );
   }
 
@@ -438,7 +438,7 @@ export function unlock<
   const meta = getMetadata(object, ModifiersDynamicMetadata);
   for (const field of usedFields) {
     unlockArgsOf(meta, field)[Modifier.name] = args;
-    if (field in meta.floating) {
+    if (Object.hasOwn(meta.floating, field)) {
       Object.assign(object, { [field]: floatingOf(meta, field) });
     }
   }

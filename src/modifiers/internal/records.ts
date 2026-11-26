@@ -174,9 +174,12 @@ export function withRef<T extends Modifier, U>(
   metaRef: ModifiedField["metaRef"],
   callback: (modifier: T) => U,
 ): U {
-  metaRef._ref = internal.meta[id];
+  const current = Object.hasOwn(internal.meta, id)
+    ? internal.meta[id]
+    : undefined;
+  metaRef._ref = current;
   const ret = callback(modifier);
-  if (metaRef._ref !== internal.meta[id]) {
+  if (metaRef._ref !== undefined && metaRef._ref !== current) {
     internal.meta[id] = metaRef._ref;
   }
   return ret;

@@ -141,7 +141,7 @@ export class Table {
       return mixin?.prototype ? [mixin] : [];
     })) {
       for (const key of Object.getOwnPropertyNames(mixin.prototype)) {
-        if (key !== "constructor" && !(key in c.prototype)) {
+        if (key !== "constructor" && !Reflect.has(c.prototype, key)) {
           Object.defineProperty(c.prototype, key, {
             value: mixin.prototype[key],
             writable: true,
@@ -151,7 +151,7 @@ export class Table {
         }
       }
       for (const key of Object.getOwnPropertySymbols(mixin.prototype)) {
-        if (!(key in c.prototype)) {
+        if (!Reflect.has(c.prototype, key)) {
           Object.defineProperty(c.prototype, key, {
             value: mixin.prototype[key],
             writable: true,
